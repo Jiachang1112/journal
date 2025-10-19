@@ -1,229 +1,889 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="utf-8" />
-  <title>Firebase 檢查工具</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>我的日記本 📔（雲端版）</title>
+
+  <!-- React / Babel / Tailwind -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase compat（與你專案相同寫法） -->
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <!-- Firebase (Compat 10.x，方便 UMD + Babel) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 
   <style>
-    :root{ --ok:#16a34a; --warn:#f59e0b; --err:#dc2626; --muted:#6b7280 }
-    .badge{padding:.125rem .5rem;border-radius:.375rem;font-size:.75rem}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .line-clamp-2{
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    }
+    :root{
+      --primary:#7c3aed; /* 預設紫色 */
+    }
+    .primary-bg{ background: var(--primary) !important; }
+    .primary-text{ color: var(--primary) !important; }
+    .primary-border{ border-color: var(--primary) !important; }
   </style>
 </head>
-<body class="bg-slate-50">
-  <div class="max-w-3xl mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-2">Firebase 檢查工具</h1>
-    <p class="text-sm text-slate-600 mb-6">開啟本頁即自動檢查。你也可以修改下方設定後按「重新檢查」。</p>
+<body class="bg-gradient-to-br from-purple-50 to-blue-50">
+  <div id="root"></div>
 
-    <!-- 設定 -->
-    <div class="bg-white shadow rounded-xl p-4 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <label class="text-sm">apiKey
-          <input id="apiKey" class="w-full border rounded p-2" value="AIzaSyBTeWT_xNavrjcHRi15GNfBnronvqWQjLM">
-        </label>
-        <label class="text-sm">authDomain
-          <input id="authDomain" class="w-full border rounded p-2" value="journal-49230.firebaseapp.com">
-        </label>
-        <label class="text-sm">projectId
-          <input id="projectId" class="w-full border rounded p-2" value="journal-49230">
-        </label>
-        <label class="text-sm">appId
-          <input id="appId" class="w-full border rounded p-2" value="1:894572383995:web:a41e4e58a5d3218fee6a5e">
-        </label>
-      </div>
-      <div class="mt-3 flex items-center gap-2">
-        <button id="run" class="px-3 py-2 rounded bg-indigo-600 text-white">重新檢查</button>
-        <span id="origin" class="text-xs text-slate-500"></span>
-      </div>
-    </div>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
 
-    <!-- 結果 -->
-    <div class="space-y-4" id="results">
-      <!-- 動態填入 -->
-    </div>
-
-    <!-- 詳細 Log -->
-    <div class="mt-6 bg-white shadow rounded-xl p-4">
-      <div class="flex items-center justify-between">
-        <h2 class="font-semibold">詳細紀錄</h2>
-        <button id="clearLog" class="text-sm text-slate-600 hover:underline">清除</button>
-      </div>
-      <pre id="log" class="mt-2 text-xs text-slate-800 whitespace-pre-wrap"></pre>
-    </div>
-  </div>
-
-<script type="text/javascript">
-const $ = (id)=>document.getElementById(id);
-const log = (msg, obj) => {
-  const time = new Date().toISOString().slice(11,19);
-  $('log').textContent += `[${time}] ${msg}` + (obj? `\n${JSON.stringify(obj, null, 2)}\n` : '\n');
+    /* =========================
+       Firebase 初始化
+    ==========================*/
+    const firebaseConfig = {
+  apiKey: "AIzaSyBTeWT_xNavrjcHRi15GNfBnronvqWQjLM",
+  authDomain: "journal-49230.firebaseapp.com",
+  projectId: "journal-49230",
+  storageBucket: "journal-49230.appspot.com",
+  messagingSenderId: "894572383995",
+  appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
 };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
 
-const badge = (text, type) => {
-  const color = type==='ok'?'#16a34a':type==='warn'?'#f59e0b':'#dc2626';
-  return `<span class="badge" style="background:${color};color:white">${text}</span>`;
-};
+    /* =========================
+       工具
+    ==========================*/
+    const Icon = ({ name, className="w-5 h-5", fill=false }) => {
+      const P = {
+        search:"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+        plus:"M12 4v16m8-8H4",
+        calendar:"M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z",
+        heart:"M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z",
+        lock:"M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2zm2-4a5 5 0 0110 0v4H7V7z",
+        trash:"M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2m-6 5v6m4-6v6",
+        edit:"M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z",
+        save:"M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z",
+        x:"M6 18L18 6M6 6l12 12",
+        moon:"M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z",
+        sun:"M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 6a6 6 0 100 12 6 6 0 000-12z",
+        download:"M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5 5m0 0l5-5m-5 5V3",
+        user:"M12 12a5 5 0 100-10 5 5 0 000 10zm7 10H5a7 7 0 0114 0z",
+        import:"M12 5v10m0 0l-4-4m4 4l4-4M5 19h14",
+        bell:"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-9.33-4.93M13 21a2 2 0 01-4 0",
+        image:"M3 19a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2v14zm3-3l4-4 3 3 4-4 2 2v4H6z"
+      };
+      return React.createElement('svg', {
+        className, fill: fill?'currentColor':'none', stroke:'currentColor',
+        strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
+      }, React.createElement('path',{ d: P[name] }));
+    };
 
-const render = (rows) => {
-  $('results').innerHTML = rows.map(r => `
-    <div class="bg-white shadow rounded-xl p-4">
-      <div class="flex items-center justify-between">
-        <div class="font-semibold">${r.title}</div>
-        <div>${r.badge}</div>
-      </div>
-      ${r.detail? `<div class="mt-2 text-sm text-slate-700">${r.detail}</div>`:''}
-    </div>
-  `).join('');
-};
+    const moods = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
+    const weathers = ['☀️','⛅','☁️','🌧️','⛈️','🌈','❄️','🌙'];
+    const allTags = ['生活','工作','旅遊','學習','健康','人際關係','興趣'];
 
-$('origin').textContent = `目前網域：${location.protocol}//${location.host}`;
+    /* =========================
+       登入元件
+    ==========================*/
+    const AuthBar = ({ user }) => {
+      const [show, setShow] = useState(false);
+      const [isSignup, setIsSignup] = useState(false);
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const provider = useMemo(()=>new firebase.auth.GoogleAuthProvider(),[]);
 
-$('clearLog').onclick = ()=>{$('log').textContent='';};
+      const submit = async () => {
+        try{
+          if(isSignup) await auth.createUserWithEmailAndPassword(email,password);
+          else await auth.signInWithEmailAndPassword(email,password);
+          setShow(false);
+        }catch(e){ alert('Auth Error: '+e.message); }
+      };
+      const google = async () => {
+        try{ await auth.signInWithPopup(provider); setShow(false); }
+        catch(e){ alert('Google 登入失敗：'+e.message); }
+      };
 
-async function runChecks(){
-  const cfg = {
-    apiKey: $('apiKey').value.trim(),
-    authDomain: $('authDomain').value.trim(),
-    projectId: $('projectId').value.trim(),
-    appId: $('appId').value.trim(),
-  };
+      return (
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/70">
+                <Icon name="user" />
+                <span className="text-sm">{user.email}</span>
+              </div>
+              <button onClick={()=>auth.signOut()} className="px-3 py-1 rounded-lg bg-gray-200 hover:bg-gray-300">登出</button>
+            </>
+          ):(
+            <>
+              <button onClick={()=>{setIsSignup(false);setShow(true);}} className="px-3 py-1 rounded-lg primary-bg text-white">登入</button>
+              <button onClick={()=>{setIsSignup(true);setShow(true);}} className="px-3 py-1 rounded-lg bg-gray-800 text-white">註冊</button>
+            </>
+          )}
 
-  const rows = [];
-  log('==== 開始檢查 ====');
-  log('Config', cfg);
+          {show && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-md">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold">{isSignup?'建立帳號':'登入'}</h3>
+                  <button onClick={()=>setShow(false)} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
+                </div>
+                <div className="space-y-3">
+                  <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email"
+                         className="w-full border rounded-lg p-2"/>
+                  <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="密碼"
+                         className="w-full border rounded-lg p-2"/>
+                  <button onClick={submit} className="w-full primary-bg text-white rounded-lg py-2">{isSignup?'註冊':'登入'}</button>
+                  <button onClick={google} className="w-full bg-red-500 hover:bg-red-600 text-white rounded-lg py-2">使用 Google</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
 
-  // A) API Key 基本檢查（REST：getProjectConfig）
-  let projectConfig = null;
-  try{
-    const res = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig?key=${encodeURIComponent(cfg.apiKey)}`);
-    const json = await res.json();
-    projectConfig = json;
-    if(res.ok && json.projectId){
-      rows.push({
-        title: 'API Key 驗證',
-        badge: badge('OK', 'ok'),
-        detail: `能取得專案設定（projectId=${json.projectId}）`
-      });
-      log('getProjectConfig OK', json);
-    }else{
-      const msg = (json && json.error && json.error.message) || res.statusText || '未知錯誤';
-      rows.push({
-        title: 'API Key 驗證',
-        badge: badge('FAIL', 'err'),
-        detail: `無法取得專案設定。錯誤：${msg}`
-      });
-      log('getProjectConfig FAIL', json);
-    }
-  }catch(e){
-    rows.push({ title:'API Key 驗證', badge:badge('FAIL','err'), detail:`請求失敗：${e.message}` });
-    log('getProjectConfig EXCEPTION', {error: e.message});
-  }
-
-  // B) Authorized Domains 比對目前網域
-  if(projectConfig && projectConfig.authorizedDomains){
-    const domains = projectConfig.authorizedDomains || [];
-    const host = location.host;
-    const isAllowed = domains.some(d => d===host || host.endsWith(`.${d}`));
-    rows.push({
-      title: '授權網域 (Authorized domains)',
-      badge: badge(isAllowed?'OK':'FAIL', isAllowed?'ok':'err'),
-      detail: `目前網域：${host}<br>Authorized domains：<code>${domains.join(', ')||'(空)'}</code><br>${isAllowed?'目前網域已被授權':'目前網域不在白名單，請到 Firebase Authentication → 設定 → 授權網域 新增。'}`
-    });
-    log('Authorized domains', {host, domains, isAllowed});
-  }else{
-    rows.push({
-      title: '授權網域 (Authorized domains)',
-      badge: badge('WARN', 'warn'),
-      detail: '無法從 getProjectConfig 取得授權網域清單（可能前一步已失敗）。'
-    });
-  }
-
-  // C) 初始化 Firebase 並檢查目前載入的 options
-  let app, auth, db;
-  try{
-    if(firebase.apps.length){ firebase.app().delete?.(); }
-  }catch(_){} // ignore
-  try{
-    app = firebase.initializeApp(cfg);
-    auth = firebase.auth();
-    db = firebase.firestore();
-
-    const opts = firebase.app().options || {};
-    const looksGood = (opts.apiKey===cfg.apiKey && opts.projectId===cfg.projectId && opts.appId===cfg.appId);
-    rows.push({
-      title: '前端初始化設定一致性',
-      badge: badge(looksGood?'OK':'WARN', looksGood?'ok':'warn'),
-      detail: `app.options = ${JSON.stringify(opts)}`
-    });
-    log('firebase.app().options', opts);
-  }catch(e){
-    rows.push({ title:'前端初始化', badge:badge('FAIL','err'), detail:`初始化失敗：${e.message}` });
-    log('initializeApp EXCEPTION', {error: e.message});
-  }
-
-  // D) Auth 連線測試（不需啟用匿名登入）
-  if(auth){
-    try{
-      const methods = await auth.fetchSignInMethodsForEmail('test@example.com');
-      rows.push({
-        title: 'Auth 連線',
-        badge: badge('OK', 'ok'),
-        detail: `fetchSignInMethodsForEmail 成功（回傳 ${methods.length} 筆方法）`
-      });
-      log('Auth OK', {methods});
-    }catch(e){
-      const em = e && (e.message || e.code) || String(e);
-      rows.push({
-        title: 'Auth 連線',
-        badge: badge('FAIL', 'err'),
-        detail: `Auth 呼叫失敗：${em}`
-      });
-      log('Auth FAIL', {error: em});
-    }
-  }
-
-  // E) Firestore 連線測試（若被規則擋住，也視為「可連線但無權限」）
-  if(db){
-    try{
-      await db.collection('_check').limit(1).get();
-      rows.push({
-        title: 'Firestore 連線',
-        badge: badge('OK', 'ok'),
-        detail: '讀取成功（規則允許或開放讀取）'
-      });
-      log('Firestore get OK');
-    }catch(e){
-      const code = e && e.code;
-      if(code==='permission-denied'){
-        rows.push({
-          title: 'Firestore 連線',
-          badge: badge('WARN', 'warn'),
-          detail: '成功連上，但被安全規則擋住（permission-denied）。代表連線沒問題，只是規則不允許匿名讀取。'
-        });
-        log('Firestore permission-denied（連線正常，規則擋）');
-      }else{
-        rows.push({
-          title: 'Firestore 連線',
-          badge: badge('FAIL', 'err'),
-          detail: `連線失敗：${e.message || e}`
-        });
-        log('Firestore get FAIL', {error: e.message || e});
+    /* =========================
+       通知與提醒（本地）
+    ==========================*/
+    const ReminderService = {
+      key: 'diary_reminders_v1',
+      load(){ try{ return JSON.parse(localStorage.getItem(this.key)||'[]'); }catch{ return [] } },
+      save(list){ localStorage.setItem(this.key, JSON.stringify(list)); },
+      add(rem){ const list=this.load(); list.push(rem); this.save(list); },
+      remove(id){ const list=this.load().filter(r=>r.id!==id); this.save(list); },
+      scheduleTicker(){
+        // 每 30 秒檢查一次
+        setInterval(async ()=>{
+          const list = this.load();
+          const now = Date.now();
+          for(const r of list){
+            if(!r.fired && now >= new Date(r.at).getTime()){
+              // 通知
+              if(Notification?.permission==='granted'){
+                new Notification('日記提醒', { body: r.title || '該寫日記或查看備忘囉！' });
+              }
+              r.fired = true;
+            }
+          }
+          this.save(list);
+        }, 30000);
+      },
+      requestPermission(){
+        if('Notification' in window && Notification.permission!=='granted'){
+          Notification.requestPermission();
+        }
       }
-    }
-  }
+    };
 
-  render(rows);
-  log('==== 檢查結束 ====');
-}
+    /* =========================
+       標籤雲
+    ==========================*/
+    const TagCloud = ({ diaries, activeTag, onToggle }) => {
+      const map = {};
+      diaries.forEach(d => (d.tags||[]).forEach(t => map[t]=(map[t]||0)+1));
+      const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+      if(entries.length===0) return <p className="text-gray-400">還沒有標籤</p>;
+      const max = Math.max(...entries.map(e=>e[1]));
+      return (
+        <div className="flex flex-wrap gap-2">
+          {entries.map(([tag,count])=>{
+            const size = 12 + Math.round(8*(count/max)); // 12~20px
+            const active = activeTag===tag;
+            return (
+              <button key={tag}
+                onClick={()=>onToggle(tag)}
+                className={`px-2 py-1 rounded-lg ${active?'primary-bg text-white':'bg-gray-100 hover:bg-gray-200'}`}
+                style={{ fontSize: size }}
+                title={`#${tag} ×${count}`}
+              >
+                #{tag}
+              </button>
+            );
+          })}
+        </div>
+      );
+    };
 
-$('run').onclick = runChecks;
-window.addEventListener('load', runChecks);
-</script>
+    /* =========================
+       月曆檢視
+    ==========================*/
+    const CalendarView = ({ diaries, onPickDate }) => {
+      const [cur, setCur] = useState(new Date());
+      const y = cur.getFullYear(), m = cur.getMonth();
+      const first = new Date(y,m,1);
+      const startDay = (first.getDay()+6)%7; // 以週一為起點
+      const daysInMonth = new Date(y,m+1,0).getDate();
+
+      const setMonth = (delta)=>{ const d=new Date(y,m+delta,1); setCur(d); };
+
+      const hasMap = {};
+      diaries.forEach(d=>{
+        const day = new Date(d.createdAt).toISOString().slice(0,10);
+        hasMap[day] = (hasMap[day]||0)+1;
+      });
+
+      const cells=[];
+      for(let i=0;i<startDay;i++) cells.push(null);
+      for(let d=1; d<=daysInMonth; d++) cells.push(new Date(y,m,d));
+
+      return (
+        <div className="border rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <button onClick={()=>setMonth(-1)} className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200">‹</button>
+            <div className="font-bold">{y} 年 {m+1} 月</div>
+            <button onClick={()=>setMonth(1)} className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200">›</button>
+          </div>
+          <div className="grid grid-cols-7 gap-2 text-center text-sm text-gray-500 mb-2">
+            {['一','二','三','四','五','六','日'].map(d=><div key={d}>{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {cells.map((d,i)=>{
+              if(!d) return <div key={i}></div>;
+              const key = d.toISOString().slice(0,10);
+              const count = hasMap[key]||0;
+              return (
+                <button key={i}
+                  onClick={()=>onPickDate(key)}
+                  className={`h-20 rounded-xl border relative ${count? 'primary-border border-2 bg-purple-50':'border-gray-200'}`}
+                >
+                  <div className="absolute top-2 left-2 text-sm">{d.getDate()}</div>
+                  {count>0 && (
+                    <div className="absolute bottom-2 right-2 text-xs px-2 py-0.5 rounded-full primary-bg text-white">
+                      {count} 篇
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
+
+    /* =========================
+       圖表組件
+    ==========================*/
+    const Charts = ({ diaries, darkMode }) => {
+      const moodRef = useRef(null);
+      const dailyRef = useRef(null);
+      const moodChart = useRef(null);
+      const dailyChart = useRef(null);
+
+      const moodCounts = useMemo(()=>{
+        const map = Object.fromEntries(moods.map(m=>[m,0]));
+        diaries.forEach(d => map[d.mood]=(map[d.mood]||0)+1);
+        return map;
+      },[diaries]);
+
+      const dailyCounts = useMemo(()=>{
+        const map = {};
+        diaries.forEach(d=>{
+          const day = new Date(d.createdAt).toISOString().slice(0,10);
+          map[day]=(map[day]||0)+1;
+        });
+        const keys = Object.keys(map).sort();
+        return { labels: keys, data: keys.map(k=>map[k]) };
+      },[diaries]);
+
+      useEffect(()=>{
+        if(moodChart.current){ moodChart.current.destroy(); }
+        if(dailyChart.current){ dailyChart.current.destroy(); }
+
+        moodChart.current = new Chart(moodRef.current, {
+          type:'doughnut',
+          data:{
+            labels:Object.keys(moodCounts),
+            datasets:[{ data:Object.values(moodCounts) }]
+          },
+          options:{ plugins:{legend:{position:'bottom'} } }
+        });
+
+        dailyChart.current = new Chart(dailyRef.current, {
+          type:'bar',
+          data:{
+            labels: dailyCounts.labels,
+            datasets:[{ label:'每日篇數', data: dailyCounts.data }]
+          },
+          options:{
+            scales:{ x:{ ticks:{ color: darkMode?'#fff':'#000' } },
+                     y:{ ticks:{ color: darkMode?'#fff':'#000' } } },
+            plugins:{ legend:{ display:false } }
+          }
+        });
+      },[moodCounts, dailyCounts, darkMode]);
+
+      const total = diaries.length || 0;
+      const happy = moodCounts['😊']||0;
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
+            <h4 className="font-bold mb-2">心情分佈</h4>
+            <canvas ref={moodRef} height="220"></canvas>
+            <div className="mt-3 text-sm text-gray-500">共 {total} 篇，😊 {happy} 篇</div>
+          </div>
+          <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
+            <h4 className="font-bold mb-2">每日篇數</h4>
+            <canvas ref={dailyRef} height="220"></canvas>
+          </div>
+        </div>
+      );
+    };
+
+    /* =========================
+       App 主體
+    ==========================*/
+    const DiaryApp = () => {
+      // 狀態
+      const [user, setUser] = useState(null);
+      const [diaries, setDiaries] = useState([]);
+      const [filteredDiaries, setFilteredDiaries] = useState([]);
+      const [currentDiary, setCurrentDiary] = useState(null);
+      const [showNewDiary, setShowNewDiary] = useState(false);
+      const [searchTerm, setSearchTerm] = useState('');
+      const [selectedTag, setSelectedTag] = useState('');
+      const [sortBy, setSortBy] = useState('date-desc');
+      const [filterMood, setFilterMood] = useState('');
+      const [darkMode, setDarkMode] = useState(false);
+      const [themeColor, setThemeColor] = useState(localStorage.getItem('themeColor')||'#7c3aed');
+      const [dateFilter, setDateFilter] = useState(''); // YYYY-MM-DD
+      const [uploading, setUploading] = useState(false);
+
+      const [formData, setFormData] = useState({
+        title:'', content:'', tags:[], mood:'😊', weather:'☀️',
+        isPrivate:false, isFavorite:false, images:[], remindAt:'' // ISO string
+      });
+
+      // 請求通知權限 & 提醒排程
+      useEffect(()=>{
+        ReminderService.requestPermission();
+        ReminderService.scheduleTicker();
+      },[]);
+
+      // 深色 / 主題色
+      useEffect(()=>{
+        document.documentElement.style.setProperty('--primary', themeColor);
+        localStorage.setItem('themeColor', themeColor);
+      },[themeColor]);
+
+      // Firebase Auth 監聽
+      useEffect(()=>{
+        const unsub = auth.onAuthStateChanged(async (u)=>{
+          setUser(u||null);
+          if(u){
+            // 即時監聽雲端資料
+            db.collection('users').doc(u.uid).collection('diaries')
+              .orderBy('createdAt','desc')
+              .onSnapshot(snap=>{
+                const arr = [];
+                snap.forEach(doc=>arr.push({ id:doc.id, ...doc.data() }));
+                setDiaries(arr);
+              }, err=>alert('讀取日記失敗：'+err.message));
+          }else{
+            // 無登入：使用本地示範資料
+            const sample = [
+              { id:'1', title:'美好的一天', content:'今天天氣很好，去公園散步...', tags:['生活','健康'], mood:'😊', weather:'☀️', isPrivate:false, isFavorite:true, createdAt:new Date('2025-10-18').toISOString(), updatedAt:new Date('2025-10-18').toISOString(), images:[] },
+              { id:'2', title:'工作上的挑戰', content:'今天遇到了一個難題...', tags:['工作','學習'], mood:'🤔', weather:'☁️', isPrivate:false, isFavorite:false, createdAt:new Date('2025-10-17').toISOString(), updatedAt:new Date('2025-10-17').toISOString(), images:[] },
+              { id:'3', title:'週末計畫', content:'這個週末想去爬山...', tags:['生活','興趣'], mood:'😍', weather:'🌈', isPrivate:false, isFavorite:false, createdAt:new Date('2025-10-16').toISOString(), updatedAt:new Date('2025-10-16').toISOString(), images:[] }
+            ];
+            setDiaries(sample);
+          }
+        });
+        return ()=>unsub();
+      },[]);
+
+      // 過濾排序
+      useEffect(()=>{
+        let filtered = [...diaries];
+        if (searchTerm) {
+          filtered = filtered.filter(d =>
+            (d.title||'').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (d.content||'').toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        }
+        if (selectedTag) filtered = filtered.filter(d => (d.tags||[]).includes(selectedTag));
+        if (filterMood) filtered = filtered.filter(d => d.mood === filterMood);
+        if (dateFilter) filtered = filtered.filter(d => (new Date(d.createdAt).toISOString().slice(0,10))===dateFilter);
+
+        filtered.sort((a,b)=>{
+          switch (sortBy) {
+            case 'date-desc': return new Date(b.createdAt) - new Date(a.createdAt);
+            case 'date-asc': return new Date(a.createdAt) - new Date(b.createdAt);
+            case 'title': return (a.title||'').localeCompare(b.title||'');
+            default: return 0;
+          }
+        });
+        setFilteredDiaries(filtered);
+      },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter]);
+
+      // 字數
+      const titleCount = (formData.title||'').length;
+      const contentCount = (formData.content||'').length;
+
+      // 圖片上傳
+      const onUploadImages = async (files)=>{
+        if(!files || files.length===0) return;
+        setUploading(true);
+        try{
+          const urls=[];
+          for(const f of files){
+            if(!user){
+              // 未登入：改用本地預覽 URL
+              urls.push(URL.createObjectURL(f));
+            }else{
+              const id = formData.id || (currentDiary?.id) || db.collection('_').doc().id;
+              const ref = storage.ref().child(`${user.uid}/${id}/${Date.now()}_${f.name}`);
+              await ref.put(f);
+              const url = await ref.getDownloadURL();
+              urls.push(url);
+            }
+          }
+          setFormData(prev=>({...prev, images:[...(prev.images||[]), ...urls]}));
+        }catch(e){
+          alert('上傳失敗：'+e.message);
+        }finally{
+          setUploading(false);
+        }
+      };
+
+      // 儲存
+      const handleSaveDiary = async ()=>{
+        if(!formData.title || !formData.content){
+          alert('請填寫標題和內容'); return;
+        }
+        const docData = {
+          title: formData.title,
+          content: formData.content,
+          tags: formData.tags||[],
+          mood: formData.mood||'😊',
+          weather: formData.weather||'☀️',
+          isPrivate: !!formData.isPrivate,
+          isFavorite: !!formData.isFavorite,
+          images: formData.images||[],
+          createdAt: currentDiary?.createdAt || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        // 提醒（本地）
+        if(formData.remindAt){
+          ReminderService.add({ id: (currentDiary?.id)||docData.createdAt, at: formData.remindAt, title: docData.title, fired:false });
+          alert('提醒已設定：'+new Date(formData.remindAt).toLocaleString('zh-TW'));
+        }
+
+        if(user){
+          const col = db.collection('users').doc(user.uid).collection('diaries');
+          if(currentDiary){
+            await col.doc(currentDiary.id).set(docData, { merge:true });
+          }else{
+            await col.add(docData);
+          }
+        }else{
+          // 本地模式
+          const id = currentDiary?.id || Date.now().toString();
+          const newItem = { id, ...docData };
+          if(currentDiary){
+            setDiaries(diaries.map(d=>d.id===id?newItem:d));
+          }else{
+            setDiaries([newItem, ...diaries]);
+          }
+        }
+        resetForm();
+      };
+
+      const handleDeleteDiary = async (id)=>{
+        if(!confirm('確定要刪除這篇日記嗎？')) return;
+        if(user){
+          await db.collection('users').doc(user.uid).collection('diaries').doc(id).delete();
+        }else{
+          setDiaries(diaries.filter(d=>d.id!==id));
+        }
+        if(currentDiary?.id===id) setCurrentDiary(null);
+      };
+
+      const handleEditDiary = (diary)=>{
+        setCurrentDiary(diary);
+        setFormData({ ...diary, remindAt:'' });
+        setShowNewDiary(true);
+      };
+
+      const toggleFavorite = async (id)=>{
+        if(user){
+          const doc = diaries.find(d=>d.id===id);
+          await db.collection('users').doc(user.uid).collection('diaries').doc(id)
+            .set({ isFavorite: !doc.isFavorite, updatedAt:new Date().toISOString() }, { merge:true });
+        }else{
+          setDiaries(diaries.map(d=>d.id===id?{...d,isFavorite:!d.isFavorite}:d));
+        }
+      };
+
+      const resetForm = ()=>{
+        setFormData({ title:'',content:'',tags:[],mood:'😊',weather:'☀️',isPrivate:false,isFavorite:false,images:[], remindAt:'' });
+        setCurrentDiary(null);
+        setShowNewDiary(false);
+      };
+
+      const handleTagToggle = (tag)=>{
+        setFormData(prev=>({
+          ...prev,
+          tags: prev.tags.includes(tag) ? prev.tags.filter(t=>t!==tag) : [...prev.tags, tag]
+        }));
+      };
+
+      const exportDiaries = ()=>{
+        const dataStr = JSON.stringify(diaries, null, 2);
+        const blob = new Blob([dataStr],{ type:'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href=url; a.download=`diary_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+      };
+
+      const importDiaries = async (file)=>{
+        try{
+          const text = await file.text();
+          const arr = JSON.parse(text);
+          if(!Array.isArray(arr)) throw new Error('JSON 格式不正確（需要陣列）');
+          if(user){
+            const batch = db.batch();
+            const col = db.collection('users').doc(user.uid).collection('diaries');
+            arr.forEach(d=>{
+              const ref = d.id ? col.doc(d.id) : col.doc();
+              batch.set(ref, {
+                title:d.title||'',
+                content:d.content||'',
+                tags:d.tags||[],
+                mood:d.mood||'😊',
+                weather:d.weather||'☀️',
+                isPrivate:!!d.isPrivate,
+                isFavorite:!!d.isFavorite,
+                images:d.images||[],
+                createdAt:d.createdAt||new Date().toISOString(),
+                updatedAt:new Date().toISOString()
+              }, { merge:true });
+            });
+            await batch.commit();
+            alert('已匯入至雲端');
+          }else{
+            // 本地合併
+            const map = Object.fromEntries(diaries.map(d=>[d.id,d]));
+            arr.forEach(d=>{ const id=d.id||(Date.now()+Math.random()).toString(); map[id]={ id, ...d }; });
+            setDiaries(Object.values(map).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)));
+            alert('已匯入（本地模式）');
+          }
+        }catch(e){
+          alert('匯入失敗：'+e.message);
+        }
+      };
+
+      // UI
+      return (
+        <div className={`min-h-screen ${darkMode?'bg-gray-900 text-white':'bg-transparent'}`}>
+          {/* Top Bar */}
+          <div className={`${darkMode?'bg-gray-800':'bg-white'} shadow-lg sticky top-0 z-50`}>
+            <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
+              <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
+
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* 匯出 */}
+                <button onClick={exportDiaries} className="p-2 hover:bg-gray-100 rounded-lg" title="匯出日記(JSON)">
+                  <Icon name="download"/>
+                </button>
+
+                {/* 匯入 */}
+                <label className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer" title="匯入日記(JSON)">
+                  <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0] && importDiaries(e.target.files[0])}/>
+                  <Icon name="import"/>
+                </label>
+
+                {/* 通知測試/權限 */}
+                <button onClick={()=>ReminderService.requestPermission()} className="p-2 hover:bg-gray-100 rounded-lg" title="允許桌面通知">
+                  <Icon name="bell"/>
+                </button>
+
+                {/* 主題色 */}
+                <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/70">
+                  <span className="text-sm">主題色</span>
+                  <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)} />
+                </div>
+
+                {/* 深色模式 */}
+                <button onClick={()=>setDarkMode(!darkMode)} className="p-2 hover:bg-gray-100 rounded-lg" title="切換深色模式">
+                  <Icon name={darkMode?'sun':'moon'}/>
+                </button>
+
+                {/* Auth */}
+                <AuthBar user={user}/>
+              </div>
+            </div>
+          </div>
+
+          {/* 主區 */}
+          <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 左欄：篩選 + 新增 + 清單 */}
+            <div className={`lg:col-span-1 ${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
+              <div className="space-y-4">
+                {/* 搜尋 */}
+                <div className="relative">
+                  <div className="absolute left-3 top-3"><Icon name="search" className="w-5 h-5 text-gray-400"/></div>
+                  <input type="text" placeholder="搜尋日記..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
+                    className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}
+                    style={{ boxShadow:'0 0 0 2px var(--primary, #7c3aed)20' }}/>
+                </div>
+
+                {/* 排序 / 心情 */}
+                <div className="flex flex-wrap gap-2">
+                  <select value={sortBy} onChange={e=>setSortBy(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`}>
+                    <option value="date-desc">最新優先</option>
+                    <option value="date-asc">最舊優先</option>
+                    <option value="title">標題排序</option>
+                  </select>
+                  <select value={filterMood} onChange={e=>setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`}>
+                    <option value="">所有心情</option>
+                    {moods.map(m=> <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+
+                {/* 標籤雲 */}
+                <div>
+                  <div className="text-sm mb-2 text-gray-500">標籤雲（點擊篩選）</div>
+                  <TagCloud diaries={diaries} activeTag={selectedTag} onToggle={(t)=> setSelectedTag(selectedTag===t?'':t) } />
+                </div>
+
+                {/* 新增 */}
+                <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
+                  className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
+                  <Icon name="plus"/> 新增日記
+                </button>
+
+                {/* 清單 */}
+                <div className="space-y-3">
+                  {filteredDiaries.length===0 ? (
+                    <div className="text-center py-8 text-gray-400"><p>還沒有日記，快來寫一篇吧！</p></div>
+                  ) : filteredDiaries.map(d=>(
+                    <div key={d.id}
+                      onClick={()=>{ setCurrentDiary(d); setShowNewDiary(false); setDateFilter(''); }}
+                      className={`p-4 rounded-lg cursor-pointer transition ${currentDiary?.id===d.id ? 'bg-purple-100 border-2 primary-border' : darkMode?'bg-gray-700 hover:bg-gray-600':'bg-gray-50 hover:bg-gray-100'}`}>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{d.mood}</span>
+                          <span className="text-lg">{d.weather}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {d.isFavorite && <Icon name="heart" className="w-4 h-4 text-red-500" fill={true}/>}
+                          {d.isPrivate && <Icon name="lock" className="w-4 h-4"/>}
+                        </div>
+                      </div>
+                      <h3 className="font-bold mb-1">{d.title}</h3>
+                      <p className="text-sm text-gray-500 mb-2">{new Date(d.createdAt).toLocaleDateString('zh-TW')}</p>
+                      <p className="text-sm line-clamp-2">{d.content}</p>
+                      {(d.tags||[]).length>0 && (
+                        <div className="flex gap-1 mt-2 flex-wrap">
+                          {d.tags.map(t=><span key={t} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">#{t}</span>)}
+                        </div>
+                      )}
+                      {d.images?.length>0 && (
+                        <div className="mt-2 flex gap-2 overflow-x-auto">
+                          {d.images.slice(0,3).map((url,i)=>(
+                            <img key={i} src={url} className="w-16 h-16 object-cover rounded-lg border"/>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 右欄：編輯/檢視 + 日曆 + 圖表 */}
+            <div className="lg:col-span-2 grid grid-cols-1 gap-6">
+              {/* 日曆 */}
+              <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
+                <h3 className="font-bold mb-3 flex items-center gap-2"><Icon name="calendar"/><span>日曆檢視</span></h3>
+                <CalendarView diaries={diaries} onPickDate={(d)=>{ setDateFilter(d); setCurrentDiary(null); setShowNewDiary(false); }} />
+                {dateFilter && (
+                  <div className="mt-3 text-sm">
+                    目前篩選日期：<span className="font-semibold">{dateFilter}</span>
+                    <button onClick={()=>setDateFilter('')} className="ml-2 px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">清除</button>
+                  </div>
+                )}
+              </div>
+
+              {/* 編輯 or 內容 */}
+              <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
+                {showNewDiary ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="text-2xl font-bold">{currentDiary?'編輯日記':'新增日記'}</h2>
+                      <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x" className="w-6 h-6"/></button>
+                    </div>
+
+                    <input type="text" placeholder="標題" value={formData.title}
+                      onChange={e=>setFormData({...formData, title:e.target.value})}
+                      className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
+                    <div className="text-sm text-gray-500">標題字數：{titleCount}</div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">心情</label>
+                        <div className="flex gap-2 flex-wrap">
+                          {moods.map(m=>(
+                            <button key={m} onClick={()=>setFormData({...formData,mood:m})}
+                              className={`text-3xl p-2 rounded-lg transition ${formData.mood===m?'bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
+                              {m}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">天氣</label>
+                        <div className="flex gap-2 flex-wrap">
+                          {weathers.map(w=>(
+                            <button key={w} onClick={()=>setFormData({...formData,weather:w})}
+                              className={`text-3xl p-2 rounded-lg transition ${formData.weather===w?'bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
+                              {w}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">標籤</label>
+                      <div className="flex gap-2 flex-wrap">
+                        {allTags.map(tag=>(
+                          <button key={tag} onClick={()=>handleTagToggle(tag)}
+                            className={`px-3 py-1 rounded-full text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
+                            #{tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <textarea placeholder="今天發生了什麼事呢..." value={formData.content}
+                      onChange={e=>setFormData({...formData, content:e.target.value})}
+                      className={`w-full h-64 p-4 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none resize-none`}/>
+                    <div className="text-sm text-gray-500">內容字數：{contentCount}</div>
+
+                    {/* 圖片上傳 */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium">圖片上傳</label>
+                      <div className="flex items-center gap-2">
+                        <label className="px-3 py-2 rounded-lg border cursor-pointer hover:bg-gray-50 flex items-center gap-2">
+                          <Icon name="image"/><span>選擇圖片</span>
+                          <input type="file" accept="image/*" className="hidden" multiple
+                                 onChange={e=>onUploadImages(e.target.files)}/>
+                        </label>
+                        {uploading && <span className="text-sm text-gray-500">上傳中...</span>}
+                      </div>
+                      {formData.images?.length>0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          {formData.images.map((url,i)=>(
+                            <div key={i} className="relative">
+                              <img src={url} className="w-24 h-24 object-cover rounded-lg border"/>
+                              <button onClick={()=>setFormData(prev=>({...prev, images: prev.images.filter((_,idx)=>idx!==i)}))}
+                                className="absolute -top-2 -right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center">×</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 私密 / 最愛 */}
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={formData.isPrivate}
+                               onChange={e=>setFormData({...formData,isPrivate:e.target.checked})} className="w-5 h-5"/>
+                        <Icon name="lock"/><span>私密日記</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={formData.isFavorite}
+                               onChange={e=>setFormData({...formData,isFavorite:e.target.checked})} className="w-5 h-5"/>
+                        <Icon name="heart"/><span>加入最愛</span>
+                      </label>
+                    </div>
+
+                    {/* 提醒（本地通知） */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">提醒時間（本地）</label>
+                        <input type="datetime-local" value={formData.remindAt}
+                          onChange={e=>setFormData({...formData, remindAt:e.target.value})}
+                          className="w-full border rounded-lg p-2"/>
+                        <div className="text-xs text-gray-500 mt-1">到時會發出桌面通知（需保持瀏覽器開啟或定期檢查）。</div>
+                      </div>
+                    </div>
+
+                    <button onClick={handleSaveDiary}
+                      className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
+                      <Icon name="save"/> 儲存日記
+                    </button>
+                  </div>
+                ) : currentDiary ? (
+                  <div className="space-y-6">
+                    <div className="flex items-start justify-between flex-wrap gap-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-4">
+                          <span className="text-5xl">{currentDiary.mood}</span>
+                          <span className="text-4xl">{currentDiary.weather}</span>
+                        </div>
+                        <h2 className="text-3xl font-bold mb-2">{currentDiary.title}</h2>
+                        <p className="text-sm text-gray-500">{new Date(currentDiary.createdAt).toLocaleString('zh-TW')}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={()=>toggleFavorite(currentDiary.id)} className="p-2 hover:bg-gray-100 rounded-lg">
+                          <Icon name="heart" className={`w-6 h-6 ${currentDiary.isFavorite?'text-red-500':''}`} fill={currentDiary.isFavorite}/>
+                        </button>
+                        <button onClick={()=>handleEditDiary(currentDiary)} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="edit" className="w-6 h-6"/></button>
+                        <button onClick={()=>handleDeleteDiary(currentDiary.id)} className="p-2 hover:bg-red-100 text-red-600 rounded-lg"><Icon name="trash" className="w-6 h-6"/></button>
+                      </div>
+                    </div>
+
+                    {(currentDiary.tags||[]).length>0 && (
+                      <div className="flex gap-2 flex-wrap">
+                        {currentDiary.tags.map(t=><span key={t} className="bg-purple-200 text-purple-700 px-3 py-1 rounded-full">#{t}</span>)}
+                      </div>
+                    )}
+
+                    {currentDiary.images?.length>0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {currentDiary.images.map((url,i)=><img key={i} src={url} className="w-full h-40 object-cover rounded-xl border"/>)}
+                      </div>
+                    )}
+
+                    <div className="prose max-w-none">
+                      <p className="text-lg whitespace-pre-wrap">{currentDiary.content}</p>
+                    </div>
+
+                    {currentDiary.isPrivate && (
+                      <div className="flex items-center gap-2 text-gray-500 text-sm">
+                        <Icon name="lock" className="w-4 h-4"/><span>這是一篇私密日記</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <div className="text-center">
+                      <Icon name="calendar" className="w-20 h-20 mx-auto mb-4"/>
+                      <p className="text-xl">選擇一篇日記來查看，或建立新的日記</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 圖表 */}
+              <Charts diaries={diaries} darkMode={darkMode}/>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<DiaryApp/>, document.getElementById('root'));
+  </script>
 </body>
 </html>
