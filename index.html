@@ -51,7 +51,13 @@
   messagingSenderId: "894572383995",
   appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
 };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    // 防止重複初始化
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+} else {
+  firebase.app(); // 如果已初始化，直接使用現有實例
+}
+
     const auth = firebase.auth();
     const db = firebase.firestore();
     const storage = firebase.storage();
