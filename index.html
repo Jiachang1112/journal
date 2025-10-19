@@ -9,11 +9,6 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -30,23 +25,6 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-
-        // 🔥 Firebase 配置 - 請替換成你的配置
-        const firebaseConfig = {
-            apiKey: "AIzaSyBTeWT_xNavrjcHRi15GNfBnronvqWQjLM",
-            authDomain: "journal-49230.firebaseapp.com",
-            projectId: "journal-49230",
-            storageBucket: "journal-49230.appspot.com",
-            messagingSenderId: "894572383995",
-            appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
-        };
-
-        // 初始化 Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
 
         // SVG 圖示組件
         const Icon = ({ name, className = "w-5 h-5", fill = false }) => {
@@ -85,10 +63,6 @@
             const [sortBy, setSortBy] = useState('date-desc');
             const [filterMood, setFilterMood] = useState('');
             const [darkMode, setDarkMode] = useState(false);
-            const [user, setUser] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-            const [isLogin, setIsLogin] = useState(true);
             const [formData, setFormData] = useState({
                 title: '',
                 content: '',
@@ -103,37 +77,48 @@
             const weathers = ['☀️', '⛅', '☁️', '🌧️', '⛈️', '🌈', '❄️', '🌙'];
             const allTags = ['生活', '工作', '旅遊', '學習', '健康', '人際關係', '興趣'];
 
-            // 監聽認證狀態
+            // 模擬一些範例日記
             useEffect(() => {
-                const unsubscribe = auth.onAuthStateChanged((user) => {
-                    setUser(user);
-                    setLoading(false);
-                    if (user) {
-                        loadDiaries(user.uid);
+                const sampleDiaries = [
+                    {
+                        id: '1',
+                        title: '美好的一天',
+                        content: '今天天氣很好，去公園散步，心情很愉快。看到很多人在運動，也遇到了老朋友，聊了很久。',
+                        tags: ['生活', '健康'],
+                        mood: '😊',
+                        weather: '☀️',
+                        isPrivate: false,
+                        isFavorite: true,
+                        createdAt: new Date('2025-10-18').toISOString(),
+                        updatedAt: new Date('2025-10-18').toISOString()
+                    },
+                    {
+                        id: '2',
+                        title: '工作上的挑戰',
+                        content: '今天遇到了一個難題，花了很多時間才解決。雖然很累，但學到了很多東西。',
+                        tags: ['工作', '學習'],
+                        mood: '🤔',
+                        weather: '☁️',
+                        isPrivate: false,
+                        isFavorite: false,
+                        createdAt: new Date('2025-10-17').toISOString(),
+                        updatedAt: new Date('2025-10-17').toISOString()
+                    },
+                    {
+                        id: '3',
+                        title: '週末計畫',
+                        content: '這個週末想去爬山，希望天氣好。也想去看那部期待很久的電影。',
+                        tags: ['生活', '興趣'],
+                        mood: '😍',
+                        weather: '🌈',
+                        isPrivate: false,
+                        isFavorite: false,
+                        createdAt: new Date('2025-10-16').toISOString(),
+                        updatedAt: new Date('2025-10-16').toISOString()
                     }
-                });
-                return () => unsubscribe();
+                ];
+                setDiaries(sampleDiaries);
             }, []);
-
-            // 載入日記
-            const loadDiaries = async (userId) => {
-                try {
-                    const snapshot = await db.collection('diaries')
-                        .where('userId', '==', userId)
-                        .orderBy('createdAt', 'desc')
-                        .get();
-                    const diariesData = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data(),
-                        createdAt: doc.data().createdAt?.toDate().toISOString(),
-                        updatedAt: doc.data().updatedAt?.toDate().toISOString()
-                    }));
-                    setDiaries(diariesData);
-                } catch (error) {
-                    console.error('載入日記失敗:', error);
-                    alert('載入日記失敗：' + error.message);
-                }
-            };
 
             // 過濾和排序
             useEffect(() => {
@@ -161,88 +146,44 @@
                 setFilteredDiaries(filtered);
             }, [diaries, searchTerm, selectedTag, filterMood, sortBy]);
 
-            // 註冊/登入
-            const handleAuth = async () => {
-                if (!loginForm.email || !loginForm.password) {
-                    alert('請輸入電子郵件和密碼');
-                    return;
-                }
-                try {
-                    if (isLogin) {
-                        await auth.signInWithEmailAndPassword(loginForm.email, loginForm.password);
-                    } else {
-                        await auth.createUserWithEmailAndPassword(loginForm.email, loginForm.password);
-                    }
-                } catch (error) {
-                    alert(error.message);
-                }
-            };
-
-            // 登出
-            const handleLogout = async () => {
-                await auth.signOut();
-                setDiaries([]);
-            };
-
-            // 儲存日記
-            const handleSaveDiary = async () => {
-                if (!formData.title || !formData.content || !user) {
+            const handleSaveDiary = () => {
+                if (!formData.title || !formData.content) {
                     alert('請填寫標題和內容');
                     return;
                 }
-                try {
-                    const diaryData = {
-                        ...formData,
-                        userId: user.uid,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-                    if (currentDiary) {
-                        await db.collection('diaries').doc(currentDiary.id).update(diaryData);
-                    } else {
-                        await db.collection('diaries').add({
-                            ...diaryData,
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                    }
-                    resetForm();
-                    loadDiaries(user.uid);
-                } catch (error) {
-                    alert('儲存失敗：' + error.message);
+                const diary = {
+                    ...formData,
+                    id: currentDiary?.id || Date.now().toString(),
+                    createdAt: currentDiary?.createdAt || new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                if (currentDiary) {
+                    setDiaries(diaries.map(d => d.id === diary.id ? diary : d));
+                } else {
+                    setDiaries([diary, ...diaries]);
                 }
+                resetForm();
             };
 
-            // 刪除日記
-            const handleDeleteDiary = async (id) => {
-                if (!window.confirm('確定要刪除這篇日記嗎？')) return;
-                try {
-                    await db.collection('diaries').doc(id).delete();
-                    loadDiaries(user.uid);
+            const handleDeleteDiary = (id) => {
+                if (window.confirm('確定要刪除這篇日記嗎？')) {
+                    setDiaries(diaries.filter(d => d.id !== id));
                     if (currentDiary?.id === id) setCurrentDiary(null);
-                } catch (error) {
-                    alert('刪除失敗：' + error.message);
                 }
             };
 
-            // 編輯日記
             const handleEditDiary = (diary) => {
                 setCurrentDiary(diary);
                 setFormData(diary);
                 setShowNewDiary(true);
             };
 
-            // 切換最愛
-            const toggleFavorite = async (diary) => {
-                try {
-                    await db.collection('diaries').doc(diary.id).update({
-                        isFavorite: !diary.isFavorite
-                    });
-                    loadDiaries(user.uid);
-                } catch (error) {
-                    alert('更新失敗：' + error.message);
-                }
+            const toggleFavorite = (id) => {
+                setDiaries(diaries.map(d => 
+                    d.id === id ? { ...d, isFavorite: !d.isFavorite } : d
+                ));
             };
 
-            // 重置表單
             const resetForm = () => {
                 setFormData({
                     title: '', content: '', tags: [], mood: '😊',
@@ -271,74 +212,24 @@
                 link.click();
             };
 
-            if (loading) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 to-blue-100">
-                        <div className="text-2xl font-bold text-purple-600">載入中...</div>
-                    </div>
-                );
-            }
-
-            if (!user) {
-                return (
-                    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-                            <h1 className="text-3xl font-bold text-center mb-6 text-purple-600">📔 我的日記本</h1>
-                            <div className="space-y-4">
-                                <input
-                                    type="email"
-                                    placeholder="電子郵件"
-                                    value={loginForm.email}
-                                    onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
-                                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                                />
-                                <input
-                                    type="password"
-                                    placeholder="密碼（至少6個字元）"
-                                    value={loginForm.password}
-                                    onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
-                                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                                />
-                                <button
-                                    onClick={handleAuth}
-                                    className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition"
-                                >
-                                    {isLogin ? '登入' : '註冊'}
-                                </button>
-                                <button
-                                    onClick={() => setIsLogin(!isLogin)}
-                                    className="w-full text-purple-600 hover:underline text-sm"
-                                >
-                                    {isLogin ? '還沒有帳號？點此註冊' : '已有帳號？點此登入'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-
             return (
                 <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-purple-50 to-blue-50'}`}>
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg sticky top-0 z-50`}>
                         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
                             <h1 className="text-2xl font-bold text-purple-600">📔 我的日記本</h1>
-                            <div className="flex items-center gap-4 flex-wrap">
+                            <div className="flex items-center gap-4">
                                 <button onClick={exportDiaries} className="p-2 hover:bg-gray-100 rounded-lg" title="匯出日記">
                                     <Icon name="download" />
                                 </button>
                                 <button onClick={() => setDarkMode(!darkMode)} className="p-2 hover:bg-gray-100 rounded-lg" title="切換深色模式">
                                     <Icon name={darkMode ? 'sun' : 'moon'} />
                                 </button>
-                                <span className="text-sm hidden sm:inline">{user.email}</span>
-                                <button onClick={handleLogout} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm">
-                                    登出
-                                </button>
                             </div>
                         </div>
                     </div>
 
                     <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className={`lg:col-span-1 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 h-[calc(100vh-120px)] overflow-y-auto`}>
+                        <div className={`lg:col-span-1 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
                             <div className="space-y-4">
                                 <div className="relative">
                                     <div className="absolute left-3 top-3">
@@ -406,14 +297,14 @@
                                                         {diary.isPrivate && <Icon name="lock" className="w-4 h-4" />}
                                                     </div>
                                                 </div>
-                                                <h3 className="font-bold mb-1 line-clamp-1">{diary.title}</h3>
+                                                <h3 className="font-bold mb-1">{diary.title}</h3>
                                                 <p className="text-sm text-gray-500 mb-2">
-                                                    {diary.createdAt ? new Date(diary.createdAt).toLocaleDateString('zh-TW') : ''}
+                                                    {new Date(diary.createdAt).toLocaleDateString('zh-TW')}
                                                 </p>
                                                 <p className="text-sm line-clamp-2">{diary.content}</p>
                                                 {diary.tags.length > 0 && (
                                                     <div className="flex gap-1 mt-2 flex-wrap">
-                                                        {diary.tags.slice(0, 3).map(tag => (
+                                                        {diary.tags.map(tag => (
                                                             <span key={tag} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">#{tag}</span>
                                                         ))}
                                                     </div>
@@ -425,7 +316,7 @@
                             </div>
                         </div>
 
-                        <div className={`lg:col-span-2 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 h-[calc(100vh-120px)] overflow-y-auto`}>
+                        <div className={`lg:col-span-2 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
                             {showNewDiary ? (
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between mb-4">
@@ -535,4 +426,57 @@
                                                 <span className="text-4xl">{currentDiary.weather}</span>
                                             </div>
                                             <h2 className="text-3xl font-bold mb-2">{currentDiary.title}</h2>
-                                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-
+                                            <p className="text-sm text-gray-500">
+                                                {new Date(currentDiary.createdAt).toLocaleString('zh-TW')}
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => toggleFavorite(currentDiary.id)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                                <Icon name="heart" className={`w-6 h-6 ${currentDiary.isFavorite ? 'text-red-500' : ''}`} fill={currentDiary.isFavorite} />
+                                            </button>
+                                            <button onClick={() => handleEditDiary(currentDiary)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                                <Icon name="edit" className="w-6 h-6" />
+                                            </button>
+                                            <button onClick={() => handleDeleteDiary(currentDiary.id)} className="p-2 hover:bg-red-100 text-red-600 rounded-lg">
+                                                <Icon name="trash" className="w-6 h-6" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {currentDiary.tags.length > 0 && (
+                                        <div className="flex gap-2 flex-wrap">
+                                            {currentDiary.tags.map(tag => (
+                                                <span key={tag} className="bg-purple-200 text-purple-700 px-3 py-1 rounded-full">#{tag}</span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="prose max-w-none">
+                                        <p className="text-lg whitespace-pre-wrap">{currentDiary.content}</p>
+                                    </div>
+
+                                    {currentDiary.isPrivate && (
+                                        <div className="flex items-center gap-2 text-gray-500 text-sm">
+                                            <Icon name="lock" className="w-4 h-4" />
+                                            <span>這是一篇私密日記</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-gray-400">
+                                    <div className="text-center">
+                                        <Icon name="calendar" className="w-20 h-20 mx-auto mb-4" />
+                                        <p className="text-xl">選擇一篇日記來查看，或建立新的日記</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<DiaryApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
