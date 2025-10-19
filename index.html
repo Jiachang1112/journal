@@ -1,565 +1,533 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Calendar, Tag, Heart, Lock, Unlock, Trash2, Edit2, Save, X, Moon, Sun, Download, Upload, Filter, SortAsc } from 'lucide-react';
-
-// Firebase 配置 - 請替換成你自己的 Firebase 配置
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBTeWT_xNavrjcHRi15GNfBnronvqWQjLM",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",  // 需要補充
-  projectId: "journal-49230",
-  storageBucket: "YOUR_PROJECT.appspot.com",  // 需要補充
-  messagingSenderId: "894572383995",
-  appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
-};
-
-const DiaryApp = () => {
-  const [diaries, setDiaries] = useState([]);
-  const [filteredDiaries, setFilteredDiaries] = useState([]);
-  const [currentDiary, setCurrentDiary] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showNewDiary, setShowNewDiary] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTag, setSelectedTag] = useState('');
-  const [sortBy, setSortBy] = useState('date-desc');
-  const [filterMood, setFilterMood] = useState('');
-  const [darkMode, setDarkMode] = useState(false);
-  const [user, setUser] = useState(null);
-  const [showLogin, setShowLogin] = useState(true);
-  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  
-  const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    tags: [],
-    mood: '😊',
-    weather: '☀️',
-    isPrivate: false,
-    isFavorite: false,
-    images: []
-  });
-
-  const moods = ['😊', '😢', '😡', '😰', '😍', '🤔', '😴', '🎉'];
-  const weathers = ['☀️', '⛅', '☁️', '🌧️', '⛈️', '🌈', '❄️', '🌙'];
-  const allTags = ['生活', '工作', '旅遊', '學習', '健康', '人際關係', '興趣'];
-
-  // 模擬 Firebase 認證
-  useEffect(() => {
-    const savedUser = localStorage.getItem('diary_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setShowLogin(false);
-    }
-  }, []);
-
-  // 模擬從 Firebase 載入日記
-  useEffect(() => {
-    if (user) {
-      const savedDiaries = localStorage.getItem(`diaries_${user.id}`);
-      if (savedDiaries) {
-        setDiaries(JSON.parse(savedDiaries));
-      }
-    }
-  }, [user]);
-
-  // 儲存到 Firebase (模擬)
-  useEffect(() => {
-    if (user && diaries.length > 0) {
-      localStorage.setItem(`diaries_${user.id}`, JSON.stringify(diaries));
-    }
-  }, [diaries, user]);
-
-  // 過濾和排序
-  useEffect(() => {
-    let filtered = [...diaries];
-
-    // 搜尋過濾
-    if (searchTerm) {
-      filtered = filtered.filter(d => 
-        d.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.content.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // 標籤過濾
-    if (selectedTag) {
-      filtered = filtered.filter(d => d.tags.includes(selectedTag));
-    }
-
-    // 心情過濾
-    if (filterMood) {
-      filtered = filtered.filter(d => d.mood === filterMood);
-    }
-
-    // 排序
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'date-desc':
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        case 'date-asc':
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        case 'title':
-          return a.title.localeCompare(b.title);
-        default:
-          return 0;
-      }
-    });
-
-    setFilteredDiaries(filtered);
-  }, [diaries, searchTerm, selectedTag, filterMood, sortBy]);
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    const newUser = {
-      id: Date.now().toString(),
-      email: loginForm.email
-    };
-    setUser(newUser);
-    localStorage.setItem('diary_user', JSON.stringify(newUser));
-    setShowLogin(false);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('diary_user');
-    setShowLogin(true);
-    setDiaries([]);
-  };
-
-  const handleSaveDiary = () => {
-    if (!formData.title || !formData.content) return;
-
-    const diary = {
-      ...formData,
-      id: currentDiary?.id || Date.now().toString(),
-      createdAt: currentDiary?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    if (currentDiary) {
-      setDiaries(diaries.map(d => d.id === diary.id ? diary : d));
-    } else {
-      setDiaries([diary, ...diaries]);
-    }
-
-    resetForm();
-  };
-
-  const handleDeleteDiary = (id) => {
-    if (window.confirm('確定要刪除這篇日記嗎？')) {
-      setDiaries(diaries.filter(d => d.id !== id));
-      if (currentDiary?.id === id) {
-        setCurrentDiary(null);
-      }
-    }
-  };
-
-  const handleEditDiary = (diary) => {
-    setCurrentDiary(diary);
-    setFormData(diary);
-    setIsEditing(true);
-    setShowNewDiary(true);
-  };
-
-  const toggleFavorite = (id) => {
-    setDiaries(diaries.map(d => 
-      d.id === id ? { ...d, isFavorite: !d.isFavorite } : d
-    ));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      content: '',
-      tags: [],
-      mood: '😊',
-      weather: '☀️',
-      isPrivate: false,
-      isFavorite: false,
-      images: []
-    });
-    setCurrentDiary(null);
-    setIsEditing(false);
-    setShowNewDiary(false);
-  };
-
-  const handleTagToggle = (tag) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.includes(tag)
-        ? prev.tags.filter(t => t !== tag)
-        : [...prev.tags, tag]
-    }));
-  };
-
-  const exportDiaries = () => {
-    const dataStr = JSON.stringify(diaries, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `diary_backup_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-  };
-
-  const importDiaries = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const imported = JSON.parse(event.target.result);
-          setDiaries([...imported, ...diaries]);
-          alert('匯入成功！');
-        } catch (error) {
-          alert('匯入失敗，請確認檔案格式正確');
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的日記本 📔</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .line-clamp-2 { 
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
-      };
-      reader.readAsText(file);
-    }
-  };
+        .prose { max-width: 65ch; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-  if (showLogin) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-          <h1 className="text-3xl font-bold text-center mb-6 text-purple-600">📔 我的日記本</h1>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">電子郵件</label>
-              <input
-                type="email"
-                value={loginForm.email}
-                onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">密碼</label>
-              <input
-                type="password"
-                value={loginForm.password}
-                onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition"
-            >
-              登入 / 註冊
-            </button>
-          </form>
-          <p className="text-xs text-gray-500 text-center mt-4">
-            *這是 Demo 版本，請替換 Firebase 配置以使用真實資料同步
-          </p>
-        </div>
-      </div>
-    );
-  }
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-  return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-purple-50 to-blue-50'}`}>
-      {/* 頂部導航 */}
-      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg sticky top-0 z-50`}>
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-purple-600">📔 我的日記本</h1>
-          <div className="flex items-center gap-4">
-            <button onClick={exportDiaries} className="p-2 hover:bg-gray-100 rounded-lg">
-              <Download className="w-5 h-5" />
-            </button>
-            <label className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer">
-              <Upload className="w-5 h-5" />
-              <input type="file" accept=".json" onChange={importDiaries} className="hidden" />
-            </label>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-2 hover:bg-gray-100 rounded-lg">
-              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-            <button onClick={handleLogout} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
-              登出
-            </button>
-          </div>
-        </div>
-      </div>
+        // 🔥 Firebase 配置 - 請替換成你的配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyBTeWT_xNavrjcHRi15GNfBnronvqWQjLM",
+            authDomain: "journal-49230.firebaseapp.com",
+            projectId: "journal-49230",
+            storageBucket: "journal-49230.appspot.com",
+            messagingSenderId: "894572383995",
+            appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
+        };
 
-      <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 左側欄 - 日記列表 */}
-        <div className={`lg:col-span-1 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
-          <div className="space-y-4">
-            {/* 搜尋 */}
-            <div className="relative">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="搜尋日記..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-              />
-            </div>
+        // 初始化 Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-            {/* 過濾器 */}
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
-              >
-                <option value="date-desc">最新優先</option>
-                <option value="date-asc">最舊優先</option>
-                <option value="title">標題排序</option>
-              </select>
-              <select
-                value={filterMood}
-                onChange={(e) => setFilterMood(e.target.value)}
-                className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
-              >
-                <option value="">所有心情</option>
-                {moods.map(mood => <option key={mood} value={mood}>{mood}</option>)}
-              </select>
-            </div>
+        // 圖示組件
+        const Icon = ({ name, className = "w-5 h-5", fill = false }) => {
+            const icons = {
+                search: <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>,
+                plus: <path d="M12 4v16m8-8H4"/>,
+                calendar: <path d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/>,
+                heart: <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>,
+                lock: <path d="M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2zm2-4a5 5 0 0110 0v4H7V7z"/>,
+                trash: <path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2m-6 5v6m4-6v6"/>,
+                edit: <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>,
+                save: <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>,
+                x: <path d="M6 18L18 6M6 6l12 12"/>,
+                moon: <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>,
+                sun: <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 6a6 6 0 100 12 6 6 0 000-12z"/>,
+                download: <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5 5m0 0l5-5m-5 5V3"/>,
+                upload: <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5-5m0 0L7 8m5-5v12"/>,
+            };
+            return (
+                <svg className={className} fill={fill ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    {icons[name]}
+                </svg>
+            );
+        };
 
-            {/* 標籤過濾 */}
-            <div className="flex flex-wrap gap-2">
-              {allTags.map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
-                  className={`px-3 py-1 rounded-full text-sm transition ${
-                    selectedTag === tag
-                      ? 'bg-purple-600 text-white'
-                      : darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
-                  }`}
-                >
-                  #{tag}
-                </button>
-              ))}
-            </div>
+        const DiaryApp = () => {
+            const [diaries, setDiaries] = useState([]);
+            const [filteredDiaries, setFilteredDiaries] = useState([]);
+            const [currentDiary, setCurrentDiary] = useState(null);
+            const [showNewDiary, setShowNewDiary] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedTag, setSelectedTag] = useState('');
+            const [sortBy, setSortBy] = useState('date-desc');
+            const [filterMood, setFilterMood] = useState('');
+            const [darkMode, setDarkMode] = useState(false);
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+            const [isLogin, setIsLogin] = useState(true);
+            const [formData, setFormData] = useState({
+                title: '',
+                content: '',
+                tags: [],
+                mood: '😊',
+                weather: '☀️',
+                isPrivate: false,
+                isFavorite: false
+            });
 
-            <button
-              onClick={() => {
-                resetForm();
+            const moods = ['😊', '😢', '😡', '😰', '😍', '🤔', '😴', '🎉'];
+            const weathers = ['☀️', '⛅', '☁️', '🌧️', '⛈️', '🌈', '❄️', '🌙'];
+            const allTags = ['生活', '工作', '旅遊', '學習', '健康', '人際關係', '興趣'];
+
+            // 監聽認證狀態
+            useEffect(() => {
+                const unsubscribe = auth.onAuthStateChanged(async (user) => {
+                    setUser(user);
+                    setLoading(false);
+                    if (user) {
+                        loadDiaries(user.uid);
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
+
+            // 載入日記
+            const loadDiaries = async (userId) => {
+                try {
+                    const snapshot = await db.collection('diaries')
+                        .where('userId', '==', userId)
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                    const diariesData = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                        createdAt: doc.data().createdAt?.toDate().toISOString(),
+                        updatedAt: doc.data().updatedAt?.toDate().toISOString()
+                    }));
+                    setDiaries(diariesData);
+                } catch (error) {
+                    console.error('載入日記失敗:', error);
+                }
+            };
+
+            // 過濾和排序
+            useEffect(() => {
+                let filtered = [...diaries];
+                if (searchTerm) {
+                    filtered = filtered.filter(d => 
+                        d.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        d.content.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                }
+                if (selectedTag) {
+                    filtered = filtered.filter(d => d.tags.includes(selectedTag));
+                }
+                if (filterMood) {
+                    filtered = filtered.filter(d => d.mood === filterMood);
+                }
+                filtered.sort((a, b) => {
+                    switch (sortBy) {
+                        case 'date-desc': return new Date(b.createdAt) - new Date(a.createdAt);
+                        case 'date-asc': return new Date(a.createdAt) - new Date(b.createdAt);
+                        case 'title': return a.title.localeCompare(b.title);
+                        default: return 0;
+                    }
+                });
+                setFilteredDiaries(filtered);
+            }, [diaries, searchTerm, selectedTag, filterMood, sortBy]);
+
+            // 註冊/登入
+            const handleAuth = async () => {
+                try {
+                    if (isLogin) {
+                        await auth.signInWithEmailAndPassword(loginForm.email, loginForm.password);
+                    } else {
+                        await auth.createUserWithEmailAndPassword(loginForm.email, loginForm.password);
+                    }
+                } catch (error) {
+                    alert(error.message);
+                }
+            };
+
+            // 登出
+            const handleLogout = async () => {
+                await auth.signOut();
+                setDiaries([]);
+            };
+
+            // 儲存日記
+            const handleSaveDiary = async () => {
+                if (!formData.title || !formData.content || !user) return;
+                try {
+                    const diaryData = {
+                        ...formData,
+                        userId: user.uid,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    if (currentDiary) {
+                        await db.collection('diaries').doc(currentDiary.id).update(diaryData);
+                    } else {
+                        await db.collection('diaries').add({
+                            ...diaryData,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    resetForm();
+                    loadDiaries(user.uid);
+                } catch (error) {
+                    alert('儲存失敗：' + error.message);
+                }
+            };
+
+            // 刪除日記
+            const handleDeleteDiary = async (id) => {
+                if (!window.confirm('確定要刪除這篇日記嗎？')) return;
+                try {
+                    await db.collection('diaries').doc(id).delete();
+                    loadDiaries(user.uid);
+                    if (currentDiary?.id === id) setCurrentDiary(null);
+                } catch (error) {
+                    alert('刪除失敗：' + error.message);
+                }
+            };
+
+            // 編輯日記
+            const handleEditDiary = (diary) => {
+                setCurrentDiary(diary);
+                setFormData(diary);
                 setShowNewDiary(true);
-              }}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2"
-            >
-              <Plus className="w-5 h-5" /> 新增日記
-            </button>
+            };
 
-            {/* 日記列表 */}
-            <div className="space-y-3">
-              {filteredDiaries.map(diary => (
-                <div
-                  key={diary.id}
-                  onClick={() => setCurrentDiary(diary)}
-                  className={`p-4 rounded-lg cursor-pointer transition ${
-                    currentDiary?.id === diary.id
-                      ? 'bg-purple-100 border-2 border-purple-500'
-                      : darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{diary.mood}</span>
-                      <span className="text-lg">{diary.weather}</span>
+            // 切換最愛
+            const toggleFavorite = async (diary) => {
+                try {
+                    await db.collection('diaries').doc(diary.id).update({
+                        isFavorite: !diary.isFavorite
+                    });
+                    loadDiaries(user.uid);
+                } catch (error) {
+                    alert('更新失敗：' + error.message);
+                }
+            };
+
+            // 重置表單
+            const resetForm = () => {
+                setFormData({
+                    title: '', content: '', tags: [], mood: '😊',
+                    weather: '☀️', isPrivate: false, isFavorite: false
+                });
+                setCurrentDiary(null);
+                setShowNewDiary(false);
+            };
+
+            const handleTagToggle = (tag) => {
+                setFormData(prev => ({
+                    ...prev,
+                    tags: prev.tags.includes(tag)
+                        ? prev.tags.filter(t => t !== tag)
+                        : [...prev.tags, tag]
+                }));
+            };
+
+            const exportDiaries = () => {
+                const dataStr = JSON.stringify(diaries, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `diary_backup_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+            };
+
+            if (loading) {
+                return <div className="min-h-screen flex items-center justify-center">載入中...</div>;
+            }
+
+            if (!user) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+                            <h1 className="text-3xl font-bold text-center mb-6 text-purple-600">📔 我的日記本</h1>
+                            <div className="space-y-4">
+                                <input
+                                    type="email"
+                                    placeholder="電子郵件"
+                                    value={loginForm.email}
+                                    onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
+                                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                />
+                                <input
+                                    type="password"
+                                    placeholder="密碼（至少6個字元）"
+                                    value={loginForm.password}
+                                    onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
+                                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500"
+                                />
+                                <button
+                                    onClick={handleAuth}
+                                    className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700"
+                                >
+                                    {isLogin ? '登入' : '註冊'}
+                                </button>
+                                <button
+                                    onClick={() => setIsLogin(!isLogin)}
+                                    className="w-full text-purple-600 hover:underline"
+                                >
+                                    {isLogin ? '還沒有帳號？註冊' : '已有帳號？登入'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {diary.isFavorite && <Heart className="w-4 h-4 fill-red-500 text-red-500" />}
-                      {diary.isPrivate && <Lock className="w-4 h-4" />}
+                );
+            }
+
+            return (
+                <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-purple-50 to-blue-50'}`}>
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg sticky top-0 z-50`}>
+                        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+                            <h1 className="text-2xl font-bold text-purple-600">📔 我的日記本</h1>
+                            <div className="flex items-center gap-4">
+                                <button onClick={exportDiaries} className="p-2 hover:bg-gray-100 rounded-lg">
+                                    <Icon name="download" />
+                                </button>
+                                <button onClick={() => setDarkMode(!darkMode)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                    <Icon name={darkMode ? 'sun' : 'moon'} />
+                                </button>
+                                <span className="text-sm">{user.email}</span>
+                                <button onClick={handleLogout} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                                    登出
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                  </div>
-                  <h3 className="font-bold mb-1">{diary.title}</h3>
-                  <p className="text-sm text-gray-500 mb-2">
-                    {new Date(diary.createdAt).toLocaleDateString('zh-TW')}
-                  </p>
-                  <p className="text-sm line-clamp-2">{diary.content}</p>
-                  {diary.tags.length > 0 && (
-                    <div className="flex gap-1 mt-2 flex-wrap">
-                      {diary.tags.map(tag => (
-                        <span key={tag} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* 右側欄 - 日記內容 */}
-        <div className={`lg:col-span-2 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
-          {showNewDiary || isEditing ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">{isEditing ? '編輯日記' : '新增日記'}</h2>
-                <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
+                    <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* 左側欄 */}
+                        <div className={`lg:col-span-1 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <Icon name="search" className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="搜尋日記..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'border-gray-300'}`}
+                                    />
+                                </div>
 
-              <input
-                type="text"
-                placeholder="標題"
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-                className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-              />
+                                <div className="flex flex-wrap gap-2">
+                                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                        <option value="date-desc">最新優先</option>
+                                        <option value="date-asc">最舊優先</option>
+                                        <option value="title">標題排序</option>
+                                    </select>
+                                    <select value={filterMood} onChange={(e) => setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                        <option value="">所有心情</option>
+                                        {moods.map(mood => <option key={mood} value={mood}>{mood}</option>)}
+                                    </select>
+                                </div>
 
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2">心情</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {moods.map(mood => (
-                      <button
-                        key={mood}
-                        onClick={() => setFormData({...formData, mood})}
-                        className={`text-3xl p-2 rounded-lg transition ${
-                          formData.mood === mood ? 'bg-purple-200 scale-110' : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        {mood}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2">天氣</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {weathers.map(weather => (
-                      <button
-                        key={weather}
-                        onClick={() => setFormData({...formData, weather})}
-                        className={`text-3xl p-2 rounded-lg transition ${
-                          formData.weather === weather ? 'bg-purple-200 scale-110' : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        {weather}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {allTags.map(tag => (
+                                        <button
+                                            key={tag}
+                                            onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
+                                            className={`px-3 py-1 rounded-full text-sm ${selectedTag === tag ? 'bg-purple-600 text-white' : darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}
+                                        >
+                                            #{tag}
+                                        </button>
+                                    ))}
+                                </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">標籤</label>
-                <div className="flex gap-2 flex-wrap">
-                  {allTags.map(tag => (
-                    <button
-                      key={tag}
-                      onClick={() => handleTagToggle(tag)}
-                      className={`px-3 py-1 rounded-full text-sm transition ${
-                        formData.tags.includes(tag)
-                          ? 'bg-purple-600 text-white'
-                          : darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
-                      }`}
-                    >
-                      #{tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                                <button
+                                    onClick={() => { resetForm(); setShowNewDiary(true); }}
+                                    className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2"
+                                >
+                                    <Icon name="plus" /> 新增日記
+                                </button>
 
-              <textarea
-                placeholder="今天發生了什麼事呢..."
-                value={formData.content}
-                onChange={(e) => setFormData({...formData, content: e.target.value})}
-                className={`w-full h-64 p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'border-gray-300'} focus:ring-2 focus:ring-purple-500`}
-              />
+                                <div className="space-y-3">
+                                    {filteredDiaries.map(diary => (
+                                        <div
+                                            key={diary.id}
+                                            onClick={() => setCurrentDiary(diary)}
+                                            className={`p-4 rounded-lg cursor-pointer ${currentDiary?.id === diary.id ? 'bg-purple-100 border-2 border-purple-500' : darkMode ? 'bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'}`}
+                                        >
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-2xl">{diary.mood}</span>
+                                                    <span className="text-lg">{diary.weather}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {diary.isFavorite && <Icon name="heart" className="w-4 h-4 text-red-500" fill={true} />}
+                                                    {diary.isPrivate && <Icon name="lock" className="w-4 h-4" />}
+                                                </div>
+                                            </div>
+                                            <h3 className="font-bold mb-1">{diary.title}</h3>
+                                            <p className="text-sm text-gray-500 mb-2">
+                                                {diary.createdAt ? new Date(diary.createdAt).toLocaleDateString('zh-TW') : ''}
+                                            </p>
+                                            <p className="text-sm line-clamp-2">{diary.content}</p>
+                                            {diary.tags.length > 0 && (
+                                                <div className="flex gap-1 mt-2 flex-wrap">
+                                                    {diary.tags.map(tag => (
+                                                        <span key={tag} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">#{tag}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
 
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.isPrivate}
-                    onChange={(e) => setFormData({...formData, isPrivate: e.target.checked})}
-                    className="w-5 h-5"
-                  />
-                  <Lock className="w-5 h-5" />
-                  <span>私密日記</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.isFavorite}
-                    onChange={(e) => setFormData({...formData, isFavorite: e.target.checked})}
-                    className="w-5 h-5"
-                  />
-                  <Heart className="w-5 h-5" />
-                  <span>加入最愛</span>
-                </label>
-              </div>
+                        {/* 右側欄 */}
+                        <div className={`lg:col-span-2 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
+                            {showNewDiary ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-2xl font-bold">{currentDiary ? '編輯日記' : '新增日記'}</h2>
+                                        <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg">
+                                            <Icon name="x" />
+                                        </button>
+                                    </div>
 
-              <button
-                onClick={handleSaveDiary}
-                className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2"
-              >
-                <Save className="w-5 h-5" /> 儲存日記
-              </button>
-            </div>
-          ) : currentDiary ? (
-            <div className="space-y-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-5xl">{currentDiary.mood}</span>
-                    <span className="text-4xl">{currentDiary.weather}</span>
-                  </div>
-                  <h2 className="text-3xl font-bold mb-2">{currentDiary.title}</h2>
-                  <p className="text-gray-500">
-                    {new Date(currentDiary.createdAt).toLocaleString('zh-TW')}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => toggleFavorite(currentDiary.id)}
-                    className="p-2 hover:bg-gray-100 rounded-lg"
-                  >
-                    <Heart className={`w-6 h-6 ${currentDiary.isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
-                  </button>
-                  <button onClick={() => handleEditDiary(currentDiary)} className="p-2 hover:bg-gray-100 rounded-lg">
-                    <Edit2 className="w-6 h-6" />
-                  </button>
-                  <button onClick={() => handleDeleteDiary(currentDiary.id)} className="p-2 hover:bg-red-100 text-red-600 rounded-lg">
-                    <Trash2 className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
+                                    <input
+                                        type="text"
+                                        placeholder="標題"
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                        className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'border-gray-300'}`}
+                                    />
 
-              {currentDiary.tags.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {currentDiary.tags.map(tag => (
-                    <span key={tag} className="bg-purple-200 text-purple-700 px-3 py-1 rounded-full">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium mb-2">心情</label>
+                                            <div className="flex gap-2 flex-wrap">
+                                                {moods.map(mood => (
+                                                    <button
+                                                        key={mood}
+                                                        onClick={() => setFormData({...formData, mood})}
+                                                        className={`text-3xl p-2 rounded-lg ${formData.mood === mood ? 'bg-purple-200 scale-110' : 'hover:bg-gray-100'}`}
+                                                    >
+                                                        {mood}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium mb-2">天氣</label>
+                                            <div className="flex gap-2 flex-wrap">
+                                                {weathers.map(weather => (
+                                                    <button
+                                                        key={weather}
+                                                        onClick={() => setFormData({...formData, weather})}
+                                                        className={`text-3xl p-2 rounded-lg ${formData.weather === weather ? 'bg-purple-200 scale-110' : 'hover:bg-gray-100'}`}
+                                                    >
+                                                        {weather}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
 
-              <div className="prose max-w-none">
-                <p className="text-lg whitespace-pre-wrap">{currentDiary.content}</p>
-              </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">標籤</label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {allTags.map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    onClick={() => handleTagToggle(tag)}
+                                                    className={`px-3 py-1 rounded-full text-sm ${formData.tags.includes(tag) ? 'bg-purple-600 text-white' : darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}
+                                                >
+                                                    #{tag}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
 
-              {currentDiary.isPrivate && (
-                <div className="flex items-center gap-2 text-gray-500 text-sm">
-                  <Lock className="w-4 h-4" />
-                  <span>這是一篇私密日記</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              <div className="text-center">
-                <Calendar className="w-20 h-20 mx-auto mb-4" />
-                <p className="text-xl">選擇一篇日記來查看，或建立新的日記</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
+                                    <textarea
+                                        placeholder="今天發生了什麼事呢..."
+                                        value={formData.content}
+                                        onChange={(e) => setFormData({...formData, content: e.target.value})}
+                                        className={`w-full h-64 p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'border-gray-300'}`}
+                                    />
 
-export default DiaryApp;
+                                    <div className="flex items-center gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.isPrivate}
+                                                onChange={(e) => setFormData({...formData, isPrivate: e.target.checked})}
+                                                className="w-5 h-5"
+                                            />
+                                            <Icon name="lock" />
+                                            <span>私密日記</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.isFavorite}
+                                                onChange={(e) => setFormData({...formData, isFavorite: e.target.checked})}
+                                                className="w-5 h-5"
+                                            />
+                                            <Icon name="heart" />
+                                            <span>加入最愛</span>
+                                        </label>
+                                    </div>
+
+                                    <button
+                                        onClick={handleSaveDiary}
+                                        className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="save" /> 儲存日記
+                                    </button>
+                                </div>
+                            ) : currentDiary ? (
+                                <div className="space-y-6">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <span className="text-5xl">{currentDiary.mood}</span>
+                                                <span className="text-4xl">{currentDiary.weather}</span>
+                                            </div>
+                                            <h2 className="text-3xl font-bold mb-2">{currentDiary.title}</h2>
+                                            <p className="text-gray-500">
+                                                {currentDiary.createdAt ? new Date(currentDiary.createdAt).toLocaleString('zh-TW') : ''}
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => toggleFavorite(currentDiary)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                                <Icon name="heart" className={`w-6 h-6 ${currentDiary.isFavorite ? 'text-red-500' : ''}`} fill={currentDiary.isFavorite} />
+                                            </button>
+                                            <button onClick={() => handleEditDiary(currentDiary)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                                <Icon name="edit" />
+                                            </button>
+                                            <button onClick={() => handleDeleteDiary(currentDiary.id)} className="p-2 hover:bg-red-100 text-red-600 rounded-lg">
+                                                <Icon name="trash" />
+                                            </button>
+                                        </div>
+                                    </div
