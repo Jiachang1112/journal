@@ -18,18 +18,13 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        .gradient-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .gradient-pink { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .gradient-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .gradient-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .gradient-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect } = React;
 
         // SVG 圖示組件
         const Icon = ({ name, className = "w-5 h-5", fill = false }) => {
@@ -46,11 +41,6 @@
                 moon: "M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z",
                 sun: "M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 6a6 6 0 100 12 6 6 0 000-12z",
                 download: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5 5m0 0l5-5m-5 5V3",
-                upload: "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5-5m0 0L7 8m5-5v12",
-                chart: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
-                settings: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
-                star: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z",
-                clock: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
             };
             return React.createElement('svg', {
                 className: className,
@@ -73,10 +63,6 @@
             const [sortBy, setSortBy] = useState('date-desc');
             const [filterMood, setFilterMood] = useState('');
             const [darkMode, setDarkMode] = useState(false);
-            const [showStats, setShowStats] = useState(false);
-            const [showSettings, setShowSettings] = useState(false);
-            const [themeColor, setThemeColor] = useState('purple');
-            const [showCalendar, setShowCalendar] = useState(false);
             const [formData, setFormData] = useState({
                 title: '',
                 content: '',
@@ -84,67 +70,55 @@
                 mood: '😊',
                 weather: '☀️',
                 isPrivate: false,
-                isFavorite: false,
+                isFavorite: false
             });
 
-            const moods = ['😊', '😢', '😡', '😰', '😍', '🤔', '😴', '🎉', '😎', '🥳', '🤗', '😌'];
-            const weathers = ['☀️', '⛅', '☁️', '🌧️', '⛈️', '🌈', '❄️', '🌙', '🌪️', '🔥', '💨', '🌊'];
-            const allTags = ['生活', '工作', '旅遊', '學習', '健康', '人際關係', '興趣', '美食', '運動', '閱讀', '音樂', '電影'];
+            const moods = ['😊', '😢', '😡', '😰', '😍', '🤔', '😴', '🎉'];
+            const weathers = ['☀️', '⛅', '☁️', '🌧️', '⛈️', '🌈', '❄️', '🌙'];
+            const allTags = ['生活', '工作', '旅遊', '學習', '健康', '人際關係', '興趣'];
 
-            // 載入範例日記
+            // 模擬一些範例日記
             useEffect(() => {
-                const savedDiaries = localStorage.getItem('myDiaries');
-                if (savedDiaries) {
-                    setDiaries(JSON.parse(savedDiaries));
-                } else {
-                    const sampleDiaries = [
-                        {
-                            id: '1',
-                            title: '美好的一天',
-                            content: '今天天氣很好，去公園散步，心情很愉快。看到很多人在運動，也遇到了老朋友，聊了很久。決定以後要多出去走走，享受大自然的美好。',
-                            tags: ['生活', '健康'],
-                            mood: '😊',
-                            weather: '☀️',
-                            isPrivate: false,
-                            isFavorite: true,
-                            createdAt: new Date('2025-10-18').toISOString(),
-                            updatedAt: new Date('2025-10-18').toISOString()
-                        },
-                        {
-                            id: '2',
-                            title: '工作上的挑戰',
-                            content: '今天遇到了一個難題，花了很多時間才解決。雖然很累，但學到了很多東西。感謝團隊的支持和幫助。',
-                            tags: ['工作', '學習'],
-                            mood: '🤔',
-                            weather: '☁️',
-                            isPrivate: false,
-                            isFavorite: false,
-                            createdAt: new Date('2025-10-17').toISOString(),
-                            updatedAt: new Date('2025-10-17').toISOString()
-                        },
-                        {
-                            id: '3',
-                            title: '週末計畫',
-                            content: '這個週末想去爬山，希望天氣好。也想去看那部期待很久的電影。還要記得買一些日用品。',
-                            tags: ['生活', '興趣'],
-                            mood: '😍',
-                            weather: '🌈',
-                            isPrivate: false,
-                            isFavorite: false,
-                            createdAt: new Date('2025-10-16').toISOString(),
-                            updatedAt: new Date('2025-10-16').toISOString()
-                        }
-                    ];
-                    setDiaries(sampleDiaries);
-                }
+                const sampleDiaries = [
+                    {
+                        id: '1',
+                        title: '美好的一天',
+                        content: '今天天氣很好，去公園散步，心情很愉快。看到很多人在運動，也遇到了老朋友，聊了很久。',
+                        tags: ['生活', '健康'],
+                        mood: '😊',
+                        weather: '☀️',
+                        isPrivate: false,
+                        isFavorite: true,
+                        createdAt: new Date('2025-10-18').toISOString(),
+                        updatedAt: new Date('2025-10-18').toISOString()
+                    },
+                    {
+                        id: '2',
+                        title: '工作上的挑戰',
+                        content: '今天遇到了一個難題，花了很多時間才解決。雖然很累，但學到了很多東西。',
+                        tags: ['工作', '學習'],
+                        mood: '🤔',
+                        weather: '☁️',
+                        isPrivate: false,
+                        isFavorite: false,
+                        createdAt: new Date('2025-10-17').toISOString(),
+                        updatedAt: new Date('2025-10-17').toISOString()
+                    },
+                    {
+                        id: '3',
+                        title: '週末計畫',
+                        content: '這個週末想去爬山，希望天氣好。也想去看那部期待很久的電影。',
+                        tags: ['生活', '興趣'],
+                        mood: '😍',
+                        weather: '🌈',
+                        isPrivate: false,
+                        isFavorite: false,
+                        createdAt: new Date('2025-10-16').toISOString(),
+                        updatedAt: new Date('2025-10-16').toISOString()
+                    }
+                ];
+                setDiaries(sampleDiaries);
             }, []);
-
-            // 儲存到 localStorage
-            useEffect(() => {
-                if (diaries.length > 0) {
-                    localStorage.setItem('myDiaries', JSON.stringify(diaries));
-                }
-            }, [diaries]);
 
             // 過濾和排序
             useEffect(() => {
@@ -156,7 +130,7 @@
                     );
                 }
                 if (selectedTag) {
-                    filtered = filtered.filter(d => d.tags && d.tags.includes(selectedTag));
+                    filtered = filtered.filter(d => d.tags.includes(selectedTag));
                 }
                 if (filterMood) {
                     filtered = filtered.filter(d => d.mood === filterMood);
@@ -180,7 +154,6 @@
                 const diary = {
                     ...formData,
                     id: currentDiary?.id || Date.now().toString(),
-                    wordCount: formData.content.length,
                     createdAt: currentDiary?.createdAt || new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
@@ -223,9 +196,9 @@
             const handleTagToggle = (tag) => {
                 setFormData(prev => ({
                     ...prev,
-                    tags: (prev.tags || []).includes(tag)
+                    tags: prev.tags.includes(tag)
                         ? prev.tags.filter(t => t !== tag)
-                        : [...(prev.tags || []), tag]
+                        : [...prev.tags, tag]
                 }));
             };
 
@@ -239,197 +212,24 @@
                 link.click();
             };
 
-            const importDiaries = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const imported = JSON.parse(event.target.result);
-                        setDiaries([...imported, ...diaries]);
-                        alert('匯入成功！');
-                    } catch (error) {
-                        alert('匯入失敗，請確認檔案格式正確');
-                    }
-                };
-                reader.readAsText(file);
-            };
-
-            // 統計數據
-            const getStats = () => {
-                const total = diaries.length;
-                const moodStats = {};
-                const tagStats = {};
-                let totalWords = 0;
-                const favorites = diaries.filter(d => d.isFavorite).length;
-
-                diaries.forEach(diary => {
-                    moodStats[diary.mood] = (moodStats[diary.mood] || 0) + 1;
-                    if (diary.tags) {
-                        diary.tags.forEach(tag => {
-                            tagStats[tag] = (tagStats[tag] || 0) + 1;
-                        });
-                    }
-                    totalWords += (diary.wordCount || diary.content?.length || 0);
-                });
-
-                return { 
-                    total, 
-                    moodStats, 
-                    tagStats, 
-                    totalWords, 
-                    avgWords: total ? Math.round(totalWords / total) : 0,
-                    favorites
-                };
-            };
-
-            const stats = getStats();
-            const themeColors = {
-                purple: 'purple',
-                pink: 'pink',
-                blue: 'blue',
-                green: 'green',
-                orange: 'orange'
-            };
-
             return (
                 <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gradient-to-br from-purple-50 to-blue-50'}`}>
-                    {/* 頂部導航 */}
                     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg sticky top-0 z-50`}>
                         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
-                            <h1 className={`text-2xl font-bold text-${themeColor}-600`}>📔 我的日記本</h1>
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <button 
-                                    onClick={() => setShowStats(!showStats)} 
-                                    className={`p-2 rounded-lg ${showStats ? 'bg-purple-100' : 'hover:bg-gray-100'}`}
-                                    title="統計"
-                                >
-                                    <Icon name="chart" />
-                                </button>
-                                <button 
-                                    onClick={() => setShowCalendar(!showCalendar)} 
-                                    className={`p-2 rounded-lg ${showCalendar ? 'bg-purple-100' : 'hover:bg-gray-100'}`}
-                                    title="日曆"
-                                >
-                                    <Icon name="calendar" />
-                                </button>
-                                <button onClick={exportDiaries} className="p-2 hover:bg-gray-100 rounded-lg" title="匯出">
+                            <h1 className="text-2xl font-bold text-purple-600">📔 我的日記本</h1>
+                            <div className="flex items-center gap-4">
+                                <button onClick={exportDiaries} className="p-2 hover:bg-gray-100 rounded-lg" title="匯出日記">
                                     <Icon name="download" />
                                 </button>
-                                <label className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer" title="匯入">
-                                    <Icon name="upload" />
-                                    <input type="file" accept=".json" onChange={importDiaries} className="hidden" />
-                                </label>
-                                <button 
-                                    onClick={() => setShowSettings(!showSettings)} 
-                                    className={`p-2 rounded-lg ${showSettings ? 'bg-purple-100' : 'hover:bg-gray-100'}`}
-                                    title="設定"
-                                >
-                                    <Icon name="settings" />
-                                </button>
-                                <button onClick={() => setDarkMode(!darkMode)} className="p-2 hover:bg-gray-100 rounded-lg" title="深色模式">
+                                <button onClick={() => setDarkMode(!darkMode)} className="p-2 hover:bg-gray-100 rounded-lg" title="切換深色模式">
                                     <Icon name={darkMode ? 'sun' : 'moon'} />
                                 </button>
                             </div>
                         </div>
-                        
-                        {/* 統計面板 */}
-                        {showStats && (
-                            <div className={`border-t ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'} p-4`}>
-                                <div className="max-w-7xl mx-auto">
-                                    <h3 className="font-bold text-lg mb-4">📊 統計資訊</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-                                        <div className={`text-center p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow`}>
-                                            <div className="text-3xl font-bold text-purple-600">{stats.total}</div>
-                                            <div className="text-sm text-gray-500">總日記數</div>
-                                        </div>
-                                        <div className={`text-center p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow`}>
-                                            <div className="text-3xl font-bold text-blue-600">{stats.totalWords}</div>
-                                            <div className="text-sm text-gray-500">總字數</div>
-                                        </div>
-                                        <div className={`text-center p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow`}>
-                                            <div className="text-3xl font-bold text-green-600">{stats.avgWords}</div>
-                                            <div className="text-sm text-gray-500">平均字數</div>
-                                        </div>
-                                        <div className={`text-center p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow`}>
-                                            <div className="text-2xl">{Object.keys(stats.moodStats).sort((a,b) => stats.moodStats[b] - stats.moodStats[a])[0] || '😊'}</div>
-                                            <div className="text-sm text-gray-500">最常心情</div>
-                                        </div>
-                                        <div className={`text-center p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow`}>
-                                            <div className="text-3xl font-bold text-red-600">{stats.favorites}</div>
-                                            <div className="text-sm text-gray-500">我的最愛</div>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow`}>
-                                            <h4 className="font-semibold mb-2">心情分布</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {Object.entries(stats.moodStats).map(([mood, count]) => (
-                                                    <div key={mood} className="flex items-center gap-1 bg-gray-100 dark:bg-gray-600 px-3 py-1 rounded-full">
-                                                        <span className="text-xl">{mood}</span>
-                                                        <span className="text-sm font-semibold">{count}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow`}>
-                                            <h4 className="font-semibold mb-2">熱門標籤</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {Object.entries(stats.tagStats).sort((a,b) => b[1] - a[1]).slice(0, 10).map(([tag, count]) => (
-                                                    <div key={tag} className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full">
-                                                        <span>#{tag}</span>
-                                                        <span className="text-sm font-semibold">({count})</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 設定面板 */}
-                        {showSettings && (
-                            <div className={`border-t ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'} p-4`}>
-                                <div className="max-w-7xl mx-auto">
-                                    <h3 className="font-bold text-lg mb-4">⚙️ 設定</h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-2">主題顏色</label>
-                                            <div className="flex gap-2">
-                                                {Object.keys(themeColors).map(color => (
-                                                    <button
-                                                        key={color}
-                                                        onClick={() => setThemeColor(color)}
-                                                        className={`w-10 h-10 rounded-full gradient-${color} ${themeColor === color ? 'ring-4 ring-offset-2 ring-gray-400' : ''}`}
-                                                        title={color}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="pt-4 border-t">
-                                            <button 
-                                                onClick={() => {
-                                                    if (window.confirm('確定要清除所有日記嗎？此操作無法復原！')) {
-                                                        setDiaries([]);
-                                                        localStorage.removeItem('myDiaries');
-                                                        alert('已清除所有日記');
-                                                    }
-                                                }}
-                                                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                                            >
-                                                清除所有日記
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
 
                     <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* 左側欄 */}
-                        <div className={`lg:col-span-1 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 max-h-[calc(100vh-120px)] overflow-y-auto`}>
+                        <div className={`lg:col-span-1 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
                             <div className="space-y-4">
                                 <div className="relative">
                                     <div className="absolute left-3 top-3">
@@ -450,4 +250,233 @@
                                         <option value="date-asc">最舊優先</option>
                                         <option value="title">標題排序</option>
                                     </select>
-                                    <select value={filterMood} onChange={(e) => setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-gray-700 text-white'
+                                    <select value={filterMood} onChange={(e) => setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}>
+                                        <option value="">所有心情</option>
+                                        {moods.map(mood => <option key={mood} value={mood}>{mood}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                    {allTags.map(tag => (
+                                        <button
+                                            key={tag}
+                                            onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}
+                                            className={`px-3 py-1 rounded-full text-sm transition ${selectedTag === tag ? 'bg-purple-600 text-white' : darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                                        >
+                                            #{tag}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => { resetForm(); setShowNewDiary(true); }}
+                                    className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2"
+                                >
+                                    <Icon name="plus" /> 新增日記
+                                </button>
+
+                                <div className="space-y-3">
+                                    {filteredDiaries.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <p>還沒有日記，快來寫一篇吧！</p>
+                                        </div>
+                                    ) : (
+                                        filteredDiaries.map(diary => (
+                                            <div
+                                                key={diary.id}
+                                                onClick={() => { setCurrentDiary(diary); setShowNewDiary(false); }}
+                                                className={`p-4 rounded-lg cursor-pointer transition ${currentDiary?.id === diary.id ? 'bg-purple-100 border-2 border-purple-500' : darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'}`}
+                                            >
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-2xl">{diary.mood}</span>
+                                                        <span className="text-lg">{diary.weather}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {diary.isFavorite && <Icon name="heart" className="w-4 h-4 text-red-500" fill={true} />}
+                                                        {diary.isPrivate && <Icon name="lock" className="w-4 h-4" />}
+                                                    </div>
+                                                </div>
+                                                <h3 className="font-bold mb-1">{diary.title}</h3>
+                                                <p className="text-sm text-gray-500 mb-2">
+                                                    {new Date(diary.createdAt).toLocaleDateString('zh-TW')}
+                                                </p>
+                                                <p className="text-sm line-clamp-2">{diary.content}</p>
+                                                {diary.tags.length > 0 && (
+                                                    <div className="flex gap-1 mt-2 flex-wrap">
+                                                        {diary.tags.map(tag => (
+                                                            <span key={tag} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">#{tag}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={`lg:col-span-2 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
+                            {showNewDiary ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-2xl font-bold">{currentDiary ? '編輯日記' : '新增日記'}</h2>
+                                        <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg">
+                                            <Icon name="x" className="w-6 h-6" />
+                                        </button>
+                                    </div>
+
+                                    <input
+                                        type="text"
+                                        placeholder="標題"
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                        className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'} focus:ring-2 focus:ring-purple-500 focus:outline-none`}
+                                    />
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">心情</label>
+                                            <div className="flex gap-2 flex-wrap">
+                                                {moods.map(mood => (
+                                                    <button
+                                                        key={mood}
+                                                        onClick={() => setFormData({...formData, mood})}
+                                                        className={`text-3xl p-2 rounded-lg transition ${formData.mood === mood ? 'bg-purple-200 scale-110' : 'hover:bg-gray-100'}`}
+                                                    >
+                                                        {mood}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">天氣</label>
+                                            <div className="flex gap-2 flex-wrap">
+                                                {weathers.map(weather => (
+                                                    <button
+                                                        key={weather}
+                                                        onClick={() => setFormData({...formData, weather})}
+                                                        className={`text-3xl p-2 rounded-lg transition ${formData.weather === weather ? 'bg-purple-200 scale-110' : 'hover:bg-gray-100'}`}
+                                                    >
+                                                        {weather}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">標籤</label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {allTags.map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    onClick={() => handleTagToggle(tag)}
+                                                    className={`px-3 py-1 rounded-full text-sm transition ${formData.tags.includes(tag) ? 'bg-purple-600 text-white' : darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                                                >
+                                                    #{tag}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <textarea
+                                        placeholder="今天發生了什麼事呢..."
+                                        value={formData.content}
+                                        onChange={(e) => setFormData({...formData, content: e.target.value})}
+                                        className={`w-full h-64 p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'} focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none`}
+                                    />
+
+                                    <div className="flex items-center gap-4 flex-wrap">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.isPrivate}
+                                                onChange={(e) => setFormData({...formData, isPrivate: e.target.checked})}
+                                                className="w-5 h-5"
+                                            />
+                                            <Icon name="lock" />
+                                            <span>私密日記</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.isFavorite}
+                                                onChange={(e) => setFormData({...formData, isFavorite: e.target.checked})}
+                                                className="w-5 h-5"
+                                            />
+                                            <Icon name="heart" />
+                                            <span>加入最愛</span>
+                                        </label>
+                                    </div>
+
+                                    <button
+                                        onClick={handleSaveDiary}
+                                        className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="save" /> 儲存日記
+                                    </button>
+                                </div>
+                            ) : currentDiary ? (
+                                <div className="space-y-6">
+                                    <div className="flex items-start justify-between flex-wrap gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <span className="text-5xl">{currentDiary.mood}</span>
+                                                <span className="text-4xl">{currentDiary.weather}</span>
+                                            </div>
+                                            <h2 className="text-3xl font-bold mb-2">{currentDiary.title}</h2>
+                                            <p className="text-sm text-gray-500">
+                                                {new Date(currentDiary.createdAt).toLocaleString('zh-TW')}
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => toggleFavorite(currentDiary.id)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                                <Icon name="heart" className={`w-6 h-6 ${currentDiary.isFavorite ? 'text-red-500' : ''}`} fill={currentDiary.isFavorite} />
+                                            </button>
+                                            <button onClick={() => handleEditDiary(currentDiary)} className="p-2 hover:bg-gray-100 rounded-lg">
+                                                <Icon name="edit" className="w-6 h-6" />
+                                            </button>
+                                            <button onClick={() => handleDeleteDiary(currentDiary.id)} className="p-2 hover:bg-red-100 text-red-600 rounded-lg">
+                                                <Icon name="trash" className="w-6 h-6" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {currentDiary.tags.length > 0 && (
+                                        <div className="flex gap-2 flex-wrap">
+                                            {currentDiary.tags.map(tag => (
+                                                <span key={tag} className="bg-purple-200 text-purple-700 px-3 py-1 rounded-full">#{tag}</span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="prose max-w-none">
+                                        <p className="text-lg whitespace-pre-wrap">{currentDiary.content}</p>
+                                    </div>
+
+                                    {currentDiary.isPrivate && (
+                                        <div className="flex items-center gap-2 text-gray-500 text-sm">
+                                            <Icon name="lock" className="w-4 h-4" />
+                                            <span>這是一篇私密日記</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-gray-400">
+                                    <div className="text-center">
+                                        <Icon name="calendar" className="w-20 h-20 mx-auto mb-4" />
+                                        <p className="text-xl">選擇一篇日記來查看，或建立新的日記</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<DiaryApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
