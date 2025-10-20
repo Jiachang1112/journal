@@ -32,6 +32,20 @@
     .primary-bg{ background: var(--primary) !important; }
     .primary-text{ color: var(--primary) !important; }
     .primary-border{ border-color: var(--primary) !important; }
+    .switch {
+      position: relative; display: inline-block; width: 44px; height: 24px;
+    }
+    .switch input {opacity:0;width:0;height:0}
+    .slider {
+      position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+      background:#d1d5db; transition:.2s; border-radius:999px;
+    }
+    .slider:before{
+      position:absolute; content:""; height:18px; width:18px; left:3px; top:3px;
+      background:white; transition:.2s; border-radius:999px;
+    }
+    input:checked + .slider{ background: var(--primary); }
+    input:checked + .slider:before{ transform: translateX(20px); }
   </style>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-blue-50">
@@ -51,13 +65,7 @@
       messagingSenderId: "894572383995",
       appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
     };
-    // 防止重複初始化
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    } else {
-      firebase.app();
-    }
-
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
     const auth = firebase.auth();
     const db = firebase.firestore();
     const storage = firebase.storage();
@@ -157,63 +165,47 @@
     };
 
     /* =========================
-       提醒（強化：支援一次性/每日/每週 + 管理清單）
+       提醒（強化）
     ==========================*/
     const ReminderService = {
-      key: 'diary_reminders_v2',        // ★ 升級版 key，不影響舊資料（仍兼容）
+      key: 'diary_reminders_v2',
       load(){ try{ return JSON.parse(localStorage.getItem(this.key)||'[]'); }catch{ return [] } },
       save(list){ localStorage.setItem(this.key, JSON.stringify(list)); },
-      add(rem){                         // rem: {id,title,at,freq:'ONCE'|'DAILY'|'WEEKLY', fired:false}
-        const list=this.load();
-        list.push(rem);
-        this.save(list);
+      add(rem){
+        const list=this.load(); list.push(rem); this.save(list);
       },
       remove(id){
-        const list=this.load().filter(r=>r.id!==id);
-        this.save(list);
+        const list=this.load().filter(r=>r.id!==id); this.save(list);
       },
       _nextTime(cur, freq){
-        if(freq==='DAILY'){
-          const d = new Date(cur); d.setDate(d.getDate()+1); return d;
-        }else if(freq==='WEEKLY'){
-          const d = new Date(cur); d.setDate(d.getDate()+7); return d;
-        }
+        if(freq==='DAILY'){ const d = new Date(cur); d.setDate(d.getDate()+1); return d; }
+        if(freq==='WEEKLY'){ const d = new Date(cur); d.setDate(d.getDate()+7); return d; }
         return null;
       },
       scheduleTicker(){
-        // 每 15 秒檢查一次（較即時）
         setInterval(()=>{
-          let list = this.load();
-          const now = Date.now();
-          let dirty = false;
+          let list = this.load(); const now = Date.now(); let dirty = false;
           for(const r of list){
             const due = new Date(r.at).getTime();
             if(now >= due){
-              if(Notification?.permission==='granted'){
-                new Notification('日記提醒', { body: r.title || '該寫日記或查看備忘囉！' });
-              }
+              if(Notification?.permission==='granted'){ new Notification('日記提醒', { body: r.title || '該寫日記或查看備忘囉！' }); }
               if(r.freq && r.freq!=='ONCE'){
                 const next = this._nextTime(new Date(r.at), r.freq);
                 if(next){ r.at = next.toISOString(); r.fired = false; dirty = true; }
-              }else{
-                r.fired = true; dirty = true;
-              }
+              }else{ r.fired = true; dirty = true; }
             }
           }
-          // 刪掉已觸發的 ONCE
           const keep = list.filter(r => !(r.fired && (!r.freq || r.freq==='ONCE')));
           if(dirty || keep.length !== list.length){ this.save(keep); }
         }, 15000);
       },
       requestPermission(){
-        if('Notification' in window && Notification.permission!=='granted'){
-          Notification.requestPermission();
-        }
+        if('Notification' in window && Notification.permission!=='granted'){ Notification.requestPermission(); }
       }
     };
 
     /* =========================
-       標籤雲
+       Tag Cloud
     ==========================*/
     const TagCloud = ({ diaries, activeTag, onToggle }) => {
       const map = {};
@@ -224,7 +216,7 @@
       return (
         <div className="flex flex-wrap gap-2">
           {entries.map(([tag,count])=>{
-            const size = 12 + Math.round(8*(count/max)); // 12~20px
+            const size = 12 + Math.round(8*(count/max));
             const active = activeTag===tag;
             return (
               <button key={tag}
@@ -242,13 +234,13 @@
     };
 
     /* =========================
-       月曆檢視
+       Calendar
     ==========================*/
     const CalendarView = ({ diaries, onPickDate }) => {
       const [cur, setCur] = useState(new Date());
       const y = cur.getFullYear(), m = cur.getMonth();
       const first = new Date(y,m,1);
-      const startDay = (first.getDay()+6)%7; // 以週一為起點
+      const startDay = (first.getDay()+6)%7;
       const daysInMonth = new Date(y,m+1,0).getDate();
 
       const setMonth = (delta)=>{ const d=new Date(y,m+delta,1); setCur(d); };
@@ -298,7 +290,7 @@
     };
 
     /* =========================
-       圖表組件
+       Charts
     ==========================*/
     const Charts = ({ diaries, darkMode }) => {
       const moodRef = useRef(null);
@@ -368,7 +360,62 @@
     };
 
     /* =========================
-       設定面板（整合上傳/下載、提醒管理、會員/優惠券、實用工具）
+       Get Premium Modal
+    ==========================*/
+    const PremiumModal = ({ open, onClose, onApplyCoupon, onPurchase, membership, user }) => {
+      const [code, setCode] = useState('');
+      if(!open) return null;
+      return (
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="font-bold text-lg">Get Premium</div>
+              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
+            </div>
+            <div className="p-5 space-y-5">
+              <div className="rounded-xl border p-4">
+                <div className="text-xl font-bold mb-1">月費</div>
+                <div className="text-3xl font-extrabold mb-2 primary-text">NT$ 150</div>
+                <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+                  <li>雲端備份</li>
+                  <li>圖片上傳</li>
+                  <li>更多統計</li>
+                </ul>
+                <button onClick={()=>onPurchase('monthly')} className="mt-3 w-full primary-bg text-white rounded-lg py-2">升級（月費）</button>
+              </div>
+
+              <div className="rounded-xl border p-4">
+                <div className="text-xl font-bold mb-1">年費</div>
+                <div className="text-3xl font-extrabold mb-2 primary-text">NT$ 1500</div>
+                <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+                  <li>所有月費功能</li>
+                  <li>年費更划算（12 個月）</li>
+                </ul>
+                <button onClick={()=>onPurchase('yearly')} className="mt-3 w-full primary-bg text-white rounded-lg py-2">升級（年費）</button>
+              </div>
+
+              <div className="rounded-xl border p-4">
+                <div className="font-semibold mb-2">優惠券</div>
+                <div className="flex gap-2">
+                  <input value={code} onChange={e=>setCode(e.target.value)} placeholder="輸入優惠券代碼" className="flex-1 border rounded-lg p-2"/>
+                  <button onClick={()=>onApplyCoupon(code)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用</button>
+                </div>
+                <div className="text-xs text-gray-500 mt-2">成功套用後會直接延長到期日（示範流程）。</div>
+              </div>
+
+              <div className="text-sm text-gray-600">
+                目前等級：<span className="font-semibold">{membership?.tier || 'free'}</span>
+                {membership?.expiresAt && <> · 到期：<span className="font-semibold">{new Date(membership.expiresAt).toLocaleDateString('zh-TW')}</span></>}
+                {!user && <div className="text-red-600 mt-1">請先登入以完成升級</div>}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* =========================
+       設定面板（重排順序）
     ==========================*/
     const SettingsPanel = ({
       open, onClose,
@@ -378,7 +425,8 @@
       profile, isAdmin, onCreateCoupon, onApplyCoupon,
       membership, onSetMembershipTier,
       onBackupToStorage, onRestoreFromStorage,
-      todayShortcut, toggleFavoritesOnly, favoritesOnly
+      todayShortcut, toggleFavoritesOnly, favoritesOnly,
+      darkMode, setDarkMode
     })=>{
       const [title,setTitle] = useState('');
       const [when,setWhen]   = useState('');
@@ -397,68 +445,7 @@
 
             <div className="p-4 space-y-8">
 
-              {/* 主題與顏色 */}
-              <section>
-                <h3 className="font-semibold mb-2">外觀</h3>
-                <div className="flex items-center gap-3">
-                  <label className="text-sm text-gray-500">主題色</label>
-                  <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)} />
-                  <button onClick={()=>setThemeColor('#7c3aed')} className="px-2 py-1 rounded bg-gray-100">預設紫</button>
-                  <button onClick={()=>setThemeColor('#0ea5e9')} className="px-2 py-1 rounded bg-gray-100">藍</button>
-                  <button onClick={()=>setThemeColor('#f97316')} className="px-2 py-1 rounded bg-gray-100">橘</button>
-                </div>
-              </section>
-
-              {/* 上傳 / 下載 */}
-              <section>
-                <h3 className="font-semibold mb-2">資料匯入 / 匯出</h3>
-                <div className="flex flex-wrap items-center gap-3">
-                  <button onClick={exportDiaries} className="px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
-                    <Icon name="download"/><span>匯出 JSON</span>
-                  </button>
-                  <label className="px-3 py-2 rounded-lg border hover:bg-gray-50 cursor-pointer flex items-center gap-2">
-                    <Icon name="import"/><span>匯入 JSON</span>
-                    <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0]&&importDiaries(e.target.files[0])}/>
-                  </label>
-                  <button onClick={onBackupToStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50">備份到 Firebase Storage</button>
-                  <button onClick={onRestoreFromStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50">從 Storage 還原</button>
-                </div>
-              </section>
-
-              {/* 提醒（強化） */}
-              <section>
-                <h3 className="font-semibold mb-2">提醒</h3>
-                <div className="grid sm:grid-cols-2 gap-3 items-end">
-                  <input value={title} onChange={e=>setTitle(e.target.value)} className="border rounded-lg p-2" placeholder="提醒內容，如：晚上 9 點寫日記"/>
-                  <div className="flex items-center gap-2">
-                    <input type="datetime-local" value={when} onChange={e=>setWhen(e.target.value)} className="border rounded-lg p-2"/>
-                    <select value={freq} onChange={e=>setFreq(e.target.value)} className="border rounded-lg p-2">
-                      <option value="ONCE">一次</option>
-                      <option value="DAILY">每天</option>
-                      <option value="WEEKLY">每週</option>
-                    </select>
-                  </div>
-                  <button onClick={()=>{ if(!when){alert('請選擇時間');return;} onAddReminder({title, when, freq}); setTitle(''); setWhen(''); setFreq('ONCE'); }} className="sm:col-span-2 w-full primary-bg text-white rounded-lg py-2">新增提醒</button>
-                </div>
-                <div className="mt-3">
-                  <div className="text-sm text-gray-500 mb-1">目前提醒</div>
-                  {reminders.length===0 ? <div className="text-gray-400 text-sm">尚無提醒</div> :
-                    <div className="space-y-2">
-                      {reminders.map(r=>(
-                        <div key={r.id} className="flex items-center justify-between border rounded-lg p-2">
-                          <div>
-                            <div className="font-medium">{r.title||'(無標題)'}</div>
-                            <div className="text-xs text-gray-500">{new Date(r.at).toLocaleString('zh-TW')} · {r.freq||'ONCE'}</div>
-                          </div>
-                          <button onClick={()=>onRemoveReminder(r.id)} className="px-2 py-1 rounded bg-red-50 text-red-600">刪除</button>
-                        </div>
-                      ))}
-                    </div>
-                  }
-                </div>
-              </section>
-
-              {/* 會員（客製） */}
+              {/* ① 付費會員 */}
               <section>
                 <h3 className="font-semibold mb-2">付費會員</h3>
                 <div className="text-sm text-gray-600 mb-2">
@@ -492,7 +479,78 @@
                 )}
               </section>
 
-              {/* 實用工具 */}
+              {/* ② 外觀 */}
+              <section>
+                <h3 className="font-semibold mb-2">外觀</h3>
+                <div className="flex items-center gap-3 mb-3">
+                  <label className="text-sm text-gray-500">主題色</label>
+                  <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)} />
+                  <button onClick={()=>setThemeColor('#7c3aed')} className="px-2 py-1 rounded bg-gray-100">預設紫</button>
+                  <button onClick={()=>setThemeColor('#0ea5e9')} className="px-2 py-1 rounded bg-gray-100">藍</button>
+                  <button onClick={()=>setThemeColor('#f97316')} className="px-2 py-1 rounded bg-gray-100">橘</button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500">深色模式</span>
+                  <label className="switch">
+                    <input type="checkbox" checked={darkMode} onChange={e=>setDarkMode(e.target.checked)}/>
+                    <span className="slider"></span>
+                  </label>
+                </div>
+              </section>
+
+              {/* ③ 上傳 / 下載 */}
+              <section>
+                <h3 className="font-semibold mb-2">資料匯入 / 匯出</h3>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button onClick={exportDiaries} className="px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
+                    <Icon name="download"/><span>匯出 JSON</span>
+                  </button>
+                  <label className="px-3 py-2 rounded-lg border hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+                    <Icon name="import"/><span>匯入 JSON</span>
+                    <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0]&&importDiaries(e.target.files[0])}/>
+                  </label>
+                  <button onClick={onBackupToStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50">備份到 Firebase Storage</button>
+                  <button onClick={onRestoreFromStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50">從 Storage 還原</button>
+                </div>
+              </section>
+
+              {/* ④ 提醒（強化） */}
+              <section>
+                <h3 className="font-semibold mb-2">提醒</h3>
+                <div className="grid sm:grid-cols-2 gap-3 items-end">
+                  <input value={title} onChange={e=>setTitle(e.target.value)} className="border rounded-lg p-2" placeholder="提醒內容，如：晚上 9 點寫日記"/>
+                  <div className="flex items-center gap-2">
+                    <input type="datetime-local" value={when} onChange={e=>setWhen(e.target.value)} className="border rounded-lg p-2"/>
+                    <select value={freq} onChange={e=>setFreq(e.target.value)} className="border rounded-lg p-2">
+                      <option value="ONCE">一次</option>
+                      <option value="DAILY">每天</option>
+                      <option value="WEEKLY">每週</option>
+                    </select>
+                  </div>
+                  <button onClick={()=>{ if(!when){alert('請選擇時間');return;} onAddReminder({title, when, freq}); setTitle(''); setWhen(''); setFreq('ONCE'); }} className="sm:col-span-2 w-full primary-bg text-white rounded-lg py-2">新增提醒</button>
+                </div>
+                <div className="mt-3">
+                  <div className="text-sm text-gray-500 mb-1">目前提醒</div>
+                  {reminders.length===0 ? <div className="text-gray-400 text-sm">尚無提醒</div> :
+                    <div className="space-y-2">
+                      {reminders.map(r=>(
+                        <div key={r.id} className="flex items-center justify-between border rounded-lg p-2">
+                          <div>
+                            <div className="font-medium">{r.title||'(無標題)'}</div>
+                            <div className="text-xs text-gray-500">{new Date(r.at).toLocaleString('zh-TW')} · {r.freq||'ONCE'}</div>
+                          </div>
+                          <button onClick={()=>onRemoveReminder(r.id)} className="px-2 py-1 rounded bg-red-50 text-red-600">刪除</button>
+                        </div>
+                      ))}
+                    </div>
+                  }
+                  <button onClick={()=>ReminderService.requestPermission()} className="mt-3 px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
+                    <Icon name="bell"/><span>允許桌面通知</span>
+                  </button>
+                </div>
+              </section>
+
+              {/* ⑤ 實用工具 */}
               <section>
                 <h3 className="font-semibold mb-2">實用工具</h3>
                 <div className="flex flex-wrap gap-2">
@@ -528,10 +586,13 @@
       const [themeColor, setThemeColor] = useState(localStorage.getItem('themeColor')||'#7c3aed');
       const [dateFilter, setDateFilter] = useState(''); // YYYY-MM-DD
       const [uploading, setUploading] = useState(false);
-      const [settingsOpen, setSettingsOpen] = useState(false);             // ★ 新增：設定面板
+      const [settingsOpen, setSettingsOpen] = useState(false);
+
+      // Premium
+      const [showPremium, setShowPremium] = useState(false);
 
       // 會員 / Profile / 角色
-      const [profile, setProfile]     = useState(null);                    // {role, membership{tier,expiresAt}}
+      const [profile, setProfile]     = useState(null); // {role, membership{tier,expiresAt}}
       const isAdmin = profile?.role === 'admin';
       const membership = profile?.membership || { tier:'free', expiresAt:null };
 
@@ -543,18 +604,18 @@
         isPrivate:false, isFavorite:false, images:[], remindAt:'' // ISO string
       });
 
-      // 請求通知權限 & 提醒排程
       useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
-
-      // 深色 / 主題色
       useEffect(()=>{ document.documentElement.style.setProperty('--primary', themeColor); localStorage.setItem('themeColor', themeColor); },[themeColor]);
 
-      // Auth 監聽 + 讀取資料（你既有邏輯保留）
+      // 深色樣式持久化（可選）
+      useEffect(()=>{ localStorage.setItem('darkMode', darkMode ? '1' : '0'); }, [darkMode]);
+      useEffect(()=>{ const dm = localStorage.getItem('darkMode'); if(dm==='1') setDarkMode(true); },[]);
+
+      // Auth + Firestore
       useEffect(()=>{
         const unsub = auth.onAuthStateChanged(async (u)=>{
           setUser(u||null);
           if(u){
-            // 讀 Profile（會員/角色）
             db.collection('users').doc(u.uid).onSnapshot(s=>{
               if(s.exists){
                 const d = s.data();
@@ -564,7 +625,6 @@
               }
             });
 
-            // 你原本：讀 users/{uid}/diaries（保留）
             db.collection('users').doc(u.uid).collection('diaries')
               .orderBy('createdAt','desc')
               .onSnapshot(snap=>{
@@ -573,7 +633,6 @@
                 setDiaries(arr);
               }, err=>alert('讀取日記失敗：'+err.message));
           }else{
-            // 無登入：使用本地示範資料（保留）
             const sample = [
               { id:'1', title:'美好的一天', content:'今天天氣很好，去公園散步...', tags:['生活','健康'], mood:'😊', weather:'☀️', isPrivate:false, isFavorite:true, createdAt:new Date('2025-10-18').toISOString(), updatedAt:new Date('2025-10-18').toISOString(), images:[] },
               { id:'2', title:'工作上的挑戰', content:'今天遇到了一個難題...', tags:['工作','學習'], mood:'🤔', weather:'☁️', isPrivate:false, isFavorite:false, createdAt:new Date('2025-10-17').toISOString(), updatedAt:new Date('2025-10-17').toISOString(), images:[] },
@@ -586,7 +645,7 @@
         return ()=>unsub();
       },[]);
 
-      // 過濾排序（保留，外加只看最愛）
+      // 過濾排序
       useEffect(()=>{
         let filtered = [...diaries];
         if (searchTerm) {
@@ -611,11 +670,7 @@
         setFilteredDiaries(filtered);
       },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter, favoritesOnly]);
 
-      // 字數
-      const titleCount = (formData.title||'').length;
-      const contentCount = (formData.content||'').length;
-
-      // 圖片上傳（保留）
+      // 圖片上傳
       const onUploadImages = async (files)=>{
         if(!files || files.length===0) return;
         setUploading(true);
@@ -640,7 +695,7 @@
         }
       };
 
-      // 儲存（保留）
+      // 儲存日記
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){
           alert('請填寫標題和內容'); return;
@@ -657,7 +712,6 @@
           createdAt: currentDiary?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        // 提醒（本地）— 改用強化版服務，但兼容原欄位
         if(formData.remindAt){
           ReminderService.add({
             id: (currentDiary?.id)||docData.createdAt,
@@ -671,31 +725,21 @@
 
         if(user){
           const col = db.collection('users').doc(user.uid).collection('diaries');
-          if(currentDiary){
-            await col.doc(currentDiary.id).set(docData, { merge:true });
-          }else{
-            await col.add(docData);
-          }
+          if(currentDiary){ await col.doc(currentDiary.id).set(docData, { merge:true }); }
+          else { await col.add(docData); }
         }else{
-          // 本地模式
           const id = currentDiary?.id || Date.now().toString();
           const newItem = { id, ...docData };
-          if(currentDiary){
-            setDiaries(diaries.map(d=>d.id===id?newItem:d));
-          }else{
-            setDiaries([newItem, ...diaries]);
-          }
+          if(currentDiary){ setDiaries(diaries.map(d=>d.id===id?newItem:d)); }
+          else{ setDiaries([newItem, ...diaries]); }
         }
         resetForm();
       };
 
       const handleDeleteDiary = async (id)=>{
         if(!confirm('確定要刪除這篇日記嗎？')) return;
-        if(user){
-          await db.collection('users').doc(user.uid).collection('diaries').doc(id).delete();
-        }else{
-          setDiaries(diaries.filter(d=>d.id!==id));
-        }
+        if(user){ await db.collection('users').doc(user.uid).collection('diaries').doc(id).delete(); }
+        else{ setDiaries(diaries.filter(d=>d.id!==id)); }
         if(currentDiary?.id===id) setCurrentDiary(null);
       };
 
@@ -728,7 +772,6 @@
         }));
       };
 
-      // 匯出（保留）
       const exportDiaries = ()=>{
         const dataStr = JSON.stringify(diaries, null, 2);
         const blob = new Blob([dataStr],{ type:'application/json' });
@@ -737,7 +780,6 @@
         a.href=url; a.download=`diary_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
       };
 
-      // 匯入（保留）
       const importDiaries = async (file)=>{
         try{
           const text = await file.text();
@@ -764,7 +806,6 @@
             await batch.commit();
             alert('已匯入至雲端');
           }else{
-            // 本地合併
             const map = Object.fromEntries(diaries.map(d=>[d.id,d]));
             arr.forEach(d=>{ const id=d.id||(Date.now()+Math.random()).toString(); map[id]={ id, ...d }; });
             setDiaries(Object.values(map).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)));
@@ -775,10 +816,8 @@
         }
       };
 
-      /* ====== 設定面板所需的輔助 ====== */
-
-      // 讀提醒清單（本地）
-      const reminders = useMemo(()=>ReminderService.load(), [settingsOpen]); // 打開時刷新
+      // 提醒清單（設定面板顯示用）
+      const reminders = useMemo(()=>ReminderService.load(), [settingsOpen]);
 
       const onAddReminder = ({title, when, freq})=>{
         const id = `rem_${Date.now()}`;
@@ -787,13 +826,13 @@
       };
       const onRemoveReminder = (id)=>{ ReminderService.remove(id); alert('已刪除提醒'); };
 
-      // 會員：設定等級（示範用，實務上請串金流完成後再寫入）
+      // 會員：設定等級（示範）
       const onSetMembershipTier = async (tier)=>{
         if(!user){ alert('請先登入'); return; }
         const expiresAt = membership?.expiresAt ? new Date(membership.expiresAt) : new Date();
-        // 示範：直接延長 30 天
-        if(tier==='free'){ await db.collection('users').doc(user.uid).set({ membership:{ tier:'free', expiresAt:null }}, {merge:true}); }
-        else{
+        if(tier==='free'){
+          await db.collection('users').doc(user.uid).set({ membership:{ tier:'free', expiresAt:null }}, {merge:true});
+        }else{
           expiresAt.setDate(expiresAt.getDate()+30);
           await db.collection('users').doc(user.uid).set({ membership:{ tier, expiresAt: expiresAt.toISOString() }},{merge:true});
         }
@@ -814,7 +853,7 @@
         alert('已建立/更新優惠券：'+code);
       };
 
-      // 套用優惠券：延長會員期限（示範）
+      // 套用優惠券（示範：延長會員期限 / 設定層級）
       const onApplyCoupon = async (code)=>{
         if(!user){ alert('請先登入'); return; }
         if(!code){ alert('請輸入優惠券代碼'); return; }
@@ -823,7 +862,6 @@
         const c = snap.data();
         if(!c.active){ alert('此優惠券未啟用'); return; }
 
-        // 防止重複使用（簡單示範）
         const usedId = `${user.uid}_${code}`;
         const used = await db.collection('coupon_redemptions').doc(usedId).get();
         if(used.exists){ alert('此帳號已使用過該優惠券'); return; }
@@ -841,7 +879,22 @@
         alert(`已套用優惠券，會員到期：${base.toLocaleDateString('zh-TW')}`);
       };
 
-      // 備份到 Storage（JSON）
+      // Premium 付款（示範）
+      const onPurchase = async (plan)=> {
+        if(!user){ alert('請先登入'); return; }
+        const now = new Date();
+        let base = membership?.expiresAt ? new Date(membership.expiresAt) : now;
+        if(base < now) base = now;
+        if(plan==='monthly'){ base.setMonth(base.getMonth()+1); }
+        if(plan==='yearly'){ base.setFullYear(base.getFullYear()+1); }
+        await db.collection('users').doc(user.uid).set({
+          membership:{ tier:'pro', expiresAt: base.toISOString() }
+        }, { merge:true });
+        alert(`升級成功！到期：${base.toLocaleDateString('zh-TW')}`);
+        setShowPremium(false);
+      };
+
+      // 備份/還原
       const onBackupToStorage = async ()=>{
         if(!user){ alert('請先登入'); return; }
         const payload = JSON.stringify(diaries, null, 2);
@@ -849,7 +902,6 @@
         await ref.put(new Blob([payload],{type:'application/json'}));
         alert('已備份到 Storage');
       };
-      // 從 Storage 還原（抓最近一份）
       const onRestoreFromStorage = async ()=>{
         if(!user){ alert('請先登入'); return; }
         const listRef = storage.ref().child(`${user.uid}/backups/`);
@@ -858,7 +910,6 @@
         const url = await list.items[0].getDownloadURL();
         const res = await fetch(url);
         const arr = await res.json();
-        // 直接用你既有匯入流程寫回 Firestore
         const batch = db.batch();
         const col = db.collection('users').doc(user.uid).collection('diaries');
         arr.forEach(d=>{
@@ -886,67 +937,59 @@
               <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
 
               <div className="flex items-center gap-3 flex-wrap">
-                {/* 匯出（保留） */}
-                <button onClick={exportDiaries} className="p-2 hover:bg-gray-100 rounded-lg" title="匯出日記(JSON)">
-                  <Icon name="download"/>
+                {/* ✅ 已把原本你圈起來的快捷功能移除，這些改留在「設定面板」內 */}
+
+                {/* Get Premium（新增） */}
+                <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
+                  Get Premium
                 </button>
 
-                {/* 匯入（保留） */}
-                <label className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer" title="匯入日記(JSON)">
-                  <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0] && importDiaries(e.target.files[0])}/>
-                  <Icon name="import"/>
-                </label>
-
-                {/* 通知測試/權限（保留） */}
-                <button onClick={()=>ReminderService.requestPermission()} className="p-2 hover:bg-gray-100 rounded-lg" title="允許桌面通知">
-                  <Icon name="bell"/>
-                </button>
-
-                {/* 主題色（保留） */}
-                <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/70">
-                  <span className="text-sm">主題色</span>
-                  <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)} />
-                </div>
-
-                {/* 深色模式（保留） */}
-                <button onClick={()=>setDarkMode(!darkMode)} className="p-2 hover:bg-gray-100 rounded-lg" title="切換深色模式">
-                  <Icon name={darkMode?'sun':'moon'}/>
-                </button>
-
-                {/* 設定面板（新增） */}
+                {/* 設定面板 */}
                 <button onClick={()=>setSettingsOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg" title="設定">
                   <Icon name="gear"/>
                 </button>
 
-                {/* Auth（保留） */}
+                {/* Auth */}
                 <AuthBar user={user}/>
               </div>
             </div>
           </div>
 
-            {/* 設定面板（新增） */}
-            <SettingsPanel
-              open={settingsOpen}
-              onClose={()=>setSettingsOpen(false)}
-              exportDiaries={exportDiaries}
-              importDiaries={importDiaries}
-              themeColor={themeColor}
-              setThemeColor={setThemeColor}
-              reminders={ReminderService.load()}
-              onAddReminder={onAddReminder}
-              onRemoveReminder={onRemoveReminder}
-              profile={profile}
-              isAdmin={isAdmin}
-              onCreateCoupon={onCreateCoupon}
-              onApplyCoupon={onApplyCoupon}
-              membership={membership}
-              onSetMembershipTier={onSetMembershipTier}
-              onBackupToStorage={onBackupToStorage}
-              onRestoreFromStorage={onRestoreFromStorage}
-              todayShortcut={todayShortcut}
-              toggleFavoritesOnly={toggleFavoritesOnly}
-              favoritesOnly={favoritesOnly}
-            />
+          {/* Get Premium Modal */}
+          <PremiumModal
+            open={showPremium}
+            onClose={()=>setShowPremium(false)}
+            onApplyCoupon={onApplyCoupon}
+            onPurchase={onPurchase}
+            membership={membership}
+            user={user}
+          />
+
+          {/* 設定面板 */}
+          <SettingsPanel
+            open={settingsOpen}
+            onClose={()=>setSettingsOpen(false)}
+            exportDiaries={exportDiaries}
+            importDiaries={importDiaries}
+            themeColor={themeColor}
+            setThemeColor={setThemeColor}
+            reminders={ReminderService.load()}
+            onAddReminder={onAddReminder}
+            onRemoveReminder={onRemoveReminder}
+            profile={profile}
+            isAdmin={isAdmin}
+            onCreateCoupon={onCreateCoupon}
+            onApplyCoupon={onApplyCoupon}
+            membership={membership}
+            onSetMembershipTier={onSetMembershipTier}
+            onBackupToStorage={onBackupToStorage}
+            onRestoreFromStorage={onRestoreFromStorage}
+            todayShortcut={todayShortcut}
+            toggleFavoritesOnly={toggleFavoritesOnly}
+            favoritesOnly={favoritesOnly}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+          />
 
           {/* 主區 */}
           <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1053,7 +1096,7 @@
                     <input type="text" placeholder="標題" value={formData.title}
                       onChange={e=>setFormData({...formData, title:e.target.value})}
                       className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
-                    <div className="text-sm text-gray-500">標題字數：{titleCount}</div>
+                    <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -1095,7 +1138,7 @@
                     <textarea placeholder="今天發生了什麼事呢..." value={formData.content}
                       onChange={e=>setFormData({...formData, content:e.target.value})}
                       className={`w-full h-64 p-4 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none resize-none`}/>
-                    <div className="text-sm text-gray-500">內容字數：{contentCount}</div>
+                    <div className="text-sm text-gray-500">內容字數：{(formData.content||'').length}</div>
 
                     {/* 圖片上傳 */}
                     <div className="space-y-2">
