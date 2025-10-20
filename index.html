@@ -44,19 +44,19 @@
        Firebase 初始化
     ==========================*/
     const firebaseConfig = {
-  apiKey: "AIzaSyCiho09ggVwKk96ItVof-iB38NrZkr_k5w",
-  authDomain: "journal-49230.firebaseapp.com",
-  projectId: "journal-49230",
-  storageBucket: "journal-49230.appspot.com",
-  messagingSenderId: "894572383995",
-  appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
-};
+      apiKey: "AIzaSyCiho09ggVwKk96ItVof-iB38NrZkr_k5w",
+      authDomain: "journal-49230.firebaseapp.com",
+      projectId: "journal-49230",
+      storageBucket: "journal-49230.appspot.com",
+      messagingSenderId: "894572383995",
+      appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
+    };
     // 防止重複初始化
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-} else {
-  firebase.app(); // 如果已初始化，直接使用現有實例
-}
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    } else {
+      firebase.app();
+    }
 
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -82,7 +82,8 @@ if (!firebase.apps.length) {
         user:"M12 12a5 5 0 100-10 5 5 0 000 10zm7 10H5a7 7 0 0114 0z",
         import:"M12 5v10m0 0l-4-4m4 4l4-4M5 19h14",
         bell:"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-9.33-4.93M13 21a2 2 0 01-4 0",
-        image:"M3 19a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2v14zm3-3l4-4 3 3 4-4 2 2v4H6z"
+        image:"M3 19a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2v14zm3-3l4-4 3 3 4-4 2 2v4H6z",
+        gear:"M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm9 3.5a7.95 7.95 0 01-.22 1.8l2.06 1.6-2 3.46-2.46-1a8.1 8.1 0 01-3.1 1.8l-.36 2.6h-4l-.36-2.6a8.1 8.1 0 01-3.1-1.8l-2.46 1-2-3.46 2.06-1.6A7.95 7.95 0 013 12a7.95 7.95 0 01.22-1.8L1.16 8.6l2-3.46 2.46 1a8.1 8.1 0 013.1-1.8L9.08 1.74h4L13.44 4.3a8.1 8.1 0 013.1 1.8l2.46-1 2 3.46-2.06 1.6c.15.57.22 1.17.22 1.8z"
       };
       return React.createElement('svg', {
         className, fill: fill?'currentColor':'none', stroke:'currentColor',
@@ -156,30 +157,53 @@ if (!firebase.apps.length) {
     };
 
     /* =========================
-       通知與提醒（本地）
+       提醒（強化：支援一次性/每日/每週 + 管理清單）
     ==========================*/
     const ReminderService = {
-      key: 'diary_reminders_v1',
+      key: 'diary_reminders_v2',        // ★ 升級版 key，不影響舊資料（仍兼容）
       load(){ try{ return JSON.parse(localStorage.getItem(this.key)||'[]'); }catch{ return [] } },
       save(list){ localStorage.setItem(this.key, JSON.stringify(list)); },
-      add(rem){ const list=this.load(); list.push(rem); this.save(list); },
-      remove(id){ const list=this.load().filter(r=>r.id!==id); this.save(list); },
+      add(rem){                         // rem: {id,title,at,freq:'ONCE'|'DAILY'|'WEEKLY', fired:false}
+        const list=this.load();
+        list.push(rem);
+        this.save(list);
+      },
+      remove(id){
+        const list=this.load().filter(r=>r.id!==id);
+        this.save(list);
+      },
+      _nextTime(cur, freq){
+        if(freq==='DAILY'){
+          const d = new Date(cur); d.setDate(d.getDate()+1); return d;
+        }else if(freq==='WEEKLY'){
+          const d = new Date(cur); d.setDate(d.getDate()+7); return d;
+        }
+        return null;
+      },
       scheduleTicker(){
-        // 每 30 秒檢查一次
-        setInterval(async ()=>{
-          const list = this.load();
+        // 每 15 秒檢查一次（較即時）
+        setInterval(()=>{
+          let list = this.load();
           const now = Date.now();
+          let dirty = false;
           for(const r of list){
-            if(!r.fired && now >= new Date(r.at).getTime()){
-              // 通知
+            const due = new Date(r.at).getTime();
+            if(now >= due){
               if(Notification?.permission==='granted'){
                 new Notification('日記提醒', { body: r.title || '該寫日記或查看備忘囉！' });
               }
-              r.fired = true;
+              if(r.freq && r.freq!=='ONCE'){
+                const next = this._nextTime(new Date(r.at), r.freq);
+                if(next){ r.at = next.toISOString(); r.fired = false; dirty = true; }
+              }else{
+                r.fired = true; dirty = true;
+              }
             }
           }
-          this.save(list);
-        }, 30000);
+          // 刪掉已觸發的 ONCE
+          const keep = list.filter(r => !(r.fired && (!r.freq || r.freq==='ONCE')));
+          if(dirty || keep.length !== list.length){ this.save(keep); }
+        }, 15000);
       },
       requestPermission(){
         if('Notification' in window && Notification.permission!=='granted'){
@@ -344,6 +368,149 @@ if (!firebase.apps.length) {
     };
 
     /* =========================
+       設定面板（整合上傳/下載、提醒管理、會員/優惠券、實用工具）
+    ==========================*/
+    const SettingsPanel = ({
+      open, onClose,
+      exportDiaries, importDiaries,
+      themeColor, setThemeColor,
+      reminders, onAddReminder, onRemoveReminder,
+      profile, isAdmin, onCreateCoupon, onApplyCoupon,
+      membership, onSetMembershipTier,
+      onBackupToStorage, onRestoreFromStorage,
+      todayShortcut, toggleFavoritesOnly, favoritesOnly
+    })=>{
+      const [title,setTitle] = useState('');
+      const [when,setWhen]   = useState('');
+      const [freq,setFreq]   = useState('ONCE');
+      const [couponCode,setCouponCode] = useState('');
+      const [newCoupon, setNewCoupon]  = useState({ code:'', months:1, active:true });
+
+      if(!open) return null;
+      return (
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="font-bold text-lg">設定面板</div>
+              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
+            </div>
+
+            <div className="p-4 space-y-8">
+
+              {/* 主題與顏色 */}
+              <section>
+                <h3 className="font-semibold mb-2">外觀</h3>
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-gray-500">主題色</label>
+                  <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)} />
+                  <button onClick={()=>setThemeColor('#7c3aed')} className="px-2 py-1 rounded bg-gray-100">預設紫</button>
+                  <button onClick={()=>setThemeColor('#0ea5e9')} className="px-2 py-1 rounded bg-gray-100">藍</button>
+                  <button onClick={()=>setThemeColor('#f97316')} className="px-2 py-1 rounded bg-gray-100">橘</button>
+                </div>
+              </section>
+
+              {/* 上傳 / 下載 */}
+              <section>
+                <h3 className="font-semibold mb-2">資料匯入 / 匯出</h3>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button onClick={exportDiaries} className="px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
+                    <Icon name="download"/><span>匯出 JSON</span>
+                  </button>
+                  <label className="px-3 py-2 rounded-lg border hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+                    <Icon name="import"/><span>匯入 JSON</span>
+                    <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0]&&importDiaries(e.target.files[0])}/>
+                  </label>
+                  <button onClick={onBackupToStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50">備份到 Firebase Storage</button>
+                  <button onClick={onRestoreFromStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50">從 Storage 還原</button>
+                </div>
+              </section>
+
+              {/* 提醒（強化） */}
+              <section>
+                <h3 className="font-semibold mb-2">提醒</h3>
+                <div className="grid sm:grid-cols-2 gap-3 items-end">
+                  <input value={title} onChange={e=>setTitle(e.target.value)} className="border rounded-lg p-2" placeholder="提醒內容，如：晚上 9 點寫日記"/>
+                  <div className="flex items-center gap-2">
+                    <input type="datetime-local" value={when} onChange={e=>setWhen(e.target.value)} className="border rounded-lg p-2"/>
+                    <select value={freq} onChange={e=>setFreq(e.target.value)} className="border rounded-lg p-2">
+                      <option value="ONCE">一次</option>
+                      <option value="DAILY">每天</option>
+                      <option value="WEEKLY">每週</option>
+                    </select>
+                  </div>
+                  <button onClick={()=>{ if(!when){alert('請選擇時間');return;} onAddReminder({title, when, freq}); setTitle(''); setWhen(''); setFreq('ONCE'); }} className="sm:col-span-2 w-full primary-bg text-white rounded-lg py-2">新增提醒</button>
+                </div>
+                <div className="mt-3">
+                  <div className="text-sm text-gray-500 mb-1">目前提醒</div>
+                  {reminders.length===0 ? <div className="text-gray-400 text-sm">尚無提醒</div> :
+                    <div className="space-y-2">
+                      {reminders.map(r=>(
+                        <div key={r.id} className="flex items-center justify-between border rounded-lg p-2">
+                          <div>
+                            <div className="font-medium">{r.title||'(無標題)'}</div>
+                            <div className="text-xs text-gray-500">{new Date(r.at).toLocaleString('zh-TW')} · {r.freq||'ONCE'}</div>
+                          </div>
+                          <button onClick={()=>onRemoveReminder(r.id)} className="px-2 py-1 rounded bg-red-50 text-red-600">刪除</button>
+                        </div>
+                      ))}
+                    </div>
+                  }
+                </div>
+              </section>
+
+              {/* 會員（客製） */}
+              <section>
+                <h3 className="font-semibold mb-2">付費會員</h3>
+                <div className="text-sm text-gray-600 mb-2">
+                  目前身分：<span className="font-semibold">{profile?.role || 'user'}</span> |
+                  會員等級：<span className="font-semibold">{membership?.tier || 'free'}</span>（到期：{membership?.expiresAt ? new Date(membership.expiresAt).toLocaleDateString('zh-TW') : '—'}）
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button onClick={()=>onSetMembershipTier('free')} className="px-2 py-1 rounded border">Free</button>
+                  <button onClick={()=>onSetMembershipTier('pro')}  className="px-2 py-1 rounded border">Pro（示範）</button>
+                  <button onClick={()=>onSetMembershipTier('vip')}  className="px-2 py-1 rounded border">VIP（示範）</button>
+                </div>
+                <div className="mt-3 grid sm:grid-cols-2 gap-2">
+                  <input value={couponCode} onChange={e=>setCouponCode(e.target.value)} className="border rounded-lg p-2" placeholder="輸入優惠券代碼"/>
+                  <button onClick={()=>onApplyCoupon(couponCode)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用優惠券</button>
+                </div>
+
+                {isAdmin && (
+                  <div className="mt-4 border-t pt-4">
+                    <div className="text-sm text-gray-600 mb-2">（管理員）建立優惠券</div>
+                    <div className="grid sm:grid-cols-3 gap-2">
+                      <input value={newCoupon.code} onChange={e=>setNewCoupon({...newCoupon, code:e.target.value})} className="border rounded-lg p-2" placeholder="代碼，如 PRO30"/>
+                      <input type="number" min="1" value={newCoupon.months} onChange={e=>setNewCoupon({...newCoupon, months:parseInt(e.target.value||'1')})} className="border rounded-lg p-2" placeholder="延長月數"/>
+                      <select value={newCoupon.active} onChange={e=>setNewCoupon({...newCoupon, active:(e.target.value==='true')})} className="border rounded-lg p-2">
+                        <option value="true">啟用</option>
+                        <option value="false">停用</option>
+                      </select>
+                    </div>
+                    <button onClick={()=>onCreateCoupon(newCoupon)} className="mt-2 px-3 py-2 rounded-lg border hover:bg-gray-50">建立</button>
+                    <div className="text-xs text-gray-500 mt-1">會寫入 Firestore：/coupons/{'{code}'}</div>
+                  </div>
+                )}
+              </section>
+
+              {/* 實用工具 */}
+              <section>
+                <h3 className="font-semibold mb-2">實用工具</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={todayShortcut} className="px-3 py-2 rounded-lg border hover:bg-gray-50">跳到今天</button>
+                  <button onClick={toggleFavoritesOnly} className={`px-3 py-2 rounded-lg border hover:bg-gray-50 ${favoritesOnly?'bg-yellow-50':''}`}>只看最愛：{favoritesOnly?'ON':'OFF'}</button>
+                </div>
+                <div className="text-xs text-gray-500 mt-2">
+                  備註：真正收費請串接金流（如 Stripe / LINE Pay），此處僅示範會員狀態與優惠券流程。
+                </div>
+              </section>
+
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* =========================
        App 主體
     ==========================*/
     const DiaryApp = () => {
@@ -361,6 +528,15 @@ if (!firebase.apps.length) {
       const [themeColor, setThemeColor] = useState(localStorage.getItem('themeColor')||'#7c3aed');
       const [dateFilter, setDateFilter] = useState(''); // YYYY-MM-DD
       const [uploading, setUploading] = useState(false);
+      const [settingsOpen, setSettingsOpen] = useState(false);             // ★ 新增：設定面板
+
+      // 會員 / Profile / 角色
+      const [profile, setProfile]     = useState(null);                    // {role, membership{tier,expiresAt}}
+      const isAdmin = profile?.role === 'admin';
+      const membership = profile?.membership || { tier:'free', expiresAt:null };
+
+      // 只看最愛
+      const [favoritesOnly, setFavoritesOnly] = useState(false);
 
       const [formData, setFormData] = useState({
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
@@ -368,23 +544,27 @@ if (!firebase.apps.length) {
       });
 
       // 請求通知權限 & 提醒排程
-      useEffect(()=>{
-        ReminderService.requestPermission();
-        ReminderService.scheduleTicker();
-      },[]);
+      useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
 
       // 深色 / 主題色
-      useEffect(()=>{
-        document.documentElement.style.setProperty('--primary', themeColor);
-        localStorage.setItem('themeColor', themeColor);
-      },[themeColor]);
+      useEffect(()=>{ document.documentElement.style.setProperty('--primary', themeColor); localStorage.setItem('themeColor', themeColor); },[themeColor]);
 
-      // Firebase Auth 監聽
+      // Auth 監聽 + 讀取資料（你既有邏輯保留）
       useEffect(()=>{
         const unsub = auth.onAuthStateChanged(async (u)=>{
           setUser(u||null);
           if(u){
-            // 即時監聽雲端資料
+            // 讀 Profile（會員/角色）
+            db.collection('users').doc(u.uid).onSnapshot(s=>{
+              if(s.exists){
+                const d = s.data();
+                setProfile({ role: d.role||'user', membership: d.membership||{tier:'free',expiresAt:null} });
+              }else{
+                setProfile({ role:'user', membership:{ tier:'free', expiresAt:null }});
+              }
+            });
+
+            // 你原本：讀 users/{uid}/diaries（保留）
             db.collection('users').doc(u.uid).collection('diaries')
               .orderBy('createdAt','desc')
               .onSnapshot(snap=>{
@@ -393,19 +573,20 @@ if (!firebase.apps.length) {
                 setDiaries(arr);
               }, err=>alert('讀取日記失敗：'+err.message));
           }else{
-            // 無登入：使用本地示範資料
+            // 無登入：使用本地示範資料（保留）
             const sample = [
               { id:'1', title:'美好的一天', content:'今天天氣很好，去公園散步...', tags:['生活','健康'], mood:'😊', weather:'☀️', isPrivate:false, isFavorite:true, createdAt:new Date('2025-10-18').toISOString(), updatedAt:new Date('2025-10-18').toISOString(), images:[] },
               { id:'2', title:'工作上的挑戰', content:'今天遇到了一個難題...', tags:['工作','學習'], mood:'🤔', weather:'☁️', isPrivate:false, isFavorite:false, createdAt:new Date('2025-10-17').toISOString(), updatedAt:new Date('2025-10-17').toISOString(), images:[] },
               { id:'3', title:'週末計畫', content:'這個週末想去爬山...', tags:['生活','興趣'], mood:'😍', weather:'🌈', isPrivate:false, isFavorite:false, createdAt:new Date('2025-10-16').toISOString(), updatedAt:new Date('2025-10-16').toISOString(), images:[] }
             ];
+            setProfile(null);
             setDiaries(sample);
           }
         });
         return ()=>unsub();
       },[]);
 
-      // 過濾排序
+      // 過濾排序（保留，外加只看最愛）
       useEffect(()=>{
         let filtered = [...diaries];
         if (searchTerm) {
@@ -417,6 +598,7 @@ if (!firebase.apps.length) {
         if (selectedTag) filtered = filtered.filter(d => (d.tags||[]).includes(selectedTag));
         if (filterMood) filtered = filtered.filter(d => d.mood === filterMood);
         if (dateFilter) filtered = filtered.filter(d => (new Date(d.createdAt).toISOString().slice(0,10))===dateFilter);
+        if (favoritesOnly) filtered = filtered.filter(d => d.isFavorite);
 
         filtered.sort((a,b)=>{
           switch (sortBy) {
@@ -427,13 +609,13 @@ if (!firebase.apps.length) {
           }
         });
         setFilteredDiaries(filtered);
-      },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter]);
+      },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter, favoritesOnly]);
 
       // 字數
       const titleCount = (formData.title||'').length;
       const contentCount = (formData.content||'').length;
 
-      // 圖片上傳
+      // 圖片上傳（保留）
       const onUploadImages = async (files)=>{
         if(!files || files.length===0) return;
         setUploading(true);
@@ -441,7 +623,6 @@ if (!firebase.apps.length) {
           const urls=[];
           for(const f of files){
             if(!user){
-              // 未登入：改用本地預覽 URL
               urls.push(URL.createObjectURL(f));
             }else{
               const id = formData.id || (currentDiary?.id) || db.collection('_').doc().id;
@@ -459,7 +640,7 @@ if (!firebase.apps.length) {
         }
       };
 
-      // 儲存
+      // 儲存（保留）
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){
           alert('請填寫標題和內容'); return;
@@ -476,9 +657,15 @@ if (!firebase.apps.length) {
           createdAt: currentDiary?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        // 提醒（本地）
+        // 提醒（本地）— 改用強化版服務，但兼容原欄位
         if(formData.remindAt){
-          ReminderService.add({ id: (currentDiary?.id)||docData.createdAt, at: formData.remindAt, title: docData.title, fired:false });
+          ReminderService.add({
+            id: (currentDiary?.id)||docData.createdAt,
+            at: formData.remindAt,
+            title: docData.title,
+            freq: 'ONCE',
+            fired:false
+          });
           alert('提醒已設定：'+new Date(formData.remindAt).toLocaleString('zh-TW'));
         }
 
@@ -541,6 +728,7 @@ if (!firebase.apps.length) {
         }));
       };
 
+      // 匯出（保留）
       const exportDiaries = ()=>{
         const dataStr = JSON.stringify(diaries, null, 2);
         const blob = new Blob([dataStr],{ type:'application/json' });
@@ -549,6 +737,7 @@ if (!firebase.apps.length) {
         a.href=url; a.download=`diary_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
       };
 
+      // 匯入（保留）
       const importDiaries = async (file)=>{
         try{
           const text = await file.text();
@@ -586,6 +775,108 @@ if (!firebase.apps.length) {
         }
       };
 
+      /* ====== 設定面板所需的輔助 ====== */
+
+      // 讀提醒清單（本地）
+      const reminders = useMemo(()=>ReminderService.load(), [settingsOpen]); // 打開時刷新
+
+      const onAddReminder = ({title, when, freq})=>{
+        const id = `rem_${Date.now()}`;
+        ReminderService.add({ id, title, at: new Date(when).toISOString(), freq, fired:false });
+        alert('已新增提醒');
+      };
+      const onRemoveReminder = (id)=>{ ReminderService.remove(id); alert('已刪除提醒'); };
+
+      // 會員：設定等級（示範用，實務上請串金流完成後再寫入）
+      const onSetMembershipTier = async (tier)=>{
+        if(!user){ alert('請先登入'); return; }
+        const expiresAt = membership?.expiresAt ? new Date(membership.expiresAt) : new Date();
+        // 示範：直接延長 30 天
+        if(tier==='free'){ await db.collection('users').doc(user.uid).set({ membership:{ tier:'free', expiresAt:null }}, {merge:true}); }
+        else{
+          expiresAt.setDate(expiresAt.getDate()+30);
+          await db.collection('users').doc(user.uid).set({ membership:{ tier, expiresAt: expiresAt.toISOString() }},{merge:true});
+        }
+        alert('會員狀態已更新（示範）');
+      };
+
+      // 管理員：建立優惠券
+      const onCreateCoupon = async ({code, months, active})=>{
+        if(!user || !isAdmin){ alert('需要管理員權限'); return; }
+        if(!code){ alert('請輸入代碼'); return; }
+        await db.collection('coupons').doc(code).set({
+          code,
+          discountMonths: Math.max(1, parseInt(months||'1')),
+          active: !!active,
+          createdBy: user.uid,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge:true });
+        alert('已建立/更新優惠券：'+code);
+      };
+
+      // 套用優惠券：延長會員期限（示範）
+      const onApplyCoupon = async (code)=>{
+        if(!user){ alert('請先登入'); return; }
+        if(!code){ alert('請輸入優惠券代碼'); return; }
+        const snap = await db.collection('coupons').doc(code).get();
+        if(!snap.exists){ alert('優惠券不存在'); return; }
+        const c = snap.data();
+        if(!c.active){ alert('此優惠券未啟用'); return; }
+
+        // 防止重複使用（簡單示範）
+        const usedId = `${user.uid}_${code}`;
+        const used = await db.collection('coupon_redemptions').doc(usedId).get();
+        if(used.exists){ alert('此帳號已使用過該優惠券'); return; }
+
+        const now = new Date();
+        const cur = membership?.expiresAt ? new Date(membership.expiresAt) : now;
+        const base = (cur>now?cur:now);
+        base.setMonth(base.getMonth() + (c.discountMonths||1));
+        await db.collection('users').doc(user.uid).set({
+          membership:{ tier: (membership?.tier && membership.tier!=='free') ? membership.tier : 'pro', expiresAt: base.toISOString() }
+        }, { merge:true });
+        await db.collection('coupon_redemptions').doc(usedId).set({
+          uid:user.uid, code, redeemedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        alert(`已套用優惠券，會員到期：${base.toLocaleDateString('zh-TW')}`);
+      };
+
+      // 備份到 Storage（JSON）
+      const onBackupToStorage = async ()=>{
+        if(!user){ alert('請先登入'); return; }
+        const payload = JSON.stringify(diaries, null, 2);
+        const ref = storage.ref().child(`${user.uid}/backups/diaries_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`);
+        await ref.put(new Blob([payload],{type:'application/json'}));
+        alert('已備份到 Storage');
+      };
+      // 從 Storage 還原（抓最近一份）
+      const onRestoreFromStorage = async ()=>{
+        if(!user){ alert('請先登入'); return; }
+        const listRef = storage.ref().child(`${user.uid}/backups/`);
+        const list = await listRef.list({ maxResults: 1 });
+        if(!list.items.length){ alert('沒有備份檔'); return; }
+        const url = await list.items[0].getDownloadURL();
+        const res = await fetch(url);
+        const arr = await res.json();
+        // 直接用你既有匯入流程寫回 Firestore
+        const batch = db.batch();
+        const col = db.collection('users').doc(user.uid).collection('diaries');
+        arr.forEach(d=>{
+          const ref = d.id ? col.doc(d.id) : col.doc();
+          batch.set(ref, d, { merge:true });
+        });
+        await batch.commit();
+        alert('已從 Storage 還原最新備份');
+      };
+
+      const todayShortcut = ()=>{
+        const today = new Date().toISOString().slice(0,10);
+        setDateFilter(today);
+        setCurrentDiary(null);
+        setShowNewDiary(false);
+      };
+      const toggleFavoritesOnly = ()=> setFavoritesOnly(v=>!v);
+
       // UI
       return (
         <div className={`min-h-screen ${darkMode?'bg-gray-900 text-white':'bg-transparent'}`}>
@@ -595,38 +886,67 @@ if (!firebase.apps.length) {
               <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
 
               <div className="flex items-center gap-3 flex-wrap">
-                {/* 匯出 */}
+                {/* 匯出（保留） */}
                 <button onClick={exportDiaries} className="p-2 hover:bg-gray-100 rounded-lg" title="匯出日記(JSON)">
                   <Icon name="download"/>
                 </button>
 
-                {/* 匯入 */}
+                {/* 匯入（保留） */}
                 <label className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer" title="匯入日記(JSON)">
                   <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0] && importDiaries(e.target.files[0])}/>
                   <Icon name="import"/>
                 </label>
 
-                {/* 通知測試/權限 */}
+                {/* 通知測試/權限（保留） */}
                 <button onClick={()=>ReminderService.requestPermission()} className="p-2 hover:bg-gray-100 rounded-lg" title="允許桌面通知">
                   <Icon name="bell"/>
                 </button>
 
-                {/* 主題色 */}
+                {/* 主題色（保留） */}
                 <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/70">
                   <span className="text-sm">主題色</span>
                   <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)} />
                 </div>
 
-                {/* 深色模式 */}
+                {/* 深色模式（保留） */}
                 <button onClick={()=>setDarkMode(!darkMode)} className="p-2 hover:bg-gray-100 rounded-lg" title="切換深色模式">
                   <Icon name={darkMode?'sun':'moon'}/>
                 </button>
 
-                {/* Auth */}
+                {/* 設定面板（新增） */}
+                <button onClick={()=>setSettingsOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg" title="設定">
+                  <Icon name="gear"/>
+                </button>
+
+                {/* Auth（保留） */}
                 <AuthBar user={user}/>
               </div>
             </div>
           </div>
+
+            {/* 設定面板（新增） */}
+            <SettingsPanel
+              open={settingsOpen}
+              onClose={()=>setSettingsOpen(false)}
+              exportDiaries={exportDiaries}
+              importDiaries={importDiaries}
+              themeColor={themeColor}
+              setThemeColor={setThemeColor}
+              reminders={ReminderService.load()}
+              onAddReminder={onAddReminder}
+              onRemoveReminder={onRemoveReminder}
+              profile={profile}
+              isAdmin={isAdmin}
+              onCreateCoupon={onCreateCoupon}
+              onApplyCoupon={onApplyCoupon}
+              membership={membership}
+              onSetMembershipTier={onSetMembershipTier}
+              onBackupToStorage={onBackupToStorage}
+              onRestoreFromStorage={onRestoreFromStorage}
+              todayShortcut={todayShortcut}
+              toggleFavoritesOnly={toggleFavoritesOnly}
+              favoritesOnly={favoritesOnly}
+            />
 
           {/* 主區 */}
           <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -652,6 +972,8 @@ if (!firebase.apps.length) {
                     <option value="">所有心情</option>
                     {moods.map(m=> <option key={m} value={m}>{m}</option>)}
                   </select>
+                  <button onClick={todayShortcut} className="px-2 py-1 rounded-full text-sm border">今天</button>
+                  <button onClick={toggleFavoritesOnly} className={`px-2 py-1 rounded-full text-sm border ${favoritesOnly?'bg-yellow-50':''}`}>只看最愛</button>
                 </div>
 
                 {/* 標籤雲 */}
