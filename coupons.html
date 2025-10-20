@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Coupons 管理（Admin）</title>
+
+  <!-- UI 套件 -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
+  </style>
+</head>
+<body class="bg-slate-50">
+  <div id="root" class="max-w-6xl mx-auto p-4"></div>
+
+  <script type="text/babel">
+    const { useEffect, useMemo, useState } = React;
+
+    // ========= Firebase =========
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiho09ggVwKk96ItVof-iB38NrZkr_k5w",
+      authDomain: "journal-49230.firebaseapp.com",
+      projectId: "journal-49230",
+      storageBucket: "journal-49230.appspot.com",
+      messagingSenderId: "894572383995",
+      appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
+    };
+    if(!firebase.apps.length){ firebase.initializeApp(firebaseConfig); }
+    const auth = firebase.auth();
+    const db   = firebase.firestore();
+
+    // ========= 小工具 =========
+    const Icon = ({name, className="w-5 h-5"}) => {
+      const paths = {
+        logout:"M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1",
+        plus:"M12 4v16m8-8H4",
+        trash:"M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m-1 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V6h10z",
+        toggle:"M4 12a4 4 0 008 0 4 4 0 108 0",
+        search:"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+        refresh:"M4 4v6h6M20 20v-6h-6M20 8a8 8 0 10-8 12",
+        lock:"M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2zm2-4a5 5 0 0110 0v4H7V7z",
+        open:"M14 3h7v7m-1.5-5.5l-9 9M5 5v14h14"
+      };
+      return (
+        <svg className={className} fill="none" stroke="currentColor" strokeWidth="2"
+             strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+          <path d={paths[name]||paths.search}/>
+        </svg>
+      );
+    };
+
+    // ========= Auth Bar =========
+    const AuthBar = ({ user }) => {
+      const [show, setShow] = useState(false);
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const provider = useMemo(()=>new firebase.auth.GoogleAuthProvider(),[]);
+
+      const sign = async (mode) => {
+        try{
+          if(mode==='in'){
+            await auth.signInWithEmailAndPassword(email, password);
+          }else{
+            await auth.createUserWithEmailAndPassword(email, password);
+          }
+          setShow(false);
+        }catch(e){ alert(e.message); }
+      };
+      const google = async ()=>{
+        try{ await auth.signInWithPopup(provider); setShow(false); }
+        catch(e){ alert(e.message); }
+      };
+
+      return (
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <div className="text-sm text-slate-700">{user.email}</div>
+              <button onClick={()=>auth.signOut()} className="px-3 py-1 rounded bg-slate-200 hover:bg-slate-300 flex items-center gap-1">
+                <Icon name="logout"/><span>登出</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={()=>setShow(true)} className="px-3 py-1 rounded bg-indigo-600 text-white">登入 / 註冊</button>
+            </>
+          )}
+
+          {show && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+              <div className="card w-[90%] max-w-md">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-bold">登入 / 註冊</div>
+                  <button onClick={()=>setShow(false)} className="px-3 py-1 rounded bg-slate-100">關閉</button>
+                </div>
+                <div className="space-y-2">
+                  <input className="w-full border rounded p-2" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
+                  <input className="w-full border rounded p-2" placeholder="密碼" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={()=>sign('in')} className="rounded bg-indigo-600 text-white py-2">登入</button>
+                    <button onClick={()=>sign('up')} className="rounded bg-slate-800 text-white py-2">註冊</button>
+                  </div>
+                  <button onClick={google} className="w-full rounded bg-red-500 text-white py-2">使用 Google</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ========= Coupon Form =========
+    const CouponForm = ({ onSubmit })=>{
+      const [code, setCode] = useState("");
+      const [active, setActive] = useState(true);
+      const [months, setMonths] = useState(1);
+      const [tier, setTier] = useState("pro");
+      const [maxUses, setMaxUses] = useState(100);
+      const [expires, setExpires] = useState("");
+
+      const submit = async ()=>{
+        const norm = (code||"").trim().toUpperCase();
+        if(!/^[A-Z0-9_-]{3,20}$/.test(norm)){
+          alert("代碼格式不符（3~20 的英數/底線/連字號）");
+          return;
+        }
+        await onSubmit({
+          code: norm,
+          active,
+          discountMonths: Math.max(1, parseInt(months||"1")),
+          tier,
+          maxUses: Math.max(1, parseInt(maxUses||"1")),
+          expiresAt: expires ? new Date(expires).toISOString() : null
+        });
+        setCode(""); setActive(true); setMonths(1); setTier("pro"); setMaxUses(100); setExpires("");
+      };
+
+      return (
+        <div className="card">
+          <div className="font-semibold mb-2">建立 / 更新 優惠券</div>
+          <div className="grid md:grid-cols-6 gap-3">
+            <input className="border rounded p-2 md:col-span-2" placeholder="代碼（如 PRO30）" value={code} onChange={e=>setCode(e.target.value)} />
+            <select className="border rounded p-2" value={active? "true":"false"} onChange={e=>setActive(e.target.value==="true")}>
+              <option value="true">啟用</option>
+              <option value="false">停用</option>
+            </select>
+            <input className="border rounded p-2" type="number" min="1" value={months} onChange={e=>setMonths(e.target.value)} placeholder="延長月數"/>
+            <select className="border rounded p-2" value={tier} onChange={e=>setTier(e.target.value)}>
+              <option value="pro">pro</option>
+              <option value="vip">vip</option>
+              <option value="free">free</option>
+            </select>
+            <input className="border rounded p-2" type="number" min="1" value={maxUses} onChange={e=>setMaxUses(e.target.value)} placeholder="使用上限"/>
+            <input className="border rounded p-2 md:col-span-2" type="datetime-local" value={expires} onChange={e=>setExpires(e.target.value)} />
+            <button onClick={submit} className="rounded bg-indigo-600 text-white py-2 md:col-span-2">建立 / 更新</button>
+          </div>
+          <div className="text-xs text-slate-500 mt-2">會寫入：/coupons/{`{code}`}</div>
+        </div>
+      );
+    };
+
+    // ========= Coupons List =========
+    const CouponsList = ({ rows, onToggle, onDelete, onOpenRedemptions })=>{
+      const [q, setQ] = useState("");
+      const [sort, setSort] = useState("createdAt_desc");
+
+      const filtered = useMemo(()=>{
+        let arr = rows.filter(r=>{
+          const hit = (s)=> (s||"").toString().toLowerCase().includes(q.toLowerCase());
+          return hit(r.code) || hit(r.tier);
+        });
+        arr.sort((a,b)=>{
+          switch (sort){
+            case "createdAt_desc": return (b.createdAtTS||0) - (a.createdAtTS||0);
+            case "createdAt_asc":  return (a.createdAtTS||0) - (b.createdAtTS||0);
+            case "code_asc":       return a.code.localeCompare(b.code);
+            case "code_desc":      return b.code.localeCompare(a.code);
+            default: return 0;
+          }
+        });
+        return arr;
+      },[rows,q,sort]);
+
+      return (
+        <div className="card">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-semibold">優惠券列表</div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 border rounded px-2 py-1 bg-white">
+                <Icon name="search"/><input className="outline-none" placeholder="搜尋代碼/等級" value={q} onChange={e=>setQ(e.target.value)} />
+              </div>
+              <select className="border rounded p-2" value={sort} onChange={e=>setSort(e.target.value)}>
+                <option value="createdAt_desc">最新</option>
+                <option value="createdAt_asc">最舊</option>
+                <option value="code_asc">代碼 A→Z</option>
+                <option value="code_desc">代碼 Z→A</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-slate-500">
+                <tr>
+                  <th className="py-2">代碼</th>
+                  <th>啟用</th>
+                  <th>月數</th>
+                  <th>等級</th>
+                  <th>使用/上限</th>
+                  <th>到期</th>
+                  <th>建立者</th>
+                  <th>建立時間</th>
+                  <th className="text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(c=>(
+                  <tr key={c.id} className="border-t">
+                    <td className="py-2 font-mono">{c.code}</td>
+                    <td>{c.active ? '✅' : '⛔'}</td>
+                    <td>{c.discountMonths}</td>
+                    <td>{c.tier || 'pro'}</td>
+                    <td>{(c.uses||0)} / {(c.maxUses||'—')}</td>
+                    <td>{c.expiresAt ? new Date(c.expiresAt).toLocaleString('zh-TW') : '—'}</td>
+                    <td className="text-xs">{c.createdBy||'—'}</td>
+                    <td className="text-xs">{c.createdAt ? c.createdAt.toDate?.().toLocaleString('zh-TW') : '—'}</td>
+                    <td className="text-right">
+                      <div className="flex items-center gap-2 justify-end">
+                        <button onClick={()=>onOpenRedemptions(c.code)} className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 flex items-center gap-1" title="查看兌換">
+                          <Icon name="open" /><span>兌換</span>
+                        </button>
+                        <button onClick={()=>onToggle(c)} className="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200" title="啟用/停用">
+                          <Icon name="toggle"/>
+                        </button>
+                        <button onClick={()=>onDelete(c)} className="px-2 py-1 rounded bg-red-100 hover:bg-red-200" title="刪除">
+                          <Icon name="trash"/>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length===0 && (
+                  <tr><td colSpan="9" className="py-6 text-center text-slate-400">無資料</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+
+    const RedemptionsModal = ({ open, code, items, onClose })=>{
+      if(!open) return null;
+      return (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="card w-[95%] max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-semibold">兌換紀錄：{code}</div>
+              <button onClick={onClose} className="px-2 py-1 rounded bg-slate-100">關閉</button>
+            </div>
+            <div className="space-y-2">
+              {items.length===0 ? (
+                <div className="text-slate-400">尚無兌換紀錄</div>
+              ) : items.map(r=>(
+                <div key={r.id} className="border rounded p-2 flex items-center justify-between">
+                  <div>
+                    <div className="font-mono text-sm">uid：{r.uid}</div>
+                    <div className="text-xs text-slate-500">時間：{r.redeemedAt ? r.redeemedAt.toDate?.().toLocaleString('zh-TW') : '—'}</div>
+                  </div>
+                  <div className="text-xs text-slate-500">doc：{r.id}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ========= App =========
+    const App = ()=>{
+      const [user, setUser] = useState(null);
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [coupons, setCoupons] = useState([]);
+      const [redemptionsOpen, setRedemptionsOpen] = useState(false);
+      const [redeemCode, setRedeemCode] = useState("");
+      const [redeemItems, setRedeemItems] = useState([]);
+
+      // Auth
+      useEffect(()=>{
+        const unsub = auth.onAuthStateChanged(async (u)=>{
+          setUser(u||null);
+          if(u){
+            const prof = await db.collection('users').doc(u.uid).get();
+            const role = prof.exists ? (prof.data().role||'user') : 'user';
+            setIsAdmin(role === 'admin');
+          }else{
+            setIsAdmin(false);
+          }
+        });
+        return ()=>unsub();
+      },[]);
+
+      // 即時讀取 coupons
+      useEffect(()=>{
+        const unsub = db.collection('coupons').orderBy('createdAt','desc').onSnapshot(s=>{
+          const arr=[];
+          s.forEach(d=>{
+            const data=d.data();
+            arr.push({
+              id:d.id,
+              ...data,
+              createdAtTS: data.createdAt?.toMillis?.() || 0
+            });
+          });
+          setCoupons(arr);
+        });
+        return ()=>unsub();
+      },[]);
+
+      const createOrUpdate = async (payload)=>{
+        if(!user || !isAdmin){ alert("需要管理員權限"); return; }
+        await db.collection('coupons').doc(payload.code).set({
+          ...payload,
+          uses: firebase.firestore.FieldValue.increment(0), // 確保欄位存在
+          createdBy: user.uid,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        alert(`已建立/更新優惠券：${payload.code}`);
+      };
+
+      const toggleActive = async (c)=>{
+        if(!user || !isAdmin){ alert("需要管理員權限"); return; }
+        await db.collection('coupons').doc(c.code).set({
+          active: !c.active
+        }, { merge: true });
+      };
+
+      const removeCoupon = async (c)=>{
+        if(!user || !isAdmin){ alert("需要管理員權限"); return; }
+        if(!confirm(`確定刪除優惠券 ${c.code} ？`)) return;
+        await db.collection('coupons').doc(c.code).delete();
+      };
+
+      const openRedemptions = async (code)=>{
+        setRedeemCode(code);
+        const qs = await db.collection('coupon_redemptions').where('code','==', code).orderBy('redeemedAt','desc').get();
+        const arr = qs.docs.map(d=>({ id:d.id, ...d.data() }));
+        setRedeemItems(arr);
+        setRedemptionsOpen(true);
+      };
+
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">🎟️ 優惠券管理</h1>
+            <AuthBar user={user}/>
+          </div>
+
+          {!user ? (
+            <div className="card text-slate-500">請先登入</div>
+          ) : !isAdmin ? (
+            <div className="card">
+              <div className="font-semibold mb-1">你已登入，但不是管理員</div>
+              <div className="text-sm text-slate-600">請在 Firestore 的 <code class="bg-slate-100 px-1 rounded">/users/{`{uid}`}</code> 文件加上 <code class="bg-slate-100 px-1 rounded">role: "admin"</code> 後重新整理。</div>
+            </div>
+          ) : (
+            <>
+              <CouponForm onSubmit={createOrUpdate}/>
+              <CouponsList
+                rows={coupons}
+                onToggle={toggleActive}
+                onDelete={removeCoupon}
+                onOpenRedemptions={openRedemptions}
+              />
+            </>
+          )}
+
+          <RedemptionsModal
+            open={redemptionsOpen}
+            code={redeemCode}
+            items={redeemItems}
+            onClose={()=>setRedemptionsOpen(false)}
+          />
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
