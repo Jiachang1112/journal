@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Coupons 管理（Admin）</title>
 
-  <!-- React / Tailwind / Babel -->
+  <!-- UI 套件 -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -19,25 +19,11 @@
   <style>
     *{box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px}
-    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:.75rem;padding:.6rem .9rem}
-    .btn-primary{background:#4f46e5;color:#fff}
-    .btn-primary:hover{background:#4338ca}
-    .btn-neutral{background:#f1f5f9}
-    .btn-neutral:hover{background:#e5e7eb}
-    .badge{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.2rem .6rem;font-size:.75rem}
-    .badge-green{background:#dcfce7;color:#166534}
-    .badge-gray{background:#e5e7eb;color:#334155}
-    .badge-amber{background:#fef3c7;color:#92400e}
-    .badge-red{background:#fee2e2;color:#991b1b}
-    .shadow-soft{box-shadow:0 10px 30px rgba(17,24,39,.08)}
-    .input{border:1px solid #e5e7eb;border-radius:.75rem;padding:.6rem .8rem}
-    .input:focus{outline:none;box-shadow:0 0 0 4px rgba(99,102,241,.15);border-color:#6366f1}
-    .table-sticky thead th{position:sticky;top:0;background:#fafafa;z-index:1}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
   </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-indigo-50 min-h-screen">
-  <div id="root" class="max-w-7xl mx-auto p-4 md:p-8"></div>
+<body class="bg-slate-50">
+  <div id="root" class="max-w-6xl mx-auto p-4"></div>
 
   <script type="text/babel">
     const { useEffect, useMemo, useState } = React;
@@ -63,30 +49,15 @@
         trash:"M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m-1 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V6h10z",
         toggle:"M4 12a4 4 0 008 0 4 4 0 108 0",
         search:"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
-        open:"M14 3h7v7m-1.5-5.5l-9 9M5 5v14h14",
-        copy:"M8 7h8v10H8zM6 9H5a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2v-1",
-        user:"M12 12a5 5 0 100-10 5 5 0 000 10zm7 10H5a7 7 0 0114 0z",
-        x:"M6 18L18 6M6 6l12 12",
-        check:"M5 13l4 4L19 7"
+        refresh:"M4 4v6h6M20 20v-6h-6M20 8a8 8 0 10-8 12",
+        lock:"M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2zm2-4a5 5 0 0110 0v4H7V7z",
+        open:"M14 3h7v7m-1.5-5.5l-9 9M5 5v14h14"
       };
       return (
         <svg className={className} fill="none" stroke="currentColor" strokeWidth="2"
              strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
           <path d={paths[name]||paths.search}/>
         </svg>
-      );
-    };
-
-    const Toast = ({ msg, type="ok", onClose }) => {
-      if(!msg) return null;
-      return (
-        <div className="fixed bottom-4 right-4 z-50">
-          <div className={`rounded-xl px-4 py-3 shadow-soft text-sm flex items-center gap-2 ${type==="ok" ? "bg-emerald-50 text-emerald-700 border border-emerald-200":"bg-rose-50 text-rose-700 border border-rose-200"}`}>
-            <Icon name={type==="ok"?"check":"x"} />
-            <span>{msg}</span>
-            <button onClick={onClose} className="ml-2 text-slate-500 hover:text-slate-700">關閉</button>
-          </div>
-        </div>
       );
     };
 
@@ -99,8 +70,11 @@
 
       const sign = async (mode) => {
         try{
-          if(mode==='in'){ await auth.signInWithEmailAndPassword(email, password); }
-          else{ await auth.createUserWithEmailAndPassword(email, password); }
+          if(mode==='in'){
+            await auth.signInWithEmailAndPassword(email, password);
+          }else{
+            await auth.createUserWithEmailAndPassword(email, password);
+          }
           setShow(false);
         }catch(e){ alert(e.message); }
       };
@@ -113,51 +87,34 @@
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-xl bg-white/70 border">
-                <Icon name="user"/><span className="text-sm">{user.email}</span>
-              </div>
-              <button onClick={()=>auth.signOut()} className="btn btn-neutral">登出</button>
+              <div className="text-sm text-slate-700">{user.email}</div>
+              <button onClick={()=>auth.signOut()} className="px-3 py-1 rounded bg-slate-200 hover:bg-slate-300 flex items-center gap-1">
+                <Icon name="logout"/><span>登出</span>
+              </button>
             </>
           ) : (
-            <button onClick={()=>setShow(true)} className="btn btn-primary">登入 / 註冊</button>
+            <button onClick={()=>setShow(true)} className="px-3 py-1 rounded bg-indigo-600 text-white">登入 / 註冊</button>
           )}
 
           {show && (
             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-              <div className="card shadow-soft w-[92%] max-w-md p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-lg font-bold">登入 / 註冊</div>
-                  <button onClick={()=>setShow(false)} className="btn btn-neutral"><Icon name="x"/></button>
+              <div className="card w-[90%] max-w-md">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-bold">登入 / 註冊</div>
+                  <button onClick={()=>setShow(false)} className="px-3 py-1 rounded bg-slate-100">關閉</button>
                 </div>
-                <div className="space-y-3">
-                  <input className="input w-full" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
-                  <input className="input w-full" placeholder="密碼" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+                <div className="space-y-2">
+                  <input className="w-full border rounded p-2" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
+                  <input className="w-full border rounded p-2" placeholder="密碼" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
                   <div className="grid grid-cols-2 gap-2">
-                    <button onClick={()=>sign('in')} className="btn btn-primary w-full">登入</button>
-                    <button onClick={()=>sign('up')} className="btn btn-neutral w-full">註冊</button>
+                    <button onClick={()=>sign('in')} className="rounded bg-indigo-600 text-white py-2">登入</button>
+                    <button onClick={()=>sign('up')} className="rounded bg-slate-800 text-white py-2">註冊</button>
                   </div>
-                  <button onClick={google} className="btn w-full" style="background:#ef4444;color:#fff">使用 Google</button>
+                  <button onClick={google} className="w-full rounded bg-red-500 text-white py-2">使用 Google</button>
                 </div>
               </div>
             </div>
           )}
-        </div>
-      );
-    };
-
-    // ========= Delete Confirm =========
-    const Confirm = ({ open, title, desc, onCancel, onOk })=>{
-      if(!open) return null;
-      return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center z-50">
-          <div className="card w-[92%] max-w-md p-6 shadow-soft">
-            <div className="text-lg font-bold mb-1">{title}</div>
-            <div className="text-slate-600 mb-4">{desc}</div>
-            <div className="flex items-center justify-end gap-2">
-              <button onClick={onCancel} className="btn btn-neutral">取消</button>
-              <button onClick={onOk} className="btn" style="background:#ef4444;color:#fff">刪除</button>
-            </div>
-          </div>
         </div>
       );
     };
@@ -171,16 +128,15 @@
       const [maxUses, setMaxUses] = useState(100);
       const [expires, setExpires] = useState("");
 
-      // 金額折抵
+      // 新增：金額折抵
       const [discountAmount, setDiscountAmount] = useState(0); // TWD
       const [appliesTo, setAppliesTo] = useState("any");       // monthly/yearly/any
-
-      const [toast, setToast] = useState({ msg:"", type:"ok" });
 
       const submit = async ()=>{
         const norm = (code||"").trim().toUpperCase();
         if(!/^[A-Z0-9_-]{3,20}$/.test(norm)){
-          setToast({ msg:"代碼格式不符（3~20 的英數/底線/連字號）", type:"err" }); return;
+          alert("代碼格式不符（3~20 的英數/底線/連字號）");
+          return;
         }
         const payload = {
           code: norm,
@@ -192,85 +148,44 @@
           maxUses: Math.max(1, parseInt(maxUses||"1")),
           expiresAt: expires ? new Date(expires).toISOString() : null
         };
-        try{
-          await onSubmit(payload);
-          setCode(""); setActive(true); setMonths(0); setTier("pro");
-          setMaxUses(100); setExpires(""); setDiscountAmount(0); setAppliesTo("any");
-          setToast({ msg:`已建立/更新：${payload.code}`, type:"ok" });
-        }catch(e){
-          setToast({ msg:e.message||"發生錯誤", type:"err" });
-        }
+        await onSubmit(payload);
+        setCode(""); setActive(true); setMonths(0); setTier("pro");
+        setMaxUses(100); setExpires(""); setDiscountAmount(0); setAppliesTo("any");
       };
 
       return (
-        <div className="card p-6 shadow-soft">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-lg font-bold">建立 / 更新 優惠券</div>
-              <div className="text-sm text-slate-500">支援金額折抵與延長月數，可同時設定</div>
-            </div>
-            <span className={`badge ${active? 'badge-green':'badge-gray'}`}>{active?'啟用中':'已停用'}</span>
-          </div>
+        <div className="card">
+          <div className="font-semibold mb-2">建立 / 更新 優惠券</div>
 
           <div className="grid md:grid-cols-6 gap-3">
-            <div className="md:col-span-2">
-              <label className="text-sm text-slate-600">代碼</label>
-              <input className="input w-full mt-1" placeholder="如 PRO100OFF" value={code} onChange={e=>setCode(e.target.value)} />
-            </div>
+            <input className="border rounded p-2 md:col-span-2" placeholder="代碼（如 PRO100OFF）" value={code} onChange={e=>setCode(e.target.value)} />
+            <select className="border rounded p-2" value={active? "true":"false"} onChange={e=>setActive(e.target.value==="true")}>
+              <option value="true">啟用</option>
+              <option value="false">停用</option>
+            </select>
 
-            <div>
-              <label className="text-sm text-slate-600">狀態</label>
-              <select className="input w-full mt-1" value={active? "true":"false"} onChange={e=>setActive(e.target.value==="true")}>
-                <option value="true">啟用</option>
-                <option value="false">停用</option>
-              </select>
-            </div>
+            <input className="border rounded p-2" type="number" min="0" value={months} onChange={e=>setMonths(e.target.value)} placeholder="延長月數（可為 0）"/>
+            <select className="border rounded p-2" value={tier} onChange={e=>setTier(e.target.value)}>
+              <option value="pro">pro</option>
+              <option value="vip">vip</option>
+              <option value="free">free</option>
+            </select>
 
-            <div>
-              <label className="text-sm text-slate-600">延長月數</label>
-              <input className="input w-full mt-1" type="number" min="0" value={months} onChange={e=>setMonths(e.target.value)} placeholder="0 表不延長"/>
-            </div>
+            <input className="border rounded p-2" type="number" min="1" value={maxUses} onChange={e=>setMaxUses(e.target.value)} placeholder="使用上限"/>
+            <input className="border rounded p-2 md:col-span-2" type="datetime-local" value={expires} onChange={e=>setExpires(e.target.value)} />
 
-            <div>
-              <label className="text-sm text-slate-600">升級層級</label>
-              <select className="input w-full mt-1" value={tier} onChange={e=>setTier(e.target.value)}>
-                <option value="pro">pro</option>
-                <option value="vip">vip</option>
-                <option value="free">free</option>
-              </select>
-            </div>
+            {/* 新增：金額折抵區塊 */}
+            <input className="border rounded p-2" type="number" min="0" value={discountAmount} onChange={e=>setDiscountAmount(e.target.value)} placeholder="折抵金額（TWD，可為 0）"/>
+            <select className="border rounded p-2" value={appliesTo} onChange={e=>setAppliesTo(e.target.value)}>
+              <option value="any">適用方案：不限</option>
+              <option value="monthly">僅月費</option>
+              <option value="yearly">僅年費</option>
+            </select>
 
-            <div>
-              <label className="text-sm text-slate-600">使用上限</label>
-              <input className="input w-full mt-1" type="number" min="1" value={maxUses} onChange={e=>setMaxUses(e.target.value)} placeholder="如 100"/>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="text-sm text-slate-600">到期時間</label>
-              <input className="input w-full mt-1" type="datetime-local" value={expires} onChange={e=>setExpires(e.target.value)} />
-            </div>
-
-            <div>
-              <label className="text-sm text-slate-600">折抵金額（TWD）</label>
-              <input className="input w-full mt-1" type="number" min="0" value={discountAmount} onChange={e=>setDiscountAmount(e.target.value)} placeholder="例如 150"/>
-            </div>
-
-            <div>
-              <label className="text-sm text-slate-600">適用方案</label>
-              <select className="input w-full mt-1" value={appliesTo} onChange={e=>setAppliesTo(e.target.value)}>
-                <option value="any">不限</option>
-                <option value="monthly">僅月費</option>
-                <option value="yearly">僅年費</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2 flex items-end">
-              <button onClick={submit} className="btn btn-primary w-full"><Icon name="plus"/>建立 / 更新</button>
-            </div>
+            <button onClick={submit} className="rounded bg-indigo-600 text-white py-2 md:col-span-2">建立 / 更新</button>
           </div>
 
-          <div className="text-xs text-slate-500 mt-3">寫入：/coupons/{`{code}`}（含 discountAmount / appliesTo）</div>
-          <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast({msg:""})}/>
+          <div className="text-xs text-slate-500 mt-2">會寫入：/coupons/{`{code}`}（含 discountAmount / appliesTo）</div>
         </div>
       );
     };
@@ -279,13 +194,11 @@
     const CouponsList = ({ rows, onToggle, onDelete, onOpenRedemptions })=>{
       const [q, setQ] = useState("");
       const [sort, setSort] = useState("createdAt_desc");
-      const [copied, setCopied] = useState("");
-      const [confirm, setConfirm] = useState({ open:false, row:null });
 
       const filtered = useMemo(()=>{
         let arr = rows.filter(r=>{
           const hit = (s)=> (s||"").toString().toLowerCase().includes(q.toLowerCase());
-          return hit(r.code) || hit(r.tier) || hit(r.appliesTo);
+          return hit(r.code) || hit(r.tier);
         });
         arr.sort((a,b)=>{
           switch (sort){
@@ -299,19 +212,15 @@
         return arr;
       },[rows,q,sort]);
 
-      const copy = async (text)=>{
-        try{ await navigator.clipboard.writeText(text); setCopied(text); setTimeout(()=>setCopied(""),1200); }catch{}
-      };
-
       return (
-        <div className="card p-4 md:p-6 shadow-soft">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-            <div className="text-lg font-bold">優惠券列表</div>
+        <div className="card">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-semibold">優惠券列表</div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 border rounded-xl px-3 py-2 bg-white">
-                <Icon name="search"/><input className="outline-none" placeholder="搜尋代碼 / 等級 / 方案" value={q} onChange={e=>setQ(e.target.value)} />
+              <div className="flex items-center gap-2 border rounded px-2 py-1 bg-white">
+                <Icon name="search"/><input className="outline-none" placeholder="搜尋代碼/等級" value={q} onChange={e=>setQ(e.target.value)} />
               </div>
-              <select className="input" value={sort} onChange={e=>setSort(e.target.value)}>
+              <select className="border rounded p-2" value={sort} onChange={e=>setSort(e.target.value)}>
                 <option value="createdAt_desc">最新</option>
                 <option value="createdAt_asc">最舊</option>
                 <option value="code_asc">代碼 A→Z</option>
@@ -320,13 +229,12 @@
             </div>
           </div>
 
-          <!-- 桌面版表格 -->
-          <div className="hidden md:block overflow-auto max-h-[60vh] rounded-xl border">
-            <table className="w-full text-sm table-sticky">
-              <thead className="text-left text-slate-600">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-slate-500">
                 <tr>
-                  <th className="py-3 px-3">代碼</th>
-                  <th>狀態</th>
+                  <th className="py-2">代碼</th>
+                  <th>啟用</th>
                   <th>折抵金額</th>
                   <th>適用方案</th>
                   <th>延長月數</th>
@@ -335,83 +243,43 @@
                   <th>到期</th>
                   <th>建立者</th>
                   <th>建立時間</th>
-                  <th className="text-right pr-3">操作</th>
+                  <th className="text-right">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody>
                 {filtered.map(c=>(
-                  <tr key={c.id} className="odd:bg-white even:bg-slate-50">
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2">
-                        <code className="px-2 py-1 rounded bg-slate-100">{c.code}</code>
-                        <button onClick={()=>copy(c.code)} className="btn btn-neutral px-2 py-1">
-                          <Icon name="copy"/>{copied===c.code?'已複製':'複製'}
-                        </button>
-                      </div>
-                    </td>
-                    <td>{c.active ? <span className="badge badge-green">啟用</span> : <span className="badge badge-gray">停用</span>}</td>
+                  <tr key={c.id} className="border-t">
+                    <td className="py-2 font-mono">{c.code}</td>
+                    <td>{c.active ? '✅' : '⛔'}</td>
                     <td>{typeof c.discountAmount === 'number' ? `NT$ ${c.discountAmount}` : '—'}</td>
-                    <td><span className="badge badge-amber">{c.appliesTo || 'any'}</span></td>
+                    <td>{c.appliesTo || 'any'}</td>
                     <td>{c.discountMonths ?? 0}</td>
-                    <td><span className="badge badge-gray">{c.tier || 'pro'}</span></td>
+                    <td>{c.tier || 'pro'}</td>
                     <td>{(c.uses||0)} / {(c.maxUses||'—')}</td>
                     <td>{c.expiresAt ? new Date(c.expiresAt).toLocaleString('zh-TW') : '—'}</td>
                     <td className="text-xs">{c.createdBy||'—'}</td>
                     <td className="text-xs">{c.createdAt ? c.createdAt.toDate?.().toLocaleString('zh-TW') : '—'}</td>
-                    <td className="text-right pr-3">
+                    <td className="text-right">
                       <div className="flex items-center gap-2 justify-end">
-                        <button onClick={()=>onOpenRedemptions(c.code)} className="btn btn-neutral"><Icon name="open" />兌換</button>
-                        <button onClick={()=>onToggle(c)} className="btn btn-neutral"><Icon name="toggle"/>啟用/停用</button>
-                        <button onClick={()=>setConfirm({open:true,row:c})} className="btn" style="background:#fee2e2;color:#991b1b"><Icon name="trash"/>刪除</button>
+                        <button onClick={()=>onOpenRedemptions(c.code)} className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 flex items-center gap-1" title="查看兌換">
+                          <Icon name="open" /><span>兌換</span>
+                        </button>
+                        <button onClick={()=>onToggle(c)} className="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200" title="啟用/停用">
+                          <Icon name="toggle"/>
+                        </button>
+                        <button onClick={()=>onDelete(c)} className="px-2 py-1 rounded bg-red-100 hover:bg-red-200" title="刪除">
+                          <Icon name="trash"/>
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {filtered.length===0 && (
-                  <tr><td colSpan="11" className="py-10 text-center text-slate-400">查無資料</td></tr>
+                  <tr><td colSpan="11" className="py-6 text-center text-slate-400">無資料</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-
-          <!-- 手機版卡片 -->
-          <div className="md:hidden space-y-3">
-            {filtered.map(c=>(
-              <div key={c.id} className="border rounded-xl p-3 bg-white">
-                <div className="flex items-center justify-between">
-                  <code className="px-2 py-1 rounded bg-slate-100">{c.code}</code>
-                  <div className="flex items-center gap-2">
-                    {c.active ? <span className="badge badge-green">啟用</span> : <span className="badge badge-gray">停用</span>}
-                    <button onClick={()=>copy(c.code)} className="btn btn-neutral px-2 py-1"><Icon name="copy"/></button>
-                  </div>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                  <div>折抵：{typeof c.discountAmount==='number'?`NT$ ${c.discountAmount}`:'—'}</div>
-                  <div>方案：{c.appliesTo||'any'}</div>
-                  <div>延長：{c.discountMonths??0} 月</div>
-                  <div>等級：{c.tier||'pro'}</div>
-                  <div>使用：{(c.uses||0)} / {(c.maxUses||'—')}</div>
-                  <div>到期：{c.expiresAt?new Date(c.expiresAt).toLocaleDateString('zh-TW'):'—'}</div>
-                </div>
-                <div className="mt-3 flex items-center justify-end gap-2">
-                  <button onClick={()=>onOpenRedemptions(c.code)} className="btn btn-neutral">兌換</button>
-                  <button onClick={()=>onToggle(c)} className="btn btn-neutral">啟用/停用</button>
-                  <button onClick={()=>setConfirm({open:true,row:c})} className="btn" style="background:#fee2e2;color:#991b1b">刪除</button>
-                </div>
-              </div>
-            ))}
-            {filtered.length===0 && (
-              <div className="text-center text-slate-400 py-10">查無資料</div>
-            )}
-          </div>
-
-          <Confirm
-            open={confirm.open}
-            title="刪除優惠券"
-            desc={`確定要刪除 ${confirm.row?.code} ? 此操作無法復原。`}
-            onCancel={()=>setConfirm({open:false,row:null})}
-            onOk={()=>{ onDelete(confirm.row); setConfirm({open:false,row:null}); }}
-          />
         </div>
       );
     };
@@ -420,16 +288,16 @@
       if(!open) return null;
       return (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="card w-[95%] max-w-2xl max-h-[80vh] overflow-y-auto p-6 shadow-soft">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-lg font-bold">兌換紀錄：{code}</div>
-              <button onClick={onClose} className="btn btn-neutral"><Icon name="x"/>關閉</button>
+          <div className="card w-[95%] max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-semibold">兌換紀錄：{code}</div>
+              <button onClick={onClose} className="px-2 py-1 rounded bg-slate-100">關閉</button>
             </div>
             <div className="space-y-2">
               {items.length===0 ? (
                 <div className="text-slate-400">尚無兌換紀錄</div>
               ) : items.map(r=>(
-                <div key={r.id} className="border rounded-xl p-3 flex items-center justify-between bg-white">
+                <div key={r.id} className="border rounded p-2 flex items-center justify-between">
                   <div>
                     <div className="font-mono text-sm">uid：{r.uid}</div>
                     <div className="text-xs text-slate-500">時間：{r.redeemedAt ? r.redeemedAt.toDate?.().toLocaleString('zh-TW') : '—'}</div>
@@ -452,7 +320,6 @@
       const [redemptionsOpen, setRedemptionsOpen] = useState(false);
       const [redeemCode, setRedeemCode] = useState("");
       const [redeemItems, setRedeemItems] = useState([]);
-      const [toast, setToast] = useState({ msg:"", type:"ok" });
 
       // Auth
       useEffect(()=>{
@@ -487,27 +354,27 @@
       },[]);
 
       const createOrUpdate = async (payload)=>{
-        if(!user || !isAdmin){ throw new Error("需要管理員權限"); }
+        if(!user || !isAdmin){ alert("需要管理員權限"); return; }
         await db.collection('coupons').doc(payload.code).set({
           ...payload,
           uses: firebase.firestore.FieldValue.increment(0), // 確保欄位存在
           createdBy: user.uid,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
+        alert(`已建立/更新優惠券：${payload.code}`);
       };
 
       const toggleActive = async (c)=>{
-        if(!user || !isAdmin){ setToast({msg:"需要管理員權限",type:"err"}); return; }
+        if(!user || !isAdmin){ alert("需要管理員權限"); return; }
         await db.collection('coupons').doc(c.code).set({
           active: !c.active
         }, { merge: true });
-        setToast({ msg:`已${c.active?'停用':'啟用'}：${c.code}`, type:"ok" });
       };
 
       const removeCoupon = async (c)=>{
-        if(!user || !isAdmin){ setToast({msg:"需要管理員權限",type:"err"}); return; }
+        if(!user || !isAdmin){ alert("需要管理員權限"); return; }
+        if(!confirm(`確定刪除優惠券 ${c.code} ？`)) return;
         await db.collection('coupons').doc(c.code).delete();
-        setToast({ msg:`已刪除：${c.code}`, type:"ok" });
       };
 
       const openRedemptions = async (code)=>{
@@ -518,47 +385,19 @@
         setRedemptionsOpen(true);
       };
 
-      // 统计卡片
-      const stats = useMemo(()=>{
-        const total = coupons.length;
-        const enabled = coupons.filter(c=>c.active).length;
-        const used = coupons.reduce((s,c)=> s + (c.uses||0), 0);
-        return { total, enabled, used };
-      },[coupons]);
-
       return (
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="rounded-2xl p-6 md:p-8 bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-soft">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-extrabold">🎟️ 優惠券管理</h1>
-                <p className="text-white/80 mt-1">建立金額折抵 / 方案限制 / 延長月數，並即時管理使用狀況</p>
-              </div>
-              <AuthBar user={user}/>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
-              <div className="bg-white/10 rounded-xl p-4">
-                <div className="text-white/80 text-sm">總數</div>
-                <div className="text-2xl font-bold">{stats.total}</div>
-              </div>
-              <div className="bg-white/10 rounded-xl p-4">
-                <div className="text-white/80 text-sm">啟用中</div>
-                <div className="text-2xl font-bold">{stats.enabled}</div>
-              </div>
-              <div className="bg-white/10 rounded-xl p-4">
-                <div className="text-white/80 text-sm">累計使用</div>
-                <div className="text-2xl font-bold">{stats.used}</div>
-              </div>
-            </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">🎟️ 優惠券管理</h1>
+            <AuthBar user={user}/>
           </div>
 
           {!user ? (
-            <div className="card p-6 shadow-soft text-slate-600">請先登入</div>
+            <div className="card text-slate-500">請先登入</div>
           ) : !isAdmin ? (
-            <div className="card p-6 shadow-soft">
+            <div className="card">
               <div className="font-semibold mb-1">你已登入，但不是管理員</div>
-              <div className="text-sm text-slate-600">請在 Firestore 的 <code className="bg-slate-100 px-1 rounded">/users/{`{uid}`}</code> 文件加上 <code className="bg-slate-100 px-1 rounded">role: "admin"</code> 後重新整理。</div>
+              <div className="text-sm text-slate-600">請在 Firestore 的 <code class="bg-slate-100 px-1 rounded">/users/{`{uid}`}</code> 文件加上 <code class="bg-slate-100 px-1 rounded">role: "admin"</code> 後重新整理。</div>
             </div>
           ) : (
             <>
@@ -578,8 +417,6 @@
             items={redeemItems}
             onClose={()=>setRedemptionsOpen(false)}
           />
-
-          <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast({msg:""})}/>
         </div>
       );
     };
