@@ -86,7 +86,7 @@
         x:"M6 18L18 6M6 6l12 12",
         moon:"M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z",
         sun:"M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 6a6 6 0 100 12 6 6 0 000-12z",
-        download:"M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2 2v-4m4-5l5 5m0 0l5-5m-5 5V3",
+        download:"M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5 5m0 0l5-5m-5 5V3",
         user:"M12 12a5 5 0 100-10 5 5 0 000 10zm7 10H5a7 7 0 0114 0z",
         import:"M12 5v10m0 0l-4-4m4 4l4-4M5 19h14",
         bell:"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-9.33-4.93M13 21a2 2 0 01-4 0",
@@ -360,29 +360,11 @@
     };
 
     /* =========================
-       Get Premium Modal（新版：可顯示折扣、清除券）
+       Get Premium Modal
     ==========================*/
-    const PremiumModal = ({ open, onClose, onApplyCoupon, onPurchase, onClearCoupon, membership, user, appliedCoupon, PRICES }) => {
+    const PremiumModal = ({ open, onClose, onApplyCoupon, onPurchase, membership, user }) => {
       const [code, setCode] = useState('');
       if(!open) return null;
-
-      const priceAfter = (plan)=>{
-        const base = PRICES[plan];
-        if (!appliedCoupon) return base;
-        const okPlan = (appliedCoupon.appliesTo === 'any' || appliedCoupon.appliesTo === plan);
-        const notExpired = (!appliedCoupon.expiresAt) || (new Date(appliedCoupon.expiresAt) >= new Date());
-        if (appliedCoupon.active && okPlan && notExpired) {
-          return Math.max(0, base - (appliedCoupon.discountAmount||0));
-        }
-        return base;
-      };
-
-      const Badge = () => appliedCoupon ? (
-        <div className="text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-1 rounded">
-          已套用 {appliedCoupon.code}（{appliedCoupon.appliesTo==='any'?'不限方案':appliedCoupon.appliesTo}，折 NT$ {appliedCoupon.discountAmount}）
-        </div>
-      ) : null;
-
       return (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg">
@@ -391,56 +373,34 @@
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
             </div>
             <div className="p-5 space-y-5">
-              {/* 月費 */}
               <div className="rounded-xl border p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-xl font-bold mb-1">月費</div>
-                  <Badge/>
-                </div>
-                <div className="text-3xl font-extrabold mb-2 primary-text flex items-center gap-2">
-                  {appliedCoupon && priceAfter('monthly') !== PRICES.monthly && (
-                    <span className="text-gray-400 line-through text-2xl">NT$ {PRICES.monthly}</span>
-                  )}
-                  <span>NT$ {priceAfter('monthly')}</span>
-                </div>
+                <div className="text-xl font-bold mb-1">月費</div>
+                <div className="text-3xl font-extrabold mb-2 primary-text">NT$ 150</div>
                 <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-                  <li>雲端備份</li><li>圖片上傳</li><li>更多統計</li>
+                  <li>雲端備份</li>
+                  <li>圖片上傳</li>
+                  <li>更多統計</li>
                 </ul>
                 <button onClick={()=>onPurchase('monthly')} className="mt-3 w-full primary-bg text-white rounded-lg py-2">升級（月費）</button>
               </div>
 
-              {/* 年費 */}
               <div className="rounded-xl border p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-xl font-bold mb-1">年費</div>
-                  <Badge/>
-                </div>
-                <div className="text-3xl font-extrabold mb-2 primary-text flex items-center gap-2">
-                  {appliedCoupon && priceAfter('yearly') !== PRICES.yearly && (
-                    <span className="text-gray-400 line-through text-2xl">NT$ {PRICES.yearly}</span>
-                  )}
-                  <span>NT$ {priceAfter('yearly')}</span>
-                </div>
+                <div className="text-xl font-bold mb-1">年費</div>
+                <div className="text-3xl font-extrabold mb-2 primary-text">NT$ 1500</div>
                 <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-                  <li>所有月費功能</li><li>年費更划算（12 個月）</li>
+                  <li>所有月費功能</li>
+                  <li>年費更划算（12 個月）</li>
                 </ul>
                 <button onClick={()=>onPurchase('yearly')} className="mt-3 w-full primary-bg text-white rounded-lg py-2">升級（年費）</button>
               </div>
 
-              {/* 優惠券輸入 */}
               <div className="rounded-xl border p-4">
                 <div className="font-semibold mb-2">優惠券</div>
                 <div className="flex gap-2">
                   <input value={code} onChange={e=>setCode(e.target.value)} placeholder="輸入優惠券代碼" className="flex-1 border rounded-lg p-2"/>
                   <button onClick={()=>onApplyCoupon(code)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用</button>
                 </div>
-                {appliedCoupon && (
-                  <div className="mt-2 flex items-center justify-between text-sm">
-                    <div className="text-green-700">已套用：{appliedCoupon.code}，折 NT$ {appliedCoupon.discountAmount}</div>
-                    <button onClick={onClearCoupon} className="text-red-600 underline">清除</button>
-                  </div>
-                )}
-                <div className="text-xs text-gray-500 mt-2">套用後價格會直接扣抵（示範流程）。</div>
+                <div className="text-xs text-gray-500 mt-2">成功套用後會直接延長到期日（示範流程）。</div>
               </div>
 
               <div className="text-sm text-gray-600">
@@ -455,7 +415,7 @@
     };
 
     /* =========================
-       設定面板（含管理員建立金額折抵優惠券）
+       設定面板（重排順序）
     ==========================*/
     const SettingsPanel = ({
       open, onClose,
@@ -472,9 +432,7 @@
       const [when,setWhen]   = useState('');
       const [freq,setFreq]   = useState('ONCE');
       const [couponCode,setCouponCode] = useState('');
-      const [newCoupon, setNewCoupon]  = useState({
-        code:'', discountAmount:100, appliesTo:'any', maxUses:100, active:true, expiresAt:''
-      });
+      const [newCoupon, setNewCoupon]  = useState({ code:'', months:1, active:true });
 
       if(!open) return null;
       return (
@@ -506,24 +464,17 @@
 
                 {isAdmin && (
                   <div className="mt-4 border-t pt-4">
-                    <div className="text-sm text-gray-600 mb-2">（管理員）建立優惠券（折價）</div>
-                    <div className="grid sm:grid-cols-2 gap-2">
-                      <input value={newCoupon.code} onChange={e=>setNewCoupon({...newCoupon, code:e.target.value.toUpperCase()})} className="border rounded-lg p-2" placeholder="代碼，如 PRO100"/>
-                      <input type="number" min="0" value={newCoupon.discountAmount} onChange={e=>setNewCoupon({...newCoupon, discountAmount: parseInt(e.target.value||'0')})} className="border rounded-lg p-2" placeholder="折抵金額（TWD）"/>
-                      <select value={newCoupon.appliesTo} onChange={e=>setNewCoupon({...newCoupon, appliesTo:e.target.value})} className="border rounded-lg p-2">
-                        <option value="any">不限方案</option>
-                        <option value="monthly">只限月費</option>
-                        <option value="yearly">只限年費</option>
-                      </select>
-                      <input type="number" min="1" value={newCoupon.maxUses} onChange={e=>setNewCoupon({...newCoupon, maxUses: parseInt(e.target.value||'1')})} className="border rounded-lg p-2" placeholder="最大使用次數"/>
-                      <input type="datetime-local" value={newCoupon.expiresAt} onChange={e=>setNewCoupon({...newCoupon, expiresAt: e.target.value})} className="border rounded-lg p-2" placeholder="到期時間（選填）"/>
+                    <div className="text-sm text-gray-600 mb-2">（管理員）建立優惠券</div>
+                    <div className="grid sm:grid-cols-3 gap-2">
+                      <input value={newCoupon.code} onChange={e=>setNewCoupon({...newCoupon, code:e.target.value})} className="border rounded-lg p-2" placeholder="代碼，如 PRO30"/>
+                      <input type="number" min="1" value={newCoupon.months} onChange={e=>setNewCoupon({...newCoupon, months:parseInt(e.target.value||'1')})} className="border rounded-lg p-2" placeholder="延長月數"/>
                       <select value={newCoupon.active} onChange={e=>setNewCoupon({...newCoupon, active:(e.target.value==='true')})} className="border rounded-lg p-2">
                         <option value="true">啟用</option>
                         <option value="false">停用</option>
                       </select>
                     </div>
-                    <button onClick={()=>onCreateCoupon(newCoupon)} className="mt-2 px-3 py-2 rounded-lg border hover:bg-gray-50">建立 / 更新</button>
-                    <div className="text-xs text-gray-500 mt-1">會寫入 Firestore：/coupons/{'{code}'}，欄位：discountAmount, appliesTo, maxUses, uses, active, expiresAt。</div>
+                    <button onClick={()=>onCreateCoupon(newCoupon)} className="mt-2 px-3 py-2 rounded-lg border hover:bg-gray-50">建立</button>
+                    <div className="text-xs text-gray-500 mt-1">會寫入 Firestore：/coupons/{'{code}'}</div>
                   </div>
                 )}
               </section>
@@ -607,7 +558,7 @@
                   <button onClick={toggleFavoritesOnly} className={`px-3 py-2 rounded-lg border hover:bg-gray-50 ${favoritesOnly?'bg-yellow-50':''}`}>只看最愛：{favoritesOnly?'ON':'OFF'}</button>
                 </div>
                 <div className="text-xs text-gray-500 mt-2">
-                  備註：真正收費請串接金流（如 Stripe / LINE Pay），此處僅示範會員與優惠券流程。
+                  備註：真正收費請串接金流（如 Stripe / LINE Pay），此處僅示範會員狀態與優惠券流程。
                 </div>
               </section>
 
@@ -618,13 +569,9 @@
     };
 
     /* =========================
-       App 主體
+       App 主體（下半段開始會接著定義 DiaryApp）
     ==========================*/
-    const DiaryApp = () => {
-      // 價格（TWD）
-      const PRICES = { monthly: 150, yearly: 1500 };
-      // 優惠券暫存（購買時才寫入）
-      const [appliedCoupon, setAppliedCoupon] = useState(null); 
+        const DiaryApp = () => {
       // 狀態
       const [user, setUser] = useState(null);
       const [diaries, setDiaries] = useState([]);
@@ -892,146 +839,58 @@
         alert('會員狀態已更新（示範）');
       };
 
-      // 管理員：建立優惠券（折價）
-      const onCreateCoupon = async ({code, discountAmount, appliesTo, active, maxUses, expiresAt})=>{
+      // 管理員：建立優惠券
+      const onCreateCoupon = async ({code, months, active})=>{
         if(!user || !isAdmin){ alert('需要管理員權限'); return; }
-        const norm = (code||'').trim().toUpperCase();
-        if(!norm){ alert('請輸入代碼'); return; }
-        const payload = {
-          code: norm,
-          discountAmount: Math.max(0, parseInt(discountAmount||'0')),
-          appliesTo: appliesTo || 'any',
-          maxUses: typeof maxUses==='number' ? maxUses : parseInt(maxUses||'0') || null,
-          uses: firebase.firestore.FieldValue.increment(0),
+        if(!code){ alert('請輸入代碼'); return; }
+        await db.collection('coupons').doc(code).set({
+          code,
+          discountMonths: Math.max(1, parseInt(months||'1')),
           active: !!active,
           createdBy: user.uid,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        if(expiresAt){
-          // datetime-local -> ISO
-          payload.expiresAt = new Date(expiresAt).toISOString();
-        }
-        await db.collection('coupons').doc(norm).set(payload, { merge:true });
-        alert('已建立/更新優惠券：'+norm);
+        }, { merge:true });
+        alert('已建立/更新優惠券：'+code);
       };
 
-      // 套用優惠券（前台扣價用）：只驗證與暫存，購買時才記錄兌換
-      const onApplyCoupon = async (code) => {
-        if (!user) { alert('請先登入'); return; }
-        const norm = (code||'').trim().toUpperCase();
-        if (!norm) { alert('請輸入優惠券代碼'); return; }
-
-        const snap = await db.collection('coupons').doc(norm).get();
-        if (!snap.exists) { alert('優惠券不存在'); return; }
+      // 套用優惠券（示範：延長會員期限 / 設定層級）
+      const onApplyCoupon = async (code)=>{
+        if(!user){ alert('請先登入'); return; }
+        if(!code){ alert('請輸入優惠券代碼'); return; }
+        const snap = await db.collection('coupons').doc(code).get();
+        if(!snap.exists){ alert('優惠券不存在'); return; }
         const c = snap.data();
+        if(!c.active){ alert('此優惠券未啟用'); return; }
 
-        if (!c.active) { alert('此優惠券未啟用'); return; }
-        if (typeof c.discountAmount !== 'number') { alert('此優惠券沒有設定金額折抵'); return; }
-        if (c.expiresAt && new Date(c.expiresAt) < new Date()) {
-          alert('此優惠券已過期'); return;
-        }
-        if (typeof c.maxUses === 'number' && typeof c.uses === 'number' && c.uses >= c.maxUses) {
-          alert('此優惠券已達使用上限'); return;
-        }
-        const usedId = `${user.uid}_${norm}`;
+        const usedId = `${user.uid}_${code}`;
         const used = await db.collection('coupon_redemptions').doc(usedId).get();
-        if (used.exists) { alert('此帳號已使用過該優惠券'); return; }
+        if(used.exists){ alert('此帳號已使用過該優惠券'); return; }
 
-        setAppliedCoupon({
-          code: norm,
-          discountAmount: Math.max(0, c.discountAmount || 0),
-          appliesTo: c.appliesTo || 'any', // 'monthly' | 'yearly' | 'any'
-          active: !!c.active,
-          maxUses: c.maxUses ?? null,
-          uses: c.uses ?? 0,
-          expiresAt: c.expiresAt || null,
+        const now = new Date();
+        const cur = membership?.expiresAt ? new Date(membership.expiresAt) : now;
+        const base = (cur>now?cur:now);
+        base.setMonth(base.getMonth() + (c.discountMonths||1));
+        await db.collection('users').doc(user.uid).set({
+          membership:{ tier: (membership?.tier && membership.tier!=='free') ? membership.tier : 'pro', expiresAt: base.toISOString() }
+        }, { merge:true });
+        await db.collection('coupon_redemptions').doc(usedId).set({
+          uid:user.uid, code, redeemedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-
-        alert(`已套用優惠券：${norm}`);
+        alert(`已套用優惠券，會員到期：${base.toLocaleDateString('zh-TW')}`);
       };
 
-      // 付款（示範）：計算折抵，寫入兌換紀錄 + 遞增 uses + 生成假單據，再延長會員
+      // Premium 付款（示範）
       const onPurchase = async (plan)=> {
         if(!user){ alert('請先登入'); return; }
-        if (!['monthly','yearly'].includes(plan)) { alert('方案錯誤'); return; }
-
-        // 1) 計算價格
-        const basePrice = PRICES[plan];
-        let discount = 0;
-        if (appliedCoupon) {
-          const okPlan = (appliedCoupon.appliesTo === 'any' || appliedCoupon.appliesTo === plan);
-          const notExpired = (!appliedCoupon.expiresAt) || (new Date(appliedCoupon.expiresAt) >= new Date());
-          if (appliedCoupon.active && okPlan && notExpired) {
-            discount = Math.max(0, appliedCoupon.discountAmount || 0);
-          }
-        }
-        const finalPrice = Math.max(0, basePrice - discount);
-
-        // 2) （示範）視為付款成功
-
-        // 3) 付款成功 → 寫入 redemptions（若有 coupon）、遞增 coupon.uses
-        if (appliedCoupon && discount > 0) {
-          const usedId = `${user.uid}_${appliedCoupon.code}`;
-          await db.collection('coupon_redemptions').doc(usedId).set({
-            uid: user.uid,
-            code: appliedCoupon.code,
-            redeemedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            plan,
-            appliedAmount: discount
-          }, { merge: true });
-
-          await db.collection('coupons').doc(appliedCoupon.code).set({
-            uses: firebase.firestore.FieldValue.increment(1)
-          }, { merge: true });
-        }
-
-        // 4) 延長會員到期
         const now = new Date();
         let base = membership?.expiresAt ? new Date(membership.expiresAt) : now;
-        if (base < now) base = now;
-        if (plan === 'monthly') base.setMonth(base.getMonth()+1);
-        if (plan === 'yearly') base.setFullYear(base.getFullYear()+1);
+        if(base < now) base = now;
+        if(plan==='monthly'){ base.setMonth(base.getMonth()+1); }
+        if(plan==='yearly'){ base.setFullYear(base.getFullYear()+1); }
         await db.collection('users').doc(user.uid).set({
           membership:{ tier:'pro', expiresAt: base.toISOString() }
         }, { merge:true });
-
-        // 5) 生成訂單編號與假單據（JSON 下載 + 寫入 orders）
-        const orderId = (() => {
-          const pad = (n)=>n.toString().padStart(2,'0');
-          const d = new Date();
-          const ts = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-          const rand = Math.floor(1000+Math.random()*9000);
-          return `ORD-${ts}-${rand}`;
-        })();
-
-        const order = {
-          orderId,
-          uid: user.uid,
-          plan,
-          basePrice,
-          discount,
-          finalPrice,
-          currency: 'TWD',
-          coupon: appliedCoupon?.code || null,
-          createdAt: new Date().toISOString(),
-          membershipExpiresAt: base.toISOString()
-        };
-
-        try {
-          await db.collection('orders').doc(orderId).set(order);
-        } catch(_) {}
-
-        // 下載假單據（JSON）
-        const blob = new Blob([JSON.stringify(order, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `receipt_${orderId}.json`; a.click();
-        URL.revokeObjectURL(url);
-
-        alert(`升級成功！訂單 ${orderId}，實付 NT$ ${finalPrice}（已折 NT$ ${discount}）。到期：${base.toLocaleDateString('zh-TW')}`);
-
-        // 6) 清掉本次使用的 coupon 暫存
-        setAppliedCoupon(null);
+        alert(`升級成功！到期：${base.toLocaleDateString('zh-TW')}`);
         setShowPremium(false);
       };
 
@@ -1078,15 +937,7 @@
               <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
 
               <div className="flex items-center gap-3 flex-wrap">
-                {/* 顯示已套用的優惠券（可快速清除） */}
-                {appliedCoupon && (
-                  <div className="flex items-center gap-2 px-2 py-1 rounded bg-green-50 border border-green-200 text-green-700">
-                    <span>已套用：{appliedCoupon.code}</span>
-                    <button onClick={()=>setAppliedCoupon(null)} className="underline">清除</button>
-                  </div>
-                )}
-
-                {/* Get Premium */}
+                {/* Get Premium（新增） */}
                 <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                   Get Premium
                 </button>
@@ -1108,11 +959,8 @@
             onClose={()=>setShowPremium(false)}
             onApplyCoupon={onApplyCoupon}
             onPurchase={onPurchase}
-            onClearCoupon={()=>setAppliedCoupon(null)}
             membership={membership}
             user={user}
-            appliedCoupon={appliedCoupon}
-            PRICES={PRICES}
           />
 
           {/* 設定面板 */}
@@ -1161,7 +1009,7 @@
                     <option value="date-asc">最舊優先</option>
                     <option value="title">標題排序</option>
                   </select>
-                  <select value={filterMood} onChange={e=>setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text白':'bg-gray-100'}`}>
+                  <select value={filterMood} onChange={e=>setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`}>
                     <option value="">所有心情</option>
                     {moods.map(m=> <option key={m} value={m}>{m}</option>)}
                   </select>
@@ -1177,7 +1025,7 @@
 
                 {/* 新增 */}
                 <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
-                  className="w-full primary-bg text白 py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
+                  className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
                   <Icon name="plus"/> 新增日記
                 </button>
 
