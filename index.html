@@ -569,9 +569,9 @@
     };
 
     /* =========================
-       App 主體
+       App 主體（下半段開始會接著定義 DiaryApp）
     ==========================*/
-    const DiaryApp = () => {
+        const DiaryApp = () => {
       // 狀態
       const [user, setUser] = useState(null);
       const [diaries, setDiaries] = useState([]);
@@ -937,8 +937,6 @@
               <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
 
               <div className="flex items-center gap-3 flex-wrap">
-                {/* ✅ 已把原本你圈起來的快捷功能移除，這些改留在「設定面板」內 */}
-
                 {/* Get Premium（新增） */}
                 <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                   Get Premium
