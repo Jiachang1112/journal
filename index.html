@@ -104,6 +104,30 @@
     const allTags = ['生活','工作','旅遊','學習','健康','人際關係','興趣'];
 
     /* =========================
+       日期安全小工具（新增）
+    ==========================*/
+    const toDate = (val) => {
+      // Firestore Timestamp | number | string | Date
+      try {
+        if (!val) return null;
+        if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+        if (typeof val === 'object' && typeof val.toDate === 'function') {
+          const d = val.toDate(); return isNaN(d.getTime()) ? null : d;
+        }
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? null : d;
+      } catch { return null; }
+    };
+    const localDateKey = (d) => {
+      // YYYY-MM-DD（本地）
+      if (!(d instanceof Date) || isNaN(d.getTime())) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    };
+
+    /* =========================
        登入元件
     ==========================*/
     const AuthBar = ({ user }) => {
@@ -247,8 +271,11 @@
 
       const hasMap = {};
       diaries.forEach(d=>{
-        const day = new Date(d.createdAt).toISOString().slice(0,10);
-        hasMap[day] = (hasMap[day]||0)+1;
+        const dt = toDate(d.createdAt);
+        if (dt) {
+          const day = localDateKey(dt);
+          if (day) hasMap[day] = (hasMap[day]||0)+1;
+        }
       });
 
       const cells=[];
@@ -268,7 +295,7 @@
           <div className="grid grid-cols-7 gap-2">
             {cells.map((d,i)=>{
               if(!d) return <div key={i}></div>;
-              const key = d.toISOString().slice(0,10);
+              const key = localDateKey(d);
               const count = hasMap[key]||0;
               return (
                 <button key={i}
@@ -307,8 +334,11 @@
       const dailyCounts = useMemo(()=>{
         const map = {};
         diaries.forEach(d=>{
-          const day = new Date(d.createdAt).toISOString().slice(0,10);
-          map[day]=(map[day]||0)+1;
+          const dt = toDate(d.createdAt);
+          if (dt) {
+            const day = localDateKey(dt);
+            if (day) map[day]=(map[day]||0)+1;
+          }
         });
         const keys = Object.keys(map).sort();
         return { labels: keys, data: keys.map(k=>map[k]) };
@@ -365,6 +395,10 @@
     const PremiumModal = ({ open, onClose, onApplyCoupon, onPurchase, membership, user }) => {
       const [code, setCode] = useState('');
       if(!open) return null;
+      const expiresText = (() => {
+        const dt = toDate(membership?.expiresAt);
+        return dt ? dt.toLocaleDateString('zh-TW') : null;
+      })();
       return (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg">
@@ -405,7 +439,7 @@
 
               <div className="text-sm text-gray-600">
                 目前等級：<span className="font-semibold">{membership?.tier || 'free'}</span>
-                {membership?.expiresAt && <> · 到期：<span className="font-semibold">{new Date(membership.expiresAt).toLocaleDateString('zh-TW')}</span></>}
+                {expiresText && <> · 到期：<span className="font-semibold">{expiresText}</span></>}
                 {!user && <div className="text-red-600 mt-1">請先登入以完成升級</div>}
               </div>
             </div>
@@ -435,8 +469,13 @@
       const [newCoupon, setNewCoupon]  = useState({ code:'', months:1, active:true });
 
       if(!open) return null;
+      const membershipExpireText = (() => {
+        const dt = toDate(membership?.expiresAt);
+        return dt ? dt.toLocaleDateString('zh-TW') : '—';
+      })();
+
       return (
-        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
+        <div className="fixed inset-0 bg黑/40 bg-black/40 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b flex items-center justify-between">
               <div className="font-bold text-lg">設定面板</div>
@@ -450,7 +489,7 @@
                 <h3 className="font-semibold mb-2">付費會員</h3>
                 <div className="text-sm text-gray-600 mb-2">
                   目前身分：<span className="font-semibold">{profile?.role || 'user'}</span> |
-                  會員等級：<span className="font-semibold">{membership?.tier || 'free'}</span>（到期：{membership?.expiresAt ? new Date(membership.expiresAt).toLocaleDateString('zh-TW') : '—'}）
+                  會員等級：<span className="font-semibold">{membership?.tier || 'free'}</span>（到期：{membershipExpireText}）
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <button onClick={()=>onSetMembershipTier('free')} className="px-2 py-1 rounded border">Free</button>
@@ -533,15 +572,19 @@
                   <div className="text-sm text-gray-500 mb-1">目前提醒</div>
                   {reminders.length===0 ? <div className="text-gray-400 text-sm">尚無提醒</div> :
                     <div className="space-y-2">
-                      {reminders.map(r=>(
-                        <div key={r.id} className="flex items-center justify-between border rounded-lg p-2">
-                          <div>
-                            <div className="font-medium">{r.title||'(無標題)'}</div>
-                            <div className="text-xs text-gray-500">{new Date(r.at).toLocaleString('zh-TW')} · {r.freq||'ONCE'}</div>
+                      {reminders.map(r=>{
+                        const dt = toDate(r.at);
+                        const txt = dt ? dt.toLocaleString('zh-TW') : '—';
+                        return (
+                          <div key={r.id} className="flex items-center justify-between border rounded-lg p-2">
+                            <div>
+                              <div className="font-medium">{r.title||'(無標題)'}</div>
+                              <div className="text-xs text-gray-500">{txt} · {r.freq||'ONCE'}</div>
+                            </div>
+                            <button onClick={()=>onRemoveReminder(r.id)} className="px-2 py-1 rounded bg-red-50 text-red-600">刪除</button>
                           </div>
-                          <button onClick={()=>onRemoveReminder(r.id)} className="px-2 py-1 rounded bg-red-50 text-red-600">刪除</button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   }
                   <button onClick={()=>ReminderService.requestPermission()} className="mt-3 px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
@@ -571,7 +614,7 @@
     /* =========================
        App 主體（下半段開始會接著定義 DiaryApp）
     ==========================*/
-        const DiaryApp = () => {
+    const DiaryApp = () => {
       // 狀態
       const [user, setUser] = useState(null);
       const [diaries, setDiaries] = useState([]);
@@ -645,7 +688,7 @@
         return ()=>unsub();
       },[]);
 
-      // 過濾排序
+      // 過濾排序（安全日期）
       useEffect(()=>{
         let filtered = [...diaries];
         if (searchTerm) {
@@ -656,14 +699,23 @@
         }
         if (selectedTag) filtered = filtered.filter(d => (d.tags||[]).includes(selectedTag));
         if (filterMood) filtered = filtered.filter(d => d.mood === filterMood);
-        if (dateFilter) filtered = filtered.filter(d => (new Date(d.createdAt).toISOString().slice(0,10))===dateFilter);
+        if (dateFilter) {
+          filtered = filtered.filter(d => {
+            const dt = toDate(d.createdAt);
+            return dt ? localDateKey(dt) === dateFilter : false;
+          });
+        }
         if (favoritesOnly) filtered = filtered.filter(d => d.isFavorite);
 
         filtered.sort((a,b)=>{
+          const da = toDate(a.createdAt);
+          const dbb = toDate(b.createdAt);
+          const ta = da ? da.getTime() : 0;
+          const tb = dbb ? dbb.getTime() : 0;
           switch (sortBy) {
-            case 'date-desc': return new Date(b.createdAt) - new Date(a.createdAt);
-            case 'date-asc': return new Date(a.createdAt) - new Date(b.createdAt);
-            case 'title': return (a.title||'').localeCompare(b.title||'');
+            case 'date-desc': return tb - ta;
+            case 'date-asc' : return ta - tb;
+            case 'title'    : return (a.title||'').localeCompare(b.title||'');
             default: return 0;
           }
         });
@@ -713,14 +765,19 @@
           updatedAt: new Date().toISOString(),
         };
         if(formData.remindAt){
-          ReminderService.add({
-            id: (currentDiary?.id)||docData.createdAt,
-            at: formData.remindAt,
-            title: docData.title,
-            freq: 'ONCE',
-            fired:false
-          });
-          alert('提醒已設定：'+new Date(formData.remindAt).toLocaleString('zh-TW'));
+          const when = new Date(formData.remindAt);
+          if (!isNaN(when.getTime())) {
+            ReminderService.add({
+              id: (currentDiary?.id)||docData.createdAt,
+              at: when.toISOString(),
+              title: docData.title,
+              freq: 'ONCE',
+              fired:false
+            });
+            alert('提醒已設定：'+when.toLocaleString('zh-TW'));
+          } else {
+            alert('提醒時間格式不正確，已忽略。');
+          }
         }
 
         if(user){
@@ -777,7 +834,7 @@
         const blob = new Blob([dataStr],{ type:'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href=url; a.download=`diary_backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+        a.href=url; a.download=`diary_backup_${localDateKey(new Date())}.json`; a.click();
       };
 
       const importDiaries = async (file)=>{
@@ -808,7 +865,10 @@
           }else{
             const map = Object.fromEntries(diaries.map(d=>[d.id,d]));
             arr.forEach(d=>{ const id=d.id||(Date.now()+Math.random()).toString(); map[id]={ id, ...d }; });
-            setDiaries(Object.values(map).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)));
+            setDiaries(Object.values(map).sort((a,b)=>{
+              const da=toDate(a.createdAt), dbb=toDate(b.createdAt);
+              return (dbb?dbb.getTime():0)-(da?da.getTime():0);
+            }));
             alert('已匯入（本地模式）');
           }
         }catch(e){
@@ -821,7 +881,9 @@
 
       const onAddReminder = ({title, when, freq})=>{
         const id = `rem_${Date.now()}`;
-        ReminderService.add({ id, title, at: new Date(when).toISOString(), freq, fired:false });
+        const dt = new Date(when);
+        if (isNaN(dt.getTime())) { alert('時間格式不正確'); return; }
+        ReminderService.add({ id, title, at: dt.toISOString(), freq, fired:false });
         alert('已新增提醒');
       };
       const onRemoveReminder = (id)=>{ ReminderService.remove(id); alert('已刪除提醒'); };
@@ -829,12 +891,13 @@
       // 會員：設定等級（示範）
       const onSetMembershipTier = async (tier)=>{
         if(!user){ alert('請先登入'); return; }
-        const expiresAt = membership?.expiresAt ? new Date(membership.expiresAt) : new Date();
+        const expiresAt = membership?.expiresAt ? toDate(membership.expiresAt) : new Date();
         if(tier==='free'){
           await db.collection('users').doc(user.uid).set({ membership:{ tier:'free', expiresAt:null }}, {merge:true});
         }else{
-          expiresAt.setDate(expiresAt.getDate()+30);
-          await db.collection('users').doc(user.uid).set({ membership:{ tier, expiresAt: expiresAt.toISOString() }},{merge:true});
+          const base = expiresAt || new Date();
+          base.setDate(base.getDate()+30);
+          await db.collection('users').doc(user.uid).set({ membership:{ tier, expiresAt: base.toISOString() }},{merge:true});
         }
         alert('會員狀態已更新（示範）');
       };
@@ -867,8 +930,8 @@
         if(used.exists){ alert('此帳號已使用過該優惠券'); return; }
 
         const now = new Date();
-        const cur = membership?.expiresAt ? new Date(membership.expiresAt) : now;
-        const base = (cur>now?cur:now);
+        const cur = membership?.expiresAt ? toDate(membership.expiresAt) : now;
+        const base = (cur && cur>now ? cur : now);
         base.setMonth(base.getMonth() + (c.discountMonths||1));
         await db.collection('users').doc(user.uid).set({
           membership:{ tier: (membership?.tier && membership.tier!=='free') ? membership.tier : 'pro', expiresAt: base.toISOString() }
@@ -883,8 +946,8 @@
       const onPurchase = async (plan)=> {
         if(!user){ alert('請先登入'); return; }
         const now = new Date();
-        let base = membership?.expiresAt ? new Date(membership.expiresAt) : now;
-        if(base < now) base = now;
+        let base = membership?.expiresAt ? toDate(membership.expiresAt) : now;
+        if(!base || base < now) base = now;
         if(plan==='monthly'){ base.setMonth(base.getMonth()+1); }
         if(plan==='yearly'){ base.setFullYear(base.getFullYear()+1); }
         await db.collection('users').doc(user.uid).set({
@@ -921,7 +984,7 @@
       };
 
       const todayShortcut = ()=>{
-        const today = new Date().toISOString().slice(0,10);
+        const today = localDateKey(new Date());
         setDateFilter(today);
         setCurrentDiary(null);
         setShowNewDiary(false);
@@ -1009,7 +1072,7 @@
                     <option value="date-asc">最舊優先</option>
                     <option value="title">標題排序</option>
                   </select>
-                  <select value={filterMood} onChange={e=>setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`}>
+                  <select value={filterMood} onChange={e=>setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text白':'bg-gray-100'}`}>
                     <option value="">所有心情</option>
                     {moods.map(m=> <option key={m} value={m}>{m}</option>)}
                   </select>
@@ -1025,7 +1088,7 @@
 
                 {/* 新增 */}
                 <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
-                  className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
+                  className="w-full primary-bg text白 text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
                   <Icon name="plus"/> 新增日記
                 </button>
 
@@ -1033,37 +1096,41 @@
                 <div className="space-y-3">
                   {filteredDiaries.length===0 ? (
                     <div className="text-center py-8 text-gray-400"><p>還沒有日記，快來寫一篇吧！</p></div>
-                  ) : filteredDiaries.map(d=>(
-                    <div key={d.id}
-                      onClick={()=>{ setCurrentDiary(d); setShowNewDiary(false); setDateFilter(''); }}
-                      className={`p-4 rounded-lg cursor-pointer transition ${currentDiary?.id===d.id ? 'bg-purple-100 border-2 primary-border' : darkMode?'bg-gray-700 hover:bg-gray-600':'bg-gray-50 hover:bg-gray-100'}`}>
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">{d.mood}</span>
-                          <span className="text-lg">{d.weather}</span>
+                  ) : filteredDiaries.map(d=>{
+                    const dt = toDate(d.createdAt);
+                    const dateText = dt ? dt.toLocaleDateString('zh-TW') : '—';
+                    return (
+                      <div key={d.id}
+                        onClick={()=>{ setCurrentDiary(d); setShowNewDiary(false); setDateFilter(''); }}
+                        className={`p-4 rounded-lg cursor-pointer transition ${currentDiary?.id===d.id ? 'bg-purple-100 border-2 primary-border' : darkMode?'bg-gray-700 hover:bg-gray-600':'bg-gray-50 hover:bg-gray-100'}`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{d.mood}</span>
+                            <span className="text-lg">{d.weather}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {d.isFavorite && <Icon name="heart" className="w-4 h-4 text-red-500" fill={true}/>}
+                            {d.isPrivate && <Icon name="lock" className="w-4 h-4"/>}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {d.isFavorite && <Icon name="heart" className="w-4 h-4 text-red-500" fill={true}/>}
-                          {d.isPrivate && <Icon name="lock" className="w-4 h-4"/>}
-                        </div>
+                        <h3 className="font-bold mb-1">{d.title}</h3>
+                        <p className="text-sm text-gray-500 mb-2">{dateText}</p>
+                        <p className="text-sm line-clamp-2">{d.content}</p>
+                        {(d.tags||[]).length>0 && (
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            {d.tags.map(t=><span key={t} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">#{t}</span>)}
+                          </div>
+                        )}
+                        {d.images?.length>0 && (
+                          <div className="mt-2 flex gap-2 overflow-x-auto">
+                            {d.images.slice(0,3).map((url,i)=>(
+                              <img key={i} src={url} className="w-16 h-16 object-cover rounded-lg border"/>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <h3 className="font-bold mb-1">{d.title}</h3>
-                      <p className="text-sm text-gray-500 mb-2">{new Date(d.createdAt).toLocaleDateString('zh-TW')}</p>
-                      <p className="text-sm line-clamp-2">{d.content}</p>
-                      {(d.tags||[]).length>0 && (
-                        <div className="flex gap-1 mt-2 flex-wrap">
-                          {d.tags.map(t=><span key={t} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">#{t}</span>)}
-                        </div>
-                      )}
-                      {d.images?.length>0 && (
-                        <div className="mt-2 flex gap-2 overflow-x-auto">
-                          {d.images.slice(0,3).map((url,i)=>(
-                            <img key={i} src={url} className="w-16 h-16 object-cover rounded-lg border"/>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1102,7 +1169,7 @@
                         <div className="flex gap-2 flex-wrap">
                           {moods.map(m=>(
                             <button key={m} onClick={()=>setFormData({...formData,mood:m})}
-                              className={`text-3xl p-2 rounded-lg transition ${formData.mood===m?'bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
+                              className={`text-3xl p-2 rounded-lg transition ${formData.mood===m?'bg紫-200 bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
                               {m}
                             </button>
                           ))}
@@ -1201,7 +1268,9 @@
                           <span className="text-4xl">{currentDiary.weather}</span>
                         </div>
                         <h2 className="text-3xl font-bold mb-2">{currentDiary.title}</h2>
-                        <p className="text-sm text-gray-500">{new Date(currentDiary.createdAt).toLocaleString('zh-TW')}</p>
+                        <p className="text-sm text-gray-500">
+                          {(()=>{ const dt = toDate(currentDiary.createdAt); return dt ? dt.toLocaleString('zh-TW') : '—'; })()}
+                        </p>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={()=>toggleFavorite(currentDiary.id)} className="p-2 hover:bg-gray-100 rounded-lg">
