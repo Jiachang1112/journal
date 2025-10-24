@@ -401,16 +401,63 @@
       );
     };
 
+    /* ====== 新增：價錢工具（不改動舊流程，只是加上顯示與計算） ====== */
+    const BASE_PRICES = { monthly: 150, yearly: 1500 };
+    const formatPrice = (n)=>`NT$ ${n.toLocaleString('zh-TW')}`;
+    const calcDiscountedPrice = (plan, coupon) => {
+      const price = BASE_PRICES[plan];
+      if(!coupon || coupon.active === false) return { final: price, discount: 0 };
+      const appliesTo = coupon.appliesTo || 'both';
+      if (appliesTo !== 'both' && appliesTo !== plan) return { final: price, discount: 0 };
+      let discounted = price;
+      if (typeof coupon.amountOff === 'number') discounted = Math.max(0, discounted - coupon.amountOff);
+      if (typeof coupon.percentOff === 'number') discounted = Math.max(0, Math.round(discounted * (1 - coupon.percentOff/100)));
+      return { final: discounted, discount: price - discounted };
+    };
+
     /* =========================
        Get Premium Modal
     ==========================*/
-    const PremiumModal = ({ open, onClose, onApplyCoupon, onPurchase, membership, user }) => {
+    const PremiumModal = ({ open, onClose, onApplyCoupon, onValidateCoupon, onPurchase, membership, user, couponForCheckout }) => {
       const [code, setCode] = useState('');
       if(!open) return null;
       const expiresText = (() => {
         const dt = toDate(membership?.expiresAt);
         return dt ? dt.toLocaleDateString('zh-TW') : null;
       })();
+
+      const priceMonthly = calcDiscountedPrice('monthly', couponForCheckout);
+      const priceYearly  = calcDiscountedPrice('yearly', couponForCheckout);
+
+      const PriceBlock = ({ title, base, deal, plan }) => (
+        <div className="rounded-xl border p-4">
+          <div className="text-xl font-bold mb-1">{title}</div>
+          {deal.discount>0 ? (
+            <div className="mb-2">
+              <div className="text-sm text-gray-500 line-through">{formatPrice(base)}</div>
+              <div className="text-3xl font-extrabold primary-text">{formatPrice(deal.final)}</div>
+              <div className="text-xs text-green-600">已折抵 {formatPrice(deal.discount)}</div>
+            </div>
+          ) : (
+            <div className="text-3xl font-extrabold mb-2 primary-text">{formatPrice(base)}</div>
+          )}
+          <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
+            {plan==='monthly' ? (
+              <>
+                <li>雲端備份</li><li>圖片上傳</li><li>更多統計</li>
+              </>
+            ) : (
+              <>
+                <li>所有月費功能</li><li>年費更划算（12 個月）</li>
+              </>
+            )}
+          </ul>
+          <button onClick={()=>onPurchase(plan)} className="mt-3 w-full primary-bg text-white rounded-lg py-2">
+            升級（{plan==='monthly'?'月費':'年費'}）
+          </button>
+        </div>
+      );
+
       return (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg">
@@ -419,34 +466,20 @@
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
             </div>
             <div className="p-5 space-y-5">
-              <div className="rounded-xl border p-4">
-                <div className="text-xl font-bold mb-1">月費</div>
-                <div className="text-3xl font-extrabold mb-2 primary-text">NT$ 150</div>
-                <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-                  <li>雲端備份</li>
-                  <li>圖片上傳</li>
-                  <li>更多統計</li>
-                </ul>
-                <button onClick={()=>onPurchase('monthly')} className="mt-3 w-full primary-bg text-white rounded-lg py-2">升級（月費）</button>
-              </div>
-
-              <div className="rounded-xl border p-4">
-                <div className="text-xl font-bold mb-1">年費</div>
-                <div className="text-3xl font-extrabold mb-2 primary-text">NT$ 1500</div>
-                <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-                  <li>所有月費功能</li>
-                  <li>年費更划算（12 個月）</li>
-                </ul>
-                <button onClick={()=>onPurchase('yearly')} className="mt-3 w-full primary-bg text-white rounded-lg py-2">升級（年費）</button>
-              </div>
+              <PriceBlock title="月費" base={BASE_PRICES.monthly} deal={priceMonthly} plan="monthly" />
+              <PriceBlock title="年費" base={BASE_PRICES.yearly}  deal={priceYearly}  plan="yearly" />
 
               <div className="rounded-xl border p-4">
                 <div className="font-semibold mb-2">優惠券</div>
                 <div className="flex gap-2">
                   <input value={code} onChange={e=>setCode(e.target.value)} placeholder="輸入優惠券代碼" className="flex-1 border rounded-lg p-2"/>
-                  <button onClick={()=>onApplyCoupon(code)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用</button>
+                  <!-- 這裡改為結帳用的驗證函式，不影響設定面板的 onApplyCoupon -->
+                  <button onClick={()=>onValidateCoupon(code)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用</button>
                 </div>
-                <div className="text-xs text-gray-500 mt-2">成功套用後會直接延長到期日（示範流程）。</div>
+                <div className="text-xs text-gray-500 mt-2">
+                  已套用：{couponForCheckout?.code ? <span class="font-semibold">{couponForCheckout.code}</span> : '—'}
+                </div>
+                <div className="text-xs text-gray-500 mt-2">（提示）此處為「結帳折扣」。設定面板內的「套用優惠券」仍然是延長會籍示範流程。</div>
               </div>
 
               <div className="text-sm text-gray-600">
@@ -719,6 +752,9 @@
         isPrivate:false, isFavorite:false, images:[], remindAt:'' // ISO string
       });
 
+      // 新增：結帳優惠券（不影響設定面板的 onApplyCoupon 延長流程）
+      const [couponForCheckout, setCouponForCheckout] = useState(null);
+
       useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
       useEffect(()=>{ document.documentElement.style.setProperty('--primary', themeColor); localStorage.setItem('themeColor', themeColor); },[themeColor]);
 
@@ -988,7 +1024,7 @@
         alert('已建立/更新優惠券：'+code);
       };
 
-      // 套用優惠券（示範：延長會員期限 / 設定層級）
+      // 套用優惠券（示範：延長會員期限 / 設定層級）——保留
       const onApplyCoupon = async (code)=>{
         if(!user){ alert('請先登入'); return; }
         if(!code){ alert('請輸入優惠券代碼'); return; }
@@ -1009,14 +1045,33 @@
           membership:{ tier: (membership?.tier && membership.tier!=='free') ? membership.tier : 'pro', expiresAt: base.toISOString() }
         }, { merge:true });
         await db.collection('coupon_redemptions').doc(usedId).set({
-          uid:user.uid, code, redeemedAt: firebase.firestore.FieldValue.serverTimestamp()
+          uid:user.uid, code, redeemedAt: firebase.firestore.FieldValue.serverTimestamp(), type:'extend'
         });
         alert(`已套用優惠券，會員到期：${base.toLocaleDateString('zh-TW')}`);
       };
 
-      // Premium 付款（示範）
+      // 新增：結帳視窗用的優惠券驗證（計算價格）
+      const onValidateCoupon = async (code)=>{
+        if(!code){ alert('請輸入優惠券代碼'); return; }
+        const snap = await db.collection('coupons').doc(code).get();
+        if(!snap.exists){ alert('優惠券不存在'); return; }
+        const c = snap.data();
+        if(!c.active){ alert('此優惠券未啟用'); return; }
+        setCouponForCheckout({ code, ...c });
+        alert('優惠券已套用到購物車 ✅');
+      };
+
+      // Premium 付款（示範：依目前購物車優惠券計算折扣）
       const onPurchase = async (plan)=> {
         if(!user){ alert('請先登入'); return; }
+
+        // 計算折扣顯示（示範金額）
+        const { final, discount } = calcDiscountedPrice(plan, couponForCheckout);
+        const priceMessage = discount>0
+          ? `原價 ${formatPrice(BASE_PRICES[plan])}，折扣 ${formatPrice(discount)}，實付 ${formatPrice(final)}`
+          : `價格 ${formatPrice(BASE_PRICES[plan])}`;
+
+        // 正常的會員到期設定仍保留原有邏輯
         const now = new Date();
         let base = membership?.expiresAt ? toDate(membership.expiresAt) : now;
         if(!base || base < now) base = now;
@@ -1025,7 +1080,22 @@
         await db.collection('users').doc(user.uid).set({
           membership:{ tier:'pro', expiresAt: base.toISOString() }
         }, { merge:true });
-        alert(`升級成功！到期：${base.toLocaleDateString('zh-TW')}`);
+
+        // 紀錄這張折扣券已用於購買（不影響設定面板的延長券）
+        if(couponForCheckout?.code){
+          const usedId = `${user.uid}_${couponForCheckout.code}_purchase_${Date.now()}`;
+          await db.collection('coupon_redemptions').doc(usedId).set({
+            uid:user.uid,
+            code: couponForCheckout.code,
+            type: 'purchase',
+            plan,
+            discountAmount: discount,
+            finalPrice: final,
+            redeemedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
+        alert(`升級成功！到期：${base.toLocaleDateString('zh-TW')}（${priceMessage}）`);
         setShowPremium(false);
       };
 
@@ -1093,9 +1163,11 @@
             open={showPremium}
             onClose={()=>setShowPremium(false)}
             onApplyCoupon={onApplyCoupon}
+            onValidateCoupon={onValidateCoupon}
             onPurchase={onPurchase}
             membership={membership}
             user={user}
+            couponForCheckout={couponForCheckout}
           />
 
           {/* 設定面板 */}
