@@ -34,22 +34,6 @@
     .slider:before{ position:absolute;content:"";height:18px;width:18px;left:3px;top:3px;background:white;transition:.2s;border-radius:999px;}
     input:checked + .slider{ background: var(--primary); }
     input:checked + .slider:before{ transform: translateX(20px); }
-
-    /* Google 登入按鈕（不影響原本功能） */
-    .google-btn {
-      display:flex; align-items:center; justify-content:center;
-      gap:.5rem; width:100%;
-      background:#fff; color:#1f2937; border:1px solid #e5e7eb;
-      border-radius:.5rem; padding:.6rem .75rem; font-weight:600;
-      transition:.15s ease;
-    }
-    .google-btn:hover { background:#f9fafb; border-color:#d1d5db; }
-    .google-icon {
-      width:18px; height:18px; display:inline-block;
-      background: conic-gradient(from 0deg, #ea4335 0 25%, #fbbc05 25% 50%, #34a853 50% 75%, #4285f4 75% 100%);
-      -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3"><path d="M533.5 278.4c0-18.6-1.7-36.5-4.9-53.6H272v101.4h146.9c-6.3 34.1-25.1 63-53.5 82.4v68h86.5c50.6-46.6 81.6-115.3 81.6-198.2zM272 544.3c73.8 0 135.7-24.5 181-66.4l-86.5-68c-24.1 16.2-55 25.8-94.6 25.8-72.8 0-134.5-49.1-156.6-114.9H26.6v72.1C71.6 493.5 165.8 544.3 272 544.3zM115.4 320.8c-10.9-32.6-10.9-68 0-100.6V148H26.6C9.6 182.1 0 220.2 0 260.2s9.6 78.1 26.6 112.2l88.8-51.6zM272 106.1c39.9 0 75.8 13.7 104 40.6l78-78C407.7 24.6 345.8 0 272 0 165.8 0 71.6 50.8 26.6 171.9l88.8 51.6C137.5 155.2 199.2 106.1 272 106.1z"/></svg>') center/contain no-repeat;
-              mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3"><path d="M533.5 278.4c0-18.6-1.7-36.5-4.9-53.6H272v101.4h146.9c-6.3 34.1-25.1 63-53.5 82.4v68h86.5c50.6-46.6 81.6-115.3 81.6-198.2zM272 544.3c73.8 0 135.7-24.5 181-66.4l-86.5-68c-24.1 16.2-55 25.8-94.6 25.8-72.8 0-134.5-49.1-156.6-114.9H26.6v72.1C71.6 493.5 165.8 544.3 272 544.3zM115.4 320.8c-10.9-32.6-10.9-68 0-100.6V148H26.6C9.6 182.1 0 220.2 0 260.2s9.6 78.1 26.6 112.2l88.8-51.6zM272 106.1c39.9 0 75.8 13.7 104 40.6l78-78C407.7 24.6 345.8 0 272 0 165.8 0 71.6 50.8 26.6 171.9l88.8 51.6C137.5 155.2 199.2 106.1 272 106.1z"/></svg>') center/contain no-repeat;
-    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-blue-50">
@@ -100,11 +84,12 @@
         trophy:"M17 3h4v2a5 5 0 01-5 5h-1a6 6 0 11-12 0V3h4"
       };
       return React.createElement('svg', {
-        className,
-        fill: fill ? 'currentColor' : 'none',
-        stroke: fill ? 'none' : 'currentColor',
-        strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
-      }, React.createElement('path',{ d: P[name] }));
+  className,
+  fill: fill ? 'currentColor' : 'none',
+  stroke: fill ? 'none' : 'currentColor',   // ✅ 實心圖示時不要外框
+  strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
+}, React.createElement('path',{ d: P[name] }));
+
     };
 
     const moods = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
@@ -170,78 +155,87 @@
     }
 
     const StreakBadge = ({ diaries }) => {
-      const { streak, best, hasToday } = useMemo(()=>calcStreak(diaries), [diaries]);
+  // 1) 連續天數（沿用你原本的）
+  const { streak, best, hasToday } = useMemo(()=>calcStreak(diaries), [diaries]);
 
-      const daySet = useMemo(()=>{
-        const s = new Set();
-        diaries.forEach(d=>{
-          const dt = toDate(d.createdAt);
-          if (dt) s.add(localDateKey(dt));
-        });
-        return s;
-      }, [diaries]);
+  // 2) 本週 7 天：從星期一開始
+  const daySet = useMemo(()=>{
+    const s = new Set();
+    diaries.forEach(d=>{
+      const dt = toDate(d.createdAt);
+      if (dt) s.add(localDateKey(dt));
+    });
+    return s;
+  }, [diaries]);
 
-      const week = useMemo(()=>{
-        const today = new Date();
-        const offset = (today.getDay()+6)%7; // 0=Mon … 6=Sun
-        const monday = new Date(today);
-        monday.setDate(today.getDate() - offset);
-        const days = [];
-        for (let i=0;i<7;i++){
-          const d = new Date(monday);
-          d.setDate(monday.getDate()+i);
-          days.push(d);
-        }
-        return days;
-      }, []);
+  const week = useMemo(()=>{
+    const today = new Date();
+    const offset = (today.getDay()+6)%7; // 0=Mon, … 6=Sun
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - offset);
 
-      const wcn = ['一','二','三','四','五','六','日'];
-      const tier =
-        streak >= 30 ? { name:'火焰傳奇', icon:'trophy' } :
-        streak >= 7  ? { name:'堅持之火', icon:'calendar' } :
-        streak >= 3  ? { name:'起步之星', icon:'heart' } :
-                       { name:'加油打氣', icon:'star' };
-      const tip = hasToday ? '已完成今日打卡！' : '今天還沒寫喔～';
+    const days = [];
+    for (let i=0;i<7;i++){
+      const d = new Date(monday);
+      d.setDate(monday.getDate()+i);
+      days.push(d);
+    }
+    return days;
+  }, []);
 
-      return (
-        <div className="flex items-center gap-4 px-4 py-3 rounded-2xl border bg-white/80 shadow flex-wrap">
-          <div className="flex items-center gap-3">
-            <Icon name={tier.icon} className="w-7 h-7 primary-text" fill />
-            <div>
-              <div className="text-sm text-gray-500">連續天數</div>
-              <div className="text-2xl font-extrabold">
-                {streak} 天 <span className="ml-2 text-xs font-medium text-gray-500">(最佳 {best})</span>
-              </div>
-              <div className="text-xs text-gray-500">{tip}</div>
-            </div>
-            <span className="ml-2 px-2 py-1 text-xs rounded-full primary-bg text-white">{tier.name}</span>
+  const wcn = ['一','二','三','四','五','六','日'];
+
+  const tier =
+    streak >= 30 ? { name:'火焰傳奇', icon:'trophy' } :
+    streak >= 7  ? { name:'堅持之火', icon:'calendar' } :
+    streak >= 3  ? { name:'起步之星', icon:'heart' } :
+                   { name:'加油打氣', icon:'star' };
+  const tip = hasToday ? '已完成今日打卡！' : '今天還沒寫喔～';
+
+  return (
+    <div className="flex items-center gap-4 px-4 py-3 rounded-2xl border bg-white/80 shadow flex-wrap">
+      {/* 左側：連續天數卡 */}
+      <div className="flex items-center gap-3">
+        <Icon name={tier.icon} className="w-7 h-7 primary-text" fill />
+        <div>
+          <div className="text-sm text-gray-500">連續天數</div>
+          <div className="text-2xl font-extrabold">
+            {streak} 天 <span className="ml-2 text-xs font-medium text-gray-500">(最佳 {best})</span>
           </div>
-
-          <div className="ml-auto">
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-1 select-none">
-              {wcn.map((t, i)=>(<div key={i} className="w-8 text-center">{t}</div>))}
-            </div>
-            <div className="flex items-center justify-between">
-              {week.map((d, i)=>{
-                const key = localDateKey(d);
-                const checked = daySet.has(key);
-                return (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 flex items-center justify-center"
-                       style={{ borderColor: checked ? 'var(--primary)' : '#cbd5e1',
-                                background: checked ? 'var(--primary)' : 'transparent' }}>
-                    {checked ? (
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6L9 17l-5-5"/>
-                      </svg>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <div className="text-xs text-gray-500">{tip}</div>
         </div>
-      );
-    };
+        <span className="ml-2 px-2 py-1 text-xs rounded-full primary-bg text-white">{tier.name}</span>
+      </div>
+
+      {/* 右側：本週打卡七日列 */}
+      <div className="ml-auto">
+        {/* 星期標題列 */}
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-1 select-none">
+          {wcn.map((t, i)=>(<div key={i} className="w-8 text-center">{t}</div>))}
+        </div>
+        {/* 圓點列 */}
+        <div className="flex items-center justify-between">
+          {week.map((d, i)=>{
+            const key = localDateKey(d);
+            const checked = daySet.has(key);
+            return (
+              <div key={i} className="w-8 h-8 rounded-full border-2 flex items-center justify-center"
+                   style={{ borderColor: checked ? 'var(--primary)' : '#cbd5e1',
+                            background: checked ? 'var(--primary)' : 'transparent' }}>
+                {/* 勾勾 */}
+                {checked ? (
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5"/>
+                  </svg>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
 
     /* 登入元件 */
     const AuthBar = ({ user }) => {
@@ -292,16 +286,8 @@
                          className="w-full border rounded-lg p-2"/>
                   <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="密碼"
                          className="w-full border rounded-lg p-2"/>
-
-                  <button onClick={submit} className="w-full primary-bg text-white rounded-lg py-2">
-                    {isSignup?'註冊':'登入'}
-                  </button>
-
-                  <!-- Google 樣式化按鈕（功能同原本的 signInWithPopup） -->
-                  <button onClick={google} className="google-btn">
-                    <span className="google-icon" aria-hidden="true"></span>
-                    <span>{isSignup ? '以 Google 註冊' : '以 Google 登入'}</span>
-                  </button>
+                  <button onClick={submit} className="w-full primary-bg text-white rounded-lg py-2">{isSignup?'註冊':'登入'}</button>
+                  <button onClick={google} className="w-full bg-red-500 hover:bg-red-600 text-white rounded-lg py-2">使用 Google</button>
                 </div>
               </div>
             </div>
@@ -310,7 +296,7 @@
       );
     };
 
-    /* 提醒服務 */
+    /* 提醒服務（略，與你現有相同） */
     const ReminderService = {
       key: 'diary_reminders_v2',
       load(){ try{ return JSON.parse(localStorage.getItem(this.key)||'[]'); }catch{ return [] } },
@@ -328,9 +314,7 @@
           for(const r of list){
             const due = new Date(r.at).getTime();
             if(now >= due){
-              if(typeof Notification!=='undefined' && Notification?.permission==='granted'){
-                new Notification('日記提醒', { body: r.title || '該寫日記或查看備忘囉！' });
-              }
+              if(Notification?.permission==='granted'){ new Notification('日記提醒', { body: r.title || '該寫日記或查看備忘囉！' }); }
               if(r.freq && r.freq!=='ONCE'){
                 const next = this._nextTime(new Date(r.at), r.freq);
                 if(next){ r.at = next.toISOString(); r.fired = false; dirty = true; }
@@ -342,11 +326,11 @@
         }, 15000);
       },
       requestPermission(){
-        if(typeof Notification!=='undefined' && Notification.permission!=='granted'){ Notification.requestPermission(); }
+        if('Notification' in window && Notification.permission!=='granted'){ Notification.requestPermission(); }
       }
     };
 
-    /* TagCloud / Calendar / Charts（保持原樣，略註釋） */
+    /* Tag Cloud / Calendar / Charts（與你現有相同，略去註解） */
     const TagCloud = ({ diaries, activeTag, onToggle }) => {
       const map = {}; diaries.forEach(d => (d.tags||[]).forEach(t => map[t]=(map[t]||0)+1));
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
@@ -421,179 +405,197 @@
       );
     };
 
-    const Charts = ({ diaries, darkMode }) => {
-      const moodRef  = useRef(null);
-      const dailyRef = useRef(null);
-      const moodChart  = useRef(null);
-      const dailyChart = useRef(null);
+const Charts = ({ diaries, darkMode }) => {
+  const moodRef  = useRef(null);
+  const dailyRef = useRef(null);
+  const moodChart  = useRef(null);
+  const dailyChart = useRef(null);
 
-      const getPrimary = () =>
-        getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#7c3aed';
-      const rgba = (hex, a=1)=>{
-        const h = hex.replace('#','');
-        const bigint = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h,16);
-        const r=(bigint>>16)&255, g=(bigint>>8)&255, b=(bigint)&255;
-        return `rgba(${r},${g},${b},${a})`;
-      };
+  // 取主題色（--primary），並做透明度工具
+  const getPrimary = () =>
+    getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#7c3aed';
+  const rgba = (hex, a=1)=>{
+    const h = hex.replace('#','');
+    const bigint = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h,16);
+    const r=(bigint>>16)&255, g=(bigint>>8)&255, b=bigint&255;
+    return `rgba(${r},${g},${b},${a})`;
+  };
 
-      const moodsArr = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
-      const moodCounts = useMemo(()=>{
-        const map = Object.fromEntries(moodsArr.map(m=>[m,0]));
-        diaries.forEach(d => map[d.mood]=(map[d.mood]||0)+1);
-        return map;
-      }, [diaries]);
+  /* 資料 */
+  const moodsArr = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
+  const moodCounts = useMemo(()=>{
+    const map = Object.fromEntries(moodsArr.map(m=>[m,0]));
+    diaries.forEach(d => map[d.mood]=(map[d.mood]||0)+1);
+    return map;
+  }, [diaries]);
 
-      const dailyCounts = useMemo(()=>{
-        const map = {};
-        diaries.forEach(d=>{
-          const dt = toDate(d.createdAt);
-          if (dt) {
-            const k = localDateKey(dt);
-            map[k] = (map[k]||0)+1;
-          }
-        });
-        const keys = Object.keys(map).sort();
-        return { labels: keys, data: keys.map(k=>map[k]) };
-      }, [diaries]);
+  const dailyCounts = useMemo(()=>{
+    const map = {};
+    diaries.forEach(d=>{
+      const dt = toDate(d.createdAt);
+      if (dt) {
+        const k = localDateKey(dt);
+        map[k] = (map[k]||0)+1;
+      }
+    });
+    const keys = Object.keys(map).sort();
+    return { labels: keys, data: keys.map(k=>map[k]) };
+  }, [diaries]);
 
-      const centerTextPlugin = {
-        id: 'centerText',
-        afterDraw(chart, args, opts){
-          const {ctx, chartArea:{width,height}} = chart;
-          if(!opts?.text) return;
-          ctx.save();
-          ctx.font = `600 ${opts.fontSize||20}px system-ui, -apple-system`;
-          ctx.fillStyle = opts.color||'#111';
-          ctx.textAlign='center';
-          ctx.textBaseline='middle';
-          ctx.fillText(opts.text, width/2, height/2);
-          ctx.restore();
-        }
-      };
+  /* 置中統計字：甜甜圈中央顯示 */
+  const centerTextPlugin = {
+    id: 'centerText',
+    afterDraw(chart, args, opts){
+      const {ctx, chartArea:{width,height}} = chart;
+      if(!opts?.text) return;
+      ctx.save();
+      ctx.font = `600 ${opts.fontSize||20}px system-ui, -apple-system`;
+      ctx.fillStyle = opts.color||'#111';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(opts.text, width/2, height/2);
+      ctx.restore();
+    }
+  };
 
-      useEffect(()=>{
-        moodChart.current?.destroy();
-        dailyChart.current?.destroy();
+  useEffect(()=>{
+    // 清除舊圖
+    moodChart.current?.destroy();
+    dailyChart.current?.destroy();
 
-        const primary = getPrimary();
+    const primary = getPrimary();
 
-        const moodData = Object.values(moodCounts);
-        const total = moodData.reduce((a,b)=>a+b,0);
-        const donutColors = [
-          rgba(primary, .9), rgba('#ef4444', .8), rgba('#f59e0b', .8), rgba('#06b6d4', .8),
-          rgba('#a855f7', .85), rgba('#10b981', .8), rgba('#9ca3af', .8), rgba('#3b82f6', .8)
-        ];
-        moodChart.current = new Chart(moodRef.current, {
-          type:'doughnut',
-          data:{
-            labels: Object.keys(moodCounts),
-            datasets:[{
-              data: moodData,
-              backgroundColor: donutColors.slice(0, moodData.length),
-              borderWidth: 0,
-              hoverOffset: 8,
-              spacing: 2
-            }]
-          },
-          options:{
-            cutout: '65%',
-            plugins:{
-              legend:{ display:false },
-              tooltip:{
-                backgroundColor: rgba('#111827', .9),
-                titleColor:'#fff', bodyColor:'#fff',
-                padding:12, cornerRadius:10,
-                callbacks:{
-                  label(ctx){
-                    const v = ctx.parsed;
-                    const p = total? Math.round(v/total*100):0;
-                    return `  ${v} 篇（${p}%）`;
-                  }
-                }
+    // 1) 心情甜甜圈
+    const moodData = Object.values(moodCounts);
+    const total = moodData.reduce((a,b)=>a+b,0);
+    const donutColors = [
+      rgba(primary, .9), rgba('#ef4444', .8), rgba('#f59e0b', .8), rgba('#06b6d4', .8),
+      rgba('#a855f7', .85), rgba('#10b981', .8), rgba('#9ca3af', .8), rgba('#3b82f6', .8)
+    ];
+    moodChart.current = new Chart(moodRef.current, {
+      type:'doughnut',
+      data:{
+        labels: Object.keys(moodCounts),
+        datasets:[{
+          data: moodData,
+          backgroundColor: donutColors.slice(0, moodData.length),
+          borderWidth: 0,
+          hoverOffset: 8,
+          spacing: 2
+        }]
+      },
+      options:{
+        cutout: '65%',
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor: rgba('#111827', .9),
+            titleColor:'#fff', bodyColor:'#fff',
+            padding:12, cornerRadius:10,
+            callbacks:{
+              label(ctx){
+                const v = ctx.parsed;
+                const p = total? Math.round(v/total*100):0;
+                return `  ${v} 篇（${p}%）`;
               }
-            },
-            animation:{ duration:800, easing:'easeOutQuart' }
-          },
-          plugins:[centerTextPlugin],
-        });
-        moodChart.current.options.plugins.centerText = {
-          text: total ? `共 ${total} 篇` : '尚無資料',
-          color: darkMode? '#e5e7eb':'#374151',
-          fontSize: 16
-        };
-        moodChart.current.update();
-
-        const labels = dailyCounts.labels.map(s=>{
-          const [y,m,d] = s.split('-');
-          return `${m}/${d}`;
-        });
-        const gridColor = darkMode? rgba('#ffffff', .1) : rgba('#000000', .06);
-
-        dailyChart.current = new Chart(dailyRef.current, {
-          type:'bar',
-          data:{
-            labels,
-            datasets:[{
-              label:'每日篇數',
-              data: dailyCounts.data,
-              backgroundColor: rgba(primary, .35),
-              borderColor: rgba(primary, .9),
-              borderWidth: 1.5,
-              borderRadius: 8,
-              barPercentage: .6,
-              categoryPercentage: .7
-            }]
-          },
-          options:{
-            maintainAspectRatio: false,
-            scales:{
-              x:{
-                grid:{ display:false },
-                ticks:{ color: darkMode?'#fff':'#111', maxRotation: 0, autoSkip: true }
-              },
-              y:{
-                beginAtZero:true,
-                grid:{ color: gridColor, drawBorder:false },
-                ticks:{ color: darkMode?'#fff':'#111', stepSize: 1 }
-              }
-            },
-            plugins:{
-              legend:{ display:false },
-              tooltip:{ backgroundColor: rgba('#111827', .9), titleColor:'#fff', bodyColor:'#fff',
-                        padding:12, cornerRadius:10 }
-            },
-            layout:{ padding: { top: 6, right: 10, left: 6, bottom: 0 } },
-            animation:{ duration:700, easing:'easeOutCubic' }
+            }
           }
-        });
-
-        return ()=>{ moodChart.current?.destroy(); dailyChart.current?.destroy(); }
-      }, [moodCounts, dailyCounts, darkMode]);
-
-      const total = diaries.length || 0;
-      const happy = moodCounts['😊']||0;
-
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
-            <h4 className="font-bold mb-2">心情分佈</h4>
-            <div style={{height: 320}}>
-              <canvas ref={moodRef}></canvas>
-            </div>
-            <div className="mt-3 text-sm text-gray-500">共 {total} 篇，😊 {happy} 篇</div>
-          </div>
-
-          <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
-            <h4 className="font-bold mb-2">每日篇數</h4>
-            <div style={{height: 320}}>
-              <canvas ref={dailyRef}></canvas>
-            </div>
-          </div>
-        </div>
-      );
+        },
+        animation:{ duration:800, easing:'easeOutQuart' }
+      },
+      plugins:[centerTextPlugin],
+    });
+    moodChart.current.options.plugins.centerText = {
+      text: total ? `共 ${total} 篇` : '尚無資料',
+      color: darkMode? '#e5e7eb':'#374151',
+      fontSize: 16
     };
+    moodChart.current.update();
 
-    /* ============== 金額折抵工具（維持你的設計） ============== */
+    // 2) 每日篇數長條圖
+    const labels = dailyCounts.labels.map(s=>{
+      // 只顯示 MM/DD
+      const [y,m,d] = s.split('-');
+      return `${m}/${d}`;
+    });
+    const gridColor = darkMode? rgba('#ffffff', .1) : rgba('#000000', .06);
+
+    dailyChart.current = new Chart(dailyRef.current, {
+      type:'bar',
+      data:{
+        labels,
+        datasets:[{
+          label:'每日篇數',
+          data: dailyCounts.data,
+          backgroundColor: rgba(primary, .35),
+          borderColor: rgba(primary, .9),
+          borderWidth: 1.5,
+          borderRadius: 8,              // 圓角
+          barPercentage: .6,
+          categoryPercentage: .7
+        }]
+      },
+      options:{
+        maintainAspectRatio: false,
+        scales:{
+          x:{
+            grid:{ display:false },
+            ticks:{
+              color: darkMode?'#fff':'#111',
+              maxRotation: 0,
+              autoSkip: true
+            }
+          },
+          y:{
+            beginAtZero:true,
+            grid:{ color: gridColor, drawBorder:false },
+            ticks:{ color: darkMode?'#fff':'#111', stepSize: 1 }
+          }
+        },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor: rgba('#111827', .9),
+            titleColor:'#fff', bodyColor:'#fff',
+            padding:12, cornerRadius:10
+          }
+        },
+        layout:{ padding: { top: 6, right: 10, left: 6, bottom: 0 } },
+        animation:{ duration:700, easing:'easeOutCubic' }
+      }
+    });
+
+    return ()=>{ moodChart.current?.destroy(); dailyChart.current?.destroy(); }
+  }, [moodCounts, dailyCounts, darkMode]);
+
+  const total = diaries.length || 0;
+  const happy = moodCounts['😊']||0;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* 甜甜圈 */}
+      <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
+        <h4 className="font-bold mb-2">心情分佈</h4>
+        <div style={{height: 320}}>
+          <canvas ref={moodRef}></canvas>
+        </div>
+        <div className="mt-3 text-sm text-gray-500">共 {total} 篇，😊 {happy} 篇</div>
+      </div>
+
+      {/* 長條圖 */}
+      <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
+        <h4 className="font-bold mb-2">每日篇數</h4>
+        <div style={{height: 320}}>
+          <canvas ref={dailyRef}></canvas>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+    /* ============== 金額折抵工具（新增） ============== */
+    // === Coupon 金額折抵 ===
     const prices = { monthly: 150, yearly: 1500 };
     function priceAfterDiscount(price, coupon){
       if(!coupon) return price;
@@ -626,6 +628,7 @@
             </div>
 
             <div className="p-5 space-y-5">
+              {/* 方案切換 */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={()=>setSelectedPlan('monthly')}
@@ -650,6 +653,7 @@
                 </button>
               </div>
 
+              {/* 優惠券輸入 */}
               <div className="rounded-xl border p-4">
                 <div className="font-semibold mb-2">優惠券</div>
                 <div className="flex gap-2">
@@ -667,6 +671,7 @@
                 )}
               </div>
 
+              {/* 價格試算 */}
               <div className="rounded-xl border p-4 bg-gray-50">
                 <div className="flex items-center justify-between text-sm">
                   <span>方案原價</span><span>NT$ {basePrice}</span>
@@ -697,7 +702,7 @@
       );
     };
 
-    /* 設定面板（含管理員建立優惠券） */
+    /* 設定面板（新增建立折抵金額） */
     const SettingsPanel = ({
       open, onClose,
       exportDiaries, importDiaries,
@@ -715,7 +720,7 @@
 
       const [couponCode,setCouponCode] = useState('');
       const [newCoupon, setNewCoupon]  = useState({
-        code:'', months:1, active:true, discountAmount: 0
+        code:'', months:1, active:true, discountAmount: 0 // === Coupon 金額折抵 ===
       });
 
       const [privPwdInput, setPrivPwdInput] = useState('');
@@ -728,6 +733,26 @@
         return dt ? dt.toLocaleDateString('zh-TW') : '—';
       })();
       const currentHashed = profile?.privatePasswordHash || localStorage.getItem('privatePasswordHash') || '';
+
+      const savePrivatePwd = async ()=>{
+        if(!privPwdInput){ alert('請先輸入密碼'); return; }
+        const hashed = await sha256Hex(privPwdInput);
+        if(user){
+          await db.collection('users').doc(user.uid).set({ privatePasswordHash: hashed }, { merge:true });
+        }else{
+          localStorage.setItem('privatePasswordHash', hashed);
+        }
+        alert('私密日記密碼已設定 ✅');
+        setPrivPwdInput('');
+      };
+      const clearPrivatePwd = async ()=>{
+        if(user){
+          await db.collection('users').doc(user.uid).set({ privatePasswordHash: firebase.firestore.FieldValue.delete() }, { merge:true });
+        }else{
+          localStorage.removeItem('privatePasswordHash');
+        }
+        alert('已清除私密日記密碼'); setPrivPwdInput('');
+      };
 
       return (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
@@ -780,7 +805,7 @@
               {/* ② 私密日記密碼 */}
               <section>
                 <h3 className="font-semibold mb-2">私密日記密碼</h3>
-                <p className="text-sm text-gray-500 mb-2">設定後，開啟 <span className="font-semibold">私密日記</span> 會先要求輸入密碼。</p>
+                <p className="text-sm text-gray-500 mb-2">設定後，開啟 <span class="font-semibold">私密日記</span> 會先要求輸入密碼。</p>
                 <div className="flex items-center gap-2">
                   <input
                     type={privPwdVisible ? 'text' : 'password'}
@@ -802,8 +827,7 @@
                     }else{
                       localStorage.setItem('privatePasswordHash', hashed);
                     }
-                    alert('私密日記密碼已設定 ✅'); 
-                    setPrivPwdInput('');
+                    alert('私密日記密碼已設定 ✅'); setPrivPwdInput('');
                   }} className="px-3 py-2 rounded-lg primary-bg text-white">設定密碼</button>
                   <button onClick={async()=>{
                     if(user){
@@ -811,12 +835,11 @@
                     }else{
                       localStorage.removeItem('privatePasswordHash');
                     }
-                    alert('已清除私密日記密碼'); 
-                    setPrivPwdInput('');
+                    alert('已清除私密日記密碼'); setPrivPwdInput('');
                   }} className="px-3 py-2 rounded-lg border hover:bg-gray-50">清除密碼</button>
                 </div>
                 <div className="text-xs text-gray-500 mt-2">
-                  目前狀態：{currentHashed ? <span className="text-green-600">已設定</span> : <span className="text-red-600">尚未設定</span>}
+                  目前狀態：{currentHashed ? <span class="text-green-600">已設定</span> : <span class="text-red-600">尚未設定</span>}
                 </div>
               </section>
 
@@ -839,7 +862,7 @@
                 </div>
               </section>
 
-              {/* ④ 匯入匯出 / 備份 */}
+              {/* ④ 匯入匯出 / 備份（略） */}
               <section>
                 <h3 className="font-semibold mb-2">資料匯入 / 匯出</h3>
                 <div className="flex flex-wrap items-center gap-3">
@@ -932,8 +955,8 @@
 
       // Premium
       const [showPremium, setShowPremium] = useState(false);
-      const [appliedCoupon, setAppliedCoupon] = useState(null);
-      const [selectedPlan, setSelectedPlan] = useState('monthly');
+      const [appliedCoupon, setAppliedCoupon] = useState(null);       // === Coupon 金額折抵 ===
+      const [selectedPlan, setSelectedPlan] = useState('monthly');     // === Coupon 金額折抵 ===
 
       // Profile / 會員
       const [profile, setProfile]     = useState(null);
@@ -953,6 +976,7 @@
       useEffect(()=>{ localStorage.setItem('darkMode', darkMode ? '1' : '0'); }, [darkMode]);
       useEffect(()=>{ const dm = localStorage.getItem('darkMode'); if(dm==='1') setDarkMode(true); },[]);
 
+      // Auth + Firestore
       useEffect(()=>{
         const unsub = auth.onAuthStateChanged(async (u)=>{
           setUser(u||null);
@@ -985,6 +1009,7 @@
         return ()=>unsub();
       },[]);
 
+      // 過濾排序
       useEffect(()=>{
         let filtered = [...diaries];
         if (searchTerm) {
@@ -1018,6 +1043,7 @@
         setFilteredDiaries(filtered);
       },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter, favoritesOnly]);
 
+      // 上傳圖片
       const onUploadImages = async (files)=>{
         if(!files || files.length===0) return;
         setUploading(true);
@@ -1039,6 +1065,7 @@
         finally{ setUploading(false); }
       };
 
+      // 儲存日記
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){ alert('請填寫標題和內容'); return; }
         const docData = {
@@ -1155,6 +1182,7 @@
       };
       const onRemoveReminder = (id)=>{ ReminderService.remove(id); alert('已刪除提醒'); };
 
+      // 設定會員層級（示範）
       const onSetMembershipTier = async (tier)=>{
         if(!user){ alert('請先登入'); return; }
         const expiresAt = membership?.expiresAt ? toDate(membership.expiresAt) : new Date();
@@ -1168,13 +1196,16 @@
         alert('會員狀態已更新（示範）');
       };
 
+      // 建立優惠券（管理員）：支援 discountAmount（優先）
       const onCreateCoupon = async ({code, months, active, discountAmount})=>{
         if(!user || !isAdmin){ alert('需要管理員權限'); return; }
         if(!code){ alert('請輸入代碼'); return; }
         const payload = {
           code,
           active: !!active,
+          // === Coupon 金額折抵 ===
           discountAmount: Math.max(0, parseInt(discountAmount||0)),
+          // 兼容舊邏輯：若你仍想使用延長月數，可保留，結帳時不使用它
           discountMonths: Math.max(0, parseInt(months||0)) || null,
           createdBy: user.uid,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1183,31 +1214,53 @@
         alert('已建立/更新優惠券：'+code);
       };
 
-      // 必須登入後才能套用優惠券（與你需求一致）
-      const onApplyCoupon = async (code)=>{
-        if(!user){ alert('請先登入才能套用優惠券'); return; }
-        if(!code){ alert('請輸入優惠券代碼'); return; }
+      // 套用優惠券（讀取折抵金額）
+      // 套用優惠券（讀取折抵金額）— 支援未登入試算；真的購買時才記錄兌換
+// 套用優惠券（必須登入）
+const onApplyCoupon = async (code)=>{
+  if(!user){ 
+    alert('請先登入才能套用優惠券'); 
+    return; 
+  }
+  if(!code){ 
+    alert('請輸入優惠券代碼'); 
+    return; 
+  }
 
-        try{
-          const snap = await db.collection('coupons').doc(code).get();
-          if(!snap.exists){ alert('優惠券不存在'); return; }
-          const c = snap.data();
-          if(c.active === false){ alert('此優惠券未啟用'); return; }
+  try{
+    const snap = await db.collection('coupons').doc(code).get();
+    if(!snap.exists){ 
+      alert('優惠券不存在'); 
+      return; 
+    }
+    const c = snap.data();
+    if(c.active === false){ 
+      alert('此優惠券未啟用'); 
+      return; 
+    }
 
-          const discountAmount = Math.max(0, Number(c.discountAmount||0));
-          if(discountAmount <= 0){ alert('此優惠券未設定折抵金額'); return; }
+    const discountAmount = Math.max(0, Number(c.discountAmount||0));
+    if(discountAmount <= 0){ 
+      alert('此優惠券未設定折抵金額'); 
+      return; 
+    }
 
-          setAppliedCoupon({ code, discountAmount, active:true });
-          alert(`已套用優惠券：${code}（可折抵 NT$ ${discountAmount}）`);
-        }catch(err){
-          alert('讀取優惠券失敗：' + err.message);
-        }
-      };
+    setAppliedCoupon({ code, discountAmount, active:true });
+    alert(`已套用優惠券：${code}（可折抵 NT$ ${discountAmount}）`);
+  }catch(err){
+    alert('讀取優惠券失敗：' + err.message);
+  }
+};
+
+
 
       const onClearCoupon = ()=> setAppliedCoupon(null);
 
+      // 付款示範（用折抵後金額）
       const onPurchase = async (plan, coupon, basePrice, duePrice)=> {
         if(!user){ alert('請先登入'); return; }
+
+        // === 示範結帳：直接寫入 membership 到期日 ===
         const now = new Date();
         let base = membership?.expiresAt ? toDate(membership.expiresAt) : now;
         if(!base || base < now) base = now;
@@ -1218,6 +1271,7 @@
           membership:{ tier:'pro', expiresAt: base.toISOString() }
         }, { merge:true });
 
+        // 紀錄優惠券使用（若有）
         if(coupon?.code){
           const usedId = `${user.uid}_${coupon.code}`;
           await db.collection('coupon_redemptions').doc(usedId).set({
@@ -1232,6 +1286,7 @@
         setShowPremium(false);
       };
 
+      // 備份/還原（略）
       const onBackupToStorage = async ()=>{
         if(!user){ alert('請先登入'); return; }
         const payload = JSON.stringify(diaries, null, 2);
@@ -1271,19 +1326,20 @@
                 <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                   Get Premium
                 </button>
-                <button
-                  onClick={()=>setSettingsOpen(true)}
-                  title="設定"
-                  className={`group w-10 h-10 rounded-full flex items-center justify-center
-                    ring-1 transition hover:scale-105
-                    ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent' : 'ring-black/10 hover:ring-black/20 bg-transparent'}`}
-                >
-                  <img
-                    src="assets/img/settings-icon.png"
-                    alt="設定"
-                    className="w-7 h-7 pointer-events-none select-none"
-                  />
-                </button>
+               {/* 取代原本的設定按鈕 */}
+<button
+  onClick={()=>setSettingsOpen(true)}
+  title="設定"
+  className={`group w-10 h-10 rounded-full flex items-center justify-center
+    ring-1 transition hover:scale-105
+    ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent' : 'ring-black/10 hover:ring-black/20 bg-transparent'}`}
+>
+  <img
+    src="assets/img/settings-icon.png"
+    alt="設定"
+    className="w-7 h-7 pointer-events-none select-none"
+  />
+</button>
 
                 <AuthBar user={user}/>
               </div>
@@ -1338,7 +1394,7 @@
 
           {/* 主區 */}
           <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 左欄 */}
+            {/* 左欄：篩選 + 新增 + 清單 */}
             <div className={`lg:col-span-1 ${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
               <div className="space-y-4">
                 <div className="relative">
@@ -1420,7 +1476,7 @@
               </div>
             </div>
 
-            {/* 右欄 */}
+            {/* 右欄：編輯/檢視 + 日曆 + 圖表 */}
             <div className="lg:col-span-2 grid grid-cols-1 gap-6">
               <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
                 <h3 className="font-bold mb-3 flex items-center gap-2"><Icon name="calendar"/><span>日曆檢視</span></h3>
