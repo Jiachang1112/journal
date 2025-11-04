@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>我的日記本 📔（雲端版）</title>
+  <title>我的日記本 📔</title>
 
   <!-- React / Babel / Tailwind -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -351,21 +351,6 @@
             );
           })}
         </div>
-        {/* 新增：左側「快速標籤」一排（只動左側 UI，不改其他程式） */}
-<div className="flex flex-wrap gap-2">
-  {['生活','工作','旅遊','學習'].map(t=>(
-    <button
-      key={t}
-      onClick={()=> setSelectedTag(selectedTag===t ? '' : t)}
-      className={`px-3 py-1 rounded-full text-sm border transition
-        ${selectedTag===t ? 'primary-bg text-white border-transparent' : 'bg-gray-100 hover:bg-gray-200'}`}
-      title={`#${t}`}
-    >
-      #{t}
-    </button>
-  ))}
-</div>
-
       );
     };
 
