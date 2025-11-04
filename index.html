@@ -1326,13 +1326,19 @@ const onApplyCoupon = async (code)=>{
                 <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                   Get Premium
                 </button>
-                <button
+               {/* 取代原本的設定按鈕 */}
+<button
   onClick={()=>setSettingsOpen(true)}
   title="設定"
-  className="w-10 h-10 rounded-full shadow-sm ring-1 ring-black/5 hover:shadow-md transition flex items-center justify-center"
-  style={{ background: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#1677ff' }}
+  className={`group w-10 h-10 rounded-full flex items-center justify-center
+    ring-1 transition hover:scale-105
+    ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent' : 'ring-black/10 hover:ring-black/20 bg-transparent'}`}
 >
-  <Icon name="gear" className="w-5 h-5 text-white" fill />
+  <img
+    src="assets/img/settings-icon.png"
+    alt="設定"
+    className="w-7 h-7 pointer-events-none select-none"
+  />
 </button>
 
                 <AuthBar user={user}/>
