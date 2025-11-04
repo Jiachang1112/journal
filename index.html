@@ -91,12 +91,17 @@
         import:"M12 5v10m0 0l-4-4m4 4l4-4M5 19h14",
         bell:"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-9.33-4.93M13 21a2 2 0 01-4 0",
         image:"M3 19a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 01-2 2v14zm3-3l4-4 3 3 4-4 2 2v4H6z",
-        gear:"M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm9 3.5a7.95 7.95 0 01-.22 1.8l2.06 1.6-2 3.46-2.46-1a8.1 8.1 0 01-3.1 1.8l-.36 2.6h-4l-.36-2.6a8.1 8.1 0 01-3.1-1.8l-2.46 1-2-3.46 2.06-1.6A7.95 7.95 0 013 12a7.95 7.95 0 01.22-1.8L1.16 8.6l2-3.46 2.46 1a8.1 8.1 0 013.1-1.8L9.08 1.74h4L13.44 4.3a8.1 8.1 0 013.1 1.8l2.46-1 2 3.46-2.06 1.6c.15.57.22 1.17.22 1.8z"
+        gear:"M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm9 3.5a7.95 7.95 0 01-.22 1.8l2.06 1.6-2 3.46-2.46-1a8.1 8.1 0 01-3.1 1.8l-.36 2.6h-4l-.36-2.6a8.1 8.1 0 01-3.1-1.8l-2.46 1-2-3.46 2.06-1.6A7.95 7.95 0 013 12a7.95 7.95 0 01.22-1.8L1.16 8.6l2-3.46 2.46 1a8.1 8.1 0 013.1-1.8L9.08 1.74h4L13.44 4.3a8.1 8.1 0 013.1 1.8l2.46-1 2 3.46-2.06 1.6c.15.57.22 1.17.22 1.8z",
+        /* 新增：給 Streak/分享 用 */
+        star:"M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
+        trophy:"M3 5h2a3 3 0 003-3h8a3 3 0 003 3h2v3a6 6 0 01-6 6h-2v3h3v2H7v-2h3v-3H8a6 6 0 01-6-6V5z",
+        share:"M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v14",
+        check:"M5 13l4 4L19 7"
       };
       return React.createElement('svg', {
         className, fill: fill?'currentColor':'none', stroke:'currentColor',
         strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
-      }, React.createElement('path',{ d: P[name] }));
+      }, React.createElement('path',{ d: P[name] || '' }));
     };
 
     const moods = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
@@ -160,8 +165,76 @@
       let streak = 0; let probe = new Date();
       while(set.has(localDateKey(probe))){ streak++; probe.setDate(probe.getDate()-1); }
 
-      return { streak, best, hasToday };
+      return { streak, best, hasToday, dateSet: set };
     }
+
+    /* ======= 新增：每週圓圈打勾面板 + 分享 ======= */
+    function getMonday(d){
+      const t = new Date(d);
+      const dow = t.getDay(); // 0=日
+      const diff = (dow === 0 ? -6 : 1 - dow); // 調整到週一
+      t.setDate(t.getDate() + diff);
+      t.setHours(0,0,0,0);
+      return t;
+    }
+
+    const WeeklyCheckPanel = ({ diaries }) => {
+      const { streak, dateSet } = useMemo(()=>calcStreak(diaries), [diaries]);
+      const monday = useMemo(()=>getMonday(new Date()), []);
+      const days = Array.from({length:7}).map((_,i)=>{
+        const d = new Date(monday); d.setDate(monday.getDate()+i);
+        return { key: localDateKey(d), label:['一','二','三','四','五','六','日'][i] };
+      });
+      const marks = days.map(d => ({ ...d, done: dateSet.has(d.key) }));
+
+      const shareText = (() => {
+        const line1 = `你已連續寫日記 ${streak} 天！`;
+        const line2 = '本週進度：' + marks.map(m => `${m.label}${m.done?'✅':'❌'}`).join(' ');
+        const link = location.href;
+        return `${line1}\n${line2}\n${link}`;
+      })();
+
+      const doShare = async () => {
+        try{
+          if (navigator.share) {
+            await navigator.share({ title:'我的日記本', text: shareText });
+          } else {
+            await navigator.clipboard.writeText(shareText);
+            alert('已複製本週進度到剪貼簿 ✅');
+          }
+        }catch(e){
+          try{
+            await navigator.clipboard.writeText(shareText);
+            alert('已複製本週進度到剪貼簿 ✅');
+          }catch(err){
+            alert('分享失敗，請手動複製文字。');
+          }
+        }
+      };
+
+      return (
+        <div className="mt-4 p-4 rounded-2xl border bg-white/80 shadow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <div className="text-xl font-extrabold mb-2">你已連續寫日記 {streak} 天！</div>
+            <div className="flex items-center gap-2">
+              {marks.map((m,i)=>(
+                <div key={i} className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg
+                   ${m.done ? 'primary-bg text-white border-transparent' : 'border-gray-300 bg-white text-gray-300'}`}>
+                  {m.done ? '✅' : ''}
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 text-xs text-gray-500">本週（週一至週日）有寫日記的日期會顯示 ✅</div>
+          </div>
+          <div className="shrink-0">
+            <button onClick={doShare}
+              className="px-4 py-2 rounded-lg primary-bg text-white flex items-center gap-2 hover:opacity-90">
+              <Icon name="share" className="w-5 h-5" fill /> 分享
+            </button>
+          </div>
+        </div>
+      );
+    };
 
     const StreakBadge = ({ diaries }) => {
       const { streak, best, hasToday } = useMemo(()=>calcStreak(diaries), [diaries]);
@@ -175,9 +248,9 @@
         <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border bg-white/80 shadow">
           <Icon name={tier.icon} className="w-7 h-7 primary-text" fill />
           <div className="flex-1">
-            <div className="text-sm text-gray-500">連續天數</div>
+            {/* 這行文案改為你要求的句子 */}
             <div className="text-2xl font-extrabold">
-              {streak} 天 <span className="ml-2 text-xs font-medium text-gray-500">(最佳 {best})</span>
+              你已連續寫日記 {streak} 天！ <span className="ml-2 text-xs font-medium text-gray-500">(最佳 {best})</span>
             </div>
             <div className="text-xs text-gray-500">{tip}</div>
           </div>
@@ -508,7 +581,7 @@
     };
 
     /* =========================
-       設定面板（重排順序）
+       設定面板（原樣保留）
     ==========================*/
     const SettingsPanel = ({
       open, onClose,
@@ -607,10 +680,10 @@
                 )}
               </section>
 
-              {/* ⑥ 私密日記密碼（移到付費會員下面） */}
+              {/* ⑥ 私密日記密碼 */}
               <section>
                 <h3 className="font-semibold mb-2">私密日記密碼</h3>
-                <p className="text-sm text-gray-500 mb-2">設定後，開啟 <span class="font-semibold">私密日記</span> 會先要求輸入密碼。</p>
+                <p className="text-sm text-gray-500 mb-2">設定後，開啟 <span className="font-semibold">私密日記</span> 會先要求輸入密碼。</p>
                 <div className="flex items-center gap-2">
                   <input
                     type={privPwdVisible ? 'text' : 'password'}
@@ -628,7 +701,7 @@
                   <button onClick={clearPrivatePwd} className="px-3 py-2 rounded-lg border hover:bg-gray-50">清除密碼</button>
                 </div>
                 <div className="text-xs text-gray-500 mt-2">
-                  目前狀態：{currentHashed ? <span class="text-green-600">已設定</span> : <span class="text-red-600">尚未設定</span>}
+                  目前狀態：{currentHashed ? <span className="text-green-600">已設定</span> : <span className="text-red-600">尚未設定</span>}
                 </div>
               </section>
 
@@ -667,7 +740,7 @@
                 </div>
               </section>
 
-              {/* ④ 提醒（本地通知） */}
+              {/* ④ 提醒 */}
               <section>
                 <h3 className="font-semibold mb-2">提醒</h3>
                 <div className="grid sm:grid-cols-2 gap-3 items-end">
@@ -764,7 +837,7 @@
       useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
       useEffect(()=>{ document.documentElement.style.setProperty('--primary', themeColor); localStorage.setItem('themeColor', themeColor); },[themeColor]);
 
-      // 深色樣式持久化（可選）
+      // 深色樣式持久化
       useEffect(()=>{ localStorage.setItem('darkMode', darkMode ? '1' : '0'); }, [darkMode]);
       useEffect(()=>{ const dm = localStorage.getItem('darkMode'); if(dm==='1') setDarkMode(true); },[]);
 
@@ -1030,7 +1103,7 @@
         alert('已建立/更新優惠券：'+code);
       };
 
-      // 套用優惠券（示範：延長會員期限 / 設定層級）
+      // 套用優惠券（示範）
       const onApplyCoupon = async (code)=>{
         if(!user){ alert('請先登入'); return; }
         if(!code){ alert('請輸入優惠券代碼'); return; }
@@ -1130,9 +1203,11 @@
             </div>
           </div>
 
-          {/* ===== 新增：Streak 徽章（Top 下方） ===== */}
+          {/* ===== 連續天數徽章 ===== */}
           <div className="max-w-7xl mx-auto px-4 pt-4">
             <StreakBadge diaries={diaries}/>
+            {/* ===== 新增：每週圓圈打勾面板 + 分享 ===== */}
+            <WeeklyCheckPanel diaries={diaries}/>
           </div>
 
           {/* Get Premium Modal */}
