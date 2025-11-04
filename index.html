@@ -371,14 +371,35 @@
           options:{ plugins:{legend:{position:'bottom'}} }
         });
 
-        dailyChart.current = new Chart(dailyRef.current, {
-          type:'bar',
-          data:{ labels: dailyCounts.labels, datasets:[{ label:'每日篇數', data: dailyCounts.data }] },
-          options:{
-            scales:{ x:{ ticks:{ color: darkMode?'#fff':'#000' } }, y:{ ticks:{ color: darkMode?'#fff':'#000' } } },
-            plugins:{ legend:{ display:false } }
-          }
-        });
+       options: {
+  indexAxis: 'x',
+  layout: { padding: { bottom: 10 } },
+  plugins: {
+    legend: { display: false },
+  },
+  scales: {
+    x: {
+      ticks: {
+        maxRotation: 0,   // ✅ 讓日期保持水平
+        minRotation: 0,
+        autoSkip: true,   // 自動略過部分標籤避免擁擠
+        autoSkipPadding: 8,
+        callback: function(value, index, ticks) {
+          // 每隔一筆顯示一次（避免太擠）
+          return (index % 2 === 0) ? this.getLabelForValue(value) : '';
+        },
+        color: darkMode ? '#fff' : '#000'
+      },
+      grid: { display: false }
+    },
+    y: {
+      ticks: { color: darkMode ? '#fff' : '#000' },
+      beginAtZero: true,
+      grid: { color: darkMode ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.05)' }
+    }
+  }
+}
+
       },[moodCounts, dailyCounts, darkMode]);
 
       const total = diaries.length || 0;
