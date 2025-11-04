@@ -361,15 +361,18 @@
         return { labels: keys, data: keys.map(k=>map[k]) };
       },[diaries]);
 
-      useEffect(()=>{
-        if(moodChart.current){ moodChart.current.destroy(); }
-        if(dailyChart.current){ dailyChart.current.destroy(); }
-
-        moodChart.current = new Chart(moodRef.current, {
-          type:'doughnut',
-          data:{ labels:Object.keys(moodCounts), datasets:[{ data:Object.values(moodCounts) }] },
-          options:{ plugins:{legend:{position:'bottom'}} }
-        });
+      // 還原已套用的優惠券（如果有）
+useEffect(()=>{
+  try{
+    const s = localStorage.getItem('appliedCoupon');
+    if(s){
+      const c = JSON.parse(s);
+      if(c && typeof c.discountAmount !== 'undefined'){
+        setAppliedCoupon(c);
+      }
+    }
+  }catch{}
+},[]);
 
         dailyChart.current = new Chart(dailyRef.current, {
           type:'bar',
