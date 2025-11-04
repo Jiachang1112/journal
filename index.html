@@ -402,62 +402,194 @@
       );
     };
 
-    const Charts = ({ diaries, darkMode }) => {
-      const moodRef = useRef(null); const dailyRef = useRef(null);
-      const moodChart = useRef(null); const dailyChart = useRef(null);
-      const moodCounts = useMemo(()=>{
-        const map = Object.fromEntries(moods.map(m=>[m,0]));
-        diaries.forEach(d => map[d.mood]=(map[d.mood]||0)+1);
-        return map;
-      },[diaries]);
+const Charts = ({ diaries, darkMode }) => {
+  const moodRef  = useRef(null);
+  const dailyRef = useRef(null);
+  const moodChart  = useRef(null);
+  const dailyChart = useRef(null);
 
-      const dailyCounts = useMemo(()=>{
-        const map = {};
-        diaries.forEach(d=>{
-          const dt = toDate(d.createdAt);
-          if (dt) { const day = localDateKey(dt); if (day) map[day]=(map[day]||0)+1; }
-        });
-        const keys = Object.keys(map).sort();
-        return { labels: keys, data: keys.map(k=>map[k]) };
-      },[diaries]);
+  // 取主題色（--primary），並做透明度工具
+  const getPrimary = () =>
+    getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#7c3aed';
+  const rgba = (hex, a=1)=>{
+    const h = hex.replace('#','');
+    const bigint = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h,16);
+    const r=(bigint>>16)&255, g=(bigint>>8)&255, b=bigint&255;
+    return `rgba(${r},${g},${b},${a})`;
+  };
 
-      useEffect(()=>{
-        if(moodChart.current){ moodChart.current.destroy(); }
-        if(dailyChart.current){ dailyChart.current.destroy(); }
+  /* 資料 */
+  const moodsArr = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
+  const moodCounts = useMemo(()=>{
+    const map = Object.fromEntries(moodsArr.map(m=>[m,0]));
+    diaries.forEach(d => map[d.mood]=(map[d.mood]||0)+1);
+    return map;
+  }, [diaries]);
 
-        moodChart.current = new Chart(moodRef.current, {
-          type:'doughnut',
-          data:{ labels:Object.keys(moodCounts), datasets:[{ data:Object.values(moodCounts) }] },
-          options:{ plugins:{legend:{position:'bottom'}} }
-        });
+  const dailyCounts = useMemo(()=>{
+    const map = {};
+    diaries.forEach(d=>{
+      const dt = toDate(d.createdAt);
+      if (dt) {
+        const k = localDateKey(dt);
+        map[k] = (map[k]||0)+1;
+      }
+    });
+    const keys = Object.keys(map).sort();
+    return { labels: keys, data: keys.map(k=>map[k]) };
+  }, [diaries]);
 
-        dailyChart.current = new Chart(dailyRef.current, {
-          type:'bar',
-          data:{ labels: dailyCounts.labels, datasets:[{ label:'每日篇數', data: dailyCounts.data }] },
-          options:{
-            scales:{ x:{ ticks:{ color: darkMode?'#fff':'#000' } }, y:{ ticks:{ color: darkMode?'#fff':'#000' } } },
-            plugins:{ legend:{ display:false } }
+  /* 置中統計字：甜甜圈中央顯示 */
+  const centerTextPlugin = {
+    id: 'centerText',
+    afterDraw(chart, args, opts){
+      const {ctx, chartArea:{width,height}} = chart;
+      if(!opts?.text) return;
+      ctx.save();
+      ctx.font = `600 ${opts.fontSize||20}px system-ui, -apple-system`;
+      ctx.fillStyle = opts.color||'#111';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(opts.text, width/2, height/2);
+      ctx.restore();
+    }
+  };
+
+  useEffect(()=>{
+    // 清除舊圖
+    moodChart.current?.destroy();
+    dailyChart.current?.destroy();
+
+    const primary = getPrimary();
+
+    // 1) 心情甜甜圈
+    const moodData = Object.values(moodCounts);
+    const total = moodData.reduce((a,b)=>a+b,0);
+    const donutColors = [
+      rgba(primary, .9), rgba('#ef4444', .8), rgba('#f59e0b', .8), rgba('#06b6d4', .8),
+      rgba('#a855f7', .85), rgba('#10b981', .8), rgba('#9ca3af', .8), rgba('#3b82f6', .8)
+    ];
+    moodChart.current = new Chart(moodRef.current, {
+      type:'doughnut',
+      data:{
+        labels: Object.keys(moodCounts),
+        datasets:[{
+          data: moodData,
+          backgroundColor: donutColors.slice(0, moodData.length),
+          borderWidth: 0,
+          hoverOffset: 8,
+          spacing: 2
+        }]
+      },
+      options:{
+        cutout: '65%',
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor: rgba('#111827', .9),
+            titleColor:'#fff', bodyColor:'#fff',
+            padding:12, cornerRadius:10,
+            callbacks:{
+              label(ctx){
+                const v = ctx.parsed;
+                const p = total? Math.round(v/total*100):0;
+                return `  ${v} 篇（${p}%）`;
+              }
+            }
           }
-        });
-      },[moodCounts, dailyCounts, darkMode]);
-
-      const total = diaries.length || 0;
-      const happy = moodCounts['😊']||0;
-
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
-            <h4 className="font-bold mb-2">心情分佈</h4>
-            <canvas ref={moodRef} height="220"></canvas>
-            <div className="mt-3 text-sm text-gray-500">共 {total} 篇，😊 {happy} 篇</div>
-          </div>
-          <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
-            <h4 className="font-bold mb-2">每日篇數</h4>
-            <canvas ref={dailyRef} height="220"></canvas>
-          </div>
-        </div>
-      );
+        },
+        animation:{ duration:800, easing:'easeOutQuart' }
+      },
+      plugins:[centerTextPlugin],
+    });
+    moodChart.current.options.plugins.centerText = {
+      text: total ? `共 ${total} 篇` : '尚無資料',
+      color: darkMode? '#e5e7eb':'#374151',
+      fontSize: 16
     };
+    moodChart.current.update();
+
+    // 2) 每日篇數長條圖
+    const labels = dailyCounts.labels.map(s=>{
+      // 只顯示 MM/DD
+      const [y,m,d] = s.split('-');
+      return `${m}/${d}`;
+    });
+    const gridColor = darkMode? rgba('#ffffff', .1) : rgba('#000000', .06);
+
+    dailyChart.current = new Chart(dailyRef.current, {
+      type:'bar',
+      data:{
+        labels,
+        datasets:[{
+          label:'每日篇數',
+          data: dailyCounts.data,
+          backgroundColor: rgba(primary, .35),
+          borderColor: rgba(primary, .9),
+          borderWidth: 1.5,
+          borderRadius: 8,              // 圓角
+          barPercentage: .6,
+          categoryPercentage: .7
+        }]
+      },
+      options:{
+        maintainAspectRatio: false,
+        scales:{
+          x:{
+            grid:{ display:false },
+            ticks:{
+              color: darkMode?'#fff':'#111',
+              maxRotation: 0,
+              autoSkip: true
+            }
+          },
+          y:{
+            beginAtZero:true,
+            grid:{ color: gridColor, drawBorder:false },
+            ticks:{ color: darkMode?'#fff':'#111', stepSize: 1 }
+          }
+        },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor: rgba('#111827', .9),
+            titleColor:'#fff', bodyColor:'#fff',
+            padding:12, cornerRadius:10
+          }
+        },
+        layout:{ padding: { top: 6, right: 10, left: 6, bottom: 0 } },
+        animation:{ duration:700, easing:'easeOutCubic' }
+      }
+    });
+
+    return ()=>{ moodChart.current?.destroy(); dailyChart.current?.destroy(); }
+  }, [moodCounts, dailyCounts, darkMode]);
+
+  const total = diaries.length || 0;
+  const happy = moodCounts['😊']||0;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* 甜甜圈 */}
+      <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
+        <h4 className="font-bold mb-2">心情分佈</h4>
+        <div style={{height: 320}}>
+          <canvas ref={moodRef}></canvas>
+        </div>
+        <div className="mt-3 text-sm text-gray-500">共 {total} 篇，😊 {happy} 篇</div>
+      </div>
+
+      {/* 長條圖 */}
+      <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
+        <h4 className="font-bold mb-2">每日篇數</h4>
+        <div style={{height: 320}}>
+          <canvas ref={dailyRef}></canvas>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
     /* ============== 金額折抵工具（新增） ============== */
     // === Coupon 金額折抵 ===
