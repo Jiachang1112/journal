@@ -1020,25 +1020,33 @@
       };
 
       // 套用優惠券（讀取折抵金額）
-      const onApplyCoupon = async (code)=>{
-        if(!user){ alert('請先登入'); return; }
-        if(!code){ alert('請輸入優惠券代碼'); return; }
-        const snap = await db.collection('coupons').doc(code).get();
-        if(!snap.exists){ alert('優惠券不存在'); return; }
-        const c = snap.data();
-        if(!c.active){ alert('此優惠券未啟用'); return; }
+      // 套用優惠券（讀取折抵金額）— 支援未登入試算；真的購買時才記錄兌換
+const onApplyCoupon = async (code)=>{
+  if(!code){ alert('請輸入優惠券代碼'); return; }
 
-        // 檢查是否使用過（每帳號每券限用一次）
-        const usedId = `${user.uid}_${code}`;
-        const used = await db.collection('coupon_redemptions').doc(usedId).get();
-        if(used.exists){ alert('此帳號已使用過該優惠券'); return; }
+  // 讀券（允許未登入試算；若 Firestore 規則不公開讀取，請保持登入測試）
+  let c = null;
+  try{
+    const snap = await db.collection('coupons').doc(code).get();
+    if(snap.exists) c = snap.data();
+  }catch(e){
+    // 若你的 Firestore 規則不允許未登入讀取，可在此放本地測試券（選用）
+    // 例如：if(code==='OFF200') c = {code, active:true, discountAmount:200};
+  }
 
-        const discountAmount = Math.max(0, Number(c.discountAmount||0));
-        if(discountAmount<=0){ alert('此優惠券未設定折抵金額'); return; }
+  if(!c){ alert('優惠券不存在或無法讀取'); return; }
+  if(!c.active){ alert('此優惠券未啟用'); return; }
 
-        setAppliedCoupon({ code, discountAmount, active:true });
-        alert(`已套用優惠券：${code}（可折抵 NT$ ${discountAmount}）`);
-      };
+  const discountAmount = Math.max(0, Number(c.discountAmount||0));
+  if(discountAmount<=0){ alert('此優惠券未設定折抵金額'); return; }
+
+  // 未登入：先試算並暫存；登入：也一樣先暫存，真正「兌換紀錄」在 onPurchase 才寫入
+  const applied = { code, discountAmount, active:true };
+  setAppliedCoupon(applied);
+  localStorage.setItem('appliedCoupon', JSON.stringify(applied));
+  alert(`已套用優惠券：${code}（可折抵 NT$ ${discountAmount}）`);
+};
+
 
       const onClearCoupon = ()=> setAppliedCoupon(null);
 
