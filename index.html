@@ -295,69 +295,6 @@
         </div>
       );
     };
-   // =====================
-// 左側功能列 SideMenu
-// =====================
-const SideMenu = ({ onClose, mobile=false })=>{
-  const Item = ({ icon, label, badge, active=false, onClick })=>(
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition
-        ${active ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}
-    >
-      <Icon name={icon} className="w-5 h-5"/>
-      <span className="flex-1 text-left">{label}</span>
-      {badge && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200">{badge}</span>}
-    </button>
-  );
-
-  const Block = ({ title, children })=>(
-    <div className="mt-4">
-      <div className="text-xs text-gray-500 mb-2">{title}</div>
-      <div className="space-y-1">{children}</div>
-    </div>
-  );
-
-  const content = (
-    <div className="w-[240px] h-full bg-white shadow-xl p-3 overflow-y-auto">
-      <div className="flex items-center justify-between mb-2">
-        <div className="font-semibold">功能列</div>
-        {mobile && (
-          <button className="p-2 rounded hover:bg-gray-100" onClick={onClose}><Icon name="x"/></button>
-        )}
-      </div>
-
-      <Item icon="save" label="所有記錄" active/>
-      <Block title="時間">
-        <Item icon="sun" label="早上"/>
-        <Item icon="moon" label="下午"/>
-        <Item icon="moon" label="晚上" badge="現在"/>
-      </Block>
-      <Block title="區域">
-        <Item icon="plus" label="新區域"/>
-      </Block>
-      <Block title="參考">
-        <Item icon="star"   label="習慣"/>
-        <Item icon="lock"   label="休假模式"/>
-        <Item icon="download" label="付款"/>
-        <Item icon="gear"   label="應用設定"/>
-        <Item icon="user"   label="資源"/>
-      </Block>
-    </div>
-  );
-
-  if (!mobile) return (
-    <aside className="hidden lg:block">{content}</aside>
-  );
-
-  // 手機抽屜
-  return (
-    <div className="fixed inset-0 z-[60] lg:hidden">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
-      <div className="absolute left-0 top-0 bottom-0">{content}</div>
-    </div>
-  );
-};
 
     /* 提醒服務（略，與你現有相同） */
     const ReminderService = {
@@ -1004,7 +941,6 @@ const Charts = ({ diaries, darkMode }) => {
       const [user, setUser] = useState(null);
       const [diaries, setDiaries] = useState([]);
       const [filteredDiaries, setFilteredDiaries] = useState([]);
-      const [sideNavOpen, setSideNavOpen] = useState(false); // ✅ 手機漢堡選單開關
       const [currentDiary, setCurrentDiary] = useState(null);
       const [showNewDiary, setShowNewDiary] = useState(false);
       const [searchTerm, setSearchTerm] = useState('');
@@ -1385,17 +1321,7 @@ const onApplyCoupon = async (code)=>{
           <div className={`${darkMode?'bg-gray-800':'bg-white'} shadow-lg sticky top-0 z-50`}>
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
               <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
-  {/* 手機漢堡選單按鈕 */}
-  <button
-    className="lg:hidden w-10 h-10 rounded-full ring-1 ring-black/5 flex items-center justify-center"
-    onClick={()=>setSideNavOpen(true)}
-    title="功能選單"
-  >
-    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 6h16M4 12h16M4 18h16"/>
-    </svg>
-  </button>
-              
+
               <div className="flex items-center gap-3 flex-wrap">
                 <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                   Get Premium
@@ -1466,15 +1392,8 @@ const onApplyCoupon = async (code)=>{
             user={user}
           />
 
-          {/* 主區：左側功能列 + 原本內容 */}
-<div className="max-w-7xl mx-auto p-4 flex gap-4">
-  {/* 左側功能列（桌面） */}
-  <SideMenu />
-
-  {/* 右側：你原本的三欄內容 */}
-  <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
-    {/* 左欄、右欄內容不動 */}
-
+          {/* 主區 */}
+          <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 左欄：篩選 + 新增 + 清單 */}
             <div className={`lg:col-span-1 ${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
               <div className="space-y-4">
@@ -1482,9 +1401,6 @@ const onApplyCoupon = async (code)=>{
                   <div className="absolute left-3 top-3"><Icon name="search" className="w-5 h-5 text-gray-400"/></div>
                   <input type="text" placeholder="搜尋日記..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
                     className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
-          {/* 手機抽屜功能列 */}
-{sideNavOpen && <SideMenu mobile onClose={()=>setSideNavOpen(false)} />}
-
                 </div>
 
                 <div className="flex flex-wrap gap-2">
