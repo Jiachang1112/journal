@@ -716,6 +716,8 @@
       const [when, setWhen] = useState(new Date().toISOString().substring(0,16));
       const [title, setTitle] = useState('');
       const [freq, setFreq] = useState('ONCE');
+      // [✅ 新增狀態] 預設為 'personal'
+      const [activeTab, setActiveTab] = useState('personal');
 
       if(!open) return null;
 
@@ -746,6 +748,19 @@
         setPrivPwdInput('');
       };
 
+      const TabButton = ({ tab, label }) => (
+        <button
+          onClick={() => setActiveTab(tab)}
+          className={`px-4 py-2 font-medium rounded-lg transition ${
+            activeTab === tab
+              ? 'primary-bg text-white shadow-md'
+              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+          }`}
+        >
+          {label}
+        </button>
+      );
+
       return (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -754,124 +769,140 @@
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
             </div>
 
+            {/* [✅ 新增 Tab 切換列] */}
+            <div className="p-4 border-b flex gap-3">
+              <TabButton tab="personal" label="個人"/>
+              <TabButton tab="general" label="通用"/>
+            </div>
+
             <div className="p-4 space-y-8">
-              {/* ① 付費會員 */}
-              <section>
-                <h3 className="font-semibold mb-2">付費會員</h3>
-                <div className="text-sm text-gray-600 mb-2">
-                  目前身分：<span className="font-semibold">{profile?.role || 'user'}</span> | 會員等級：<span className="font-semibold">{membership?.tier || 'free'}</span>（到期：{membershipExpireText}）
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button onClick={()=>onSetMembershipTier('free')} className="px-2 py-1 rounded border">Free</button>
-                  <button onClick={()=>onSetMembershipTier('pro')} className="px-2 py-1 rounded border">Pro（示範）</button>
-                  <button onClick={()=>onSetMembershipTier('vip')} className="px-2 py-1 rounded border">VIP（示範）</button>
-                </div>
-
-                <div className="mt-3 grid sm:grid-cols-2 gap-2">
-                  <input value={couponCode} onChange={e=>setCouponCode(e.target.value)} className="border rounded-lg p-2" placeholder="輸入優惠券代碼"/>
-                  <button onClick={()=>onApplyCoupon(couponCode)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用優惠券</button>
-                </div>
-
-                {isAdmin && (
-                  <div className="mt-4 border-t pt-4">
-                    <div className="text-sm text-gray-600 mb-2">（管理員）建立優惠券</div>
-                    <div className="grid sm:grid-cols-4 gap-2">
-                      <input value={newCoupon.code} onChange={e=>setNewCoupon({...newCoupon, code:e.target.value})} className="border rounded-lg p-2" placeholder="代碼，如 OFF200"/>
-                      <input type="number" min="0" value={newCoupon.discountAmount} onChange={e=>setNewCoupon({...newCoupon, discountAmount: parseInt(e.target.value||0)})} className="border rounded-lg p-2" placeholder="折抵金額 NT$ (優先)"/>
-                      <input type="number" min="0" value={newCoupon.months} onChange={e=>setNewCoupon({...newCoupon, months: parseInt(e.target.value||0)})} className="border rounded-lg p-2" placeholder="延長月數 (次要)"/>
-                      <button onClick={()=>onCreateCoupon(newCoupon)} className={`px-3 py-2 rounded-lg border ${newCoupon.active?'bg-green-100':'bg-red-100'} hover:opacity-80`}
-                              title={newCoupon.active?'點擊設為禁用':'點擊設為啟用'}>
-                        {newCoupon.active?'✅ 啟用中':'❌ 禁用中'}
-                      </button>
+              {/* 個人設定 Tab (原有的 ①, ②) */}
+              {activeTab === 'personal' && (
+                <div className="space-y-8">
+                  {/* ① 付費會員 */}
+                  <section>
+                    <h3 className="font-semibold mb-2">付費會員</h3>
+                    <div className="text-sm text-gray-600 mb-2">
+                      目前身分：<span className="font-semibold">{profile?.role || 'user'}</span> | 會員等級：<span className="font-semibold">{membership?.tier || 'free'}</span>（到期：{membershipExpireText}）
                     </div>
-                  </div>
-                )}
-              </section>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button onClick={()=>onSetMembershipTier('free')} className="px-2 py-1 rounded border">Free</button>
+                      <button onClick={()=>onSetMembershipTier('pro')} className="px-2 py-1 rounded border">Pro（示範）</button>
+                      <button onClick={()=>onSetMembershipTier('vip')} className="px-2 py-1 rounded border">VIP（示範）</button>
+                    </div>
 
-              {/* ② 安全性 */}
-              <section>
-                <h3 className="font-semibold mb-2">安全性</h3>
-                <div className="text-sm text-gray-600 mb-2">
-                  設定密碼保護私密日記內容。狀態：
-                  <span className={`font-semibold ml-1 ${currentHashed?'text-green-600':'text-red-600'}`}>{currentHashed?'已設定':'未設定'}</span>
-                </div>
-                <div className="grid sm:grid-cols-3 gap-2">
-                  <input type="password" value={privPwdInput} onChange={e=>setPrivPwdInput(e.target.value)} className="sm:col-span-2 border rounded-lg p-2" placeholder="輸入私密日記密碼"/>
-                  <div className="flex gap-2">
-                    <button onClick={savePrivatePwd} className="flex-1 px-3 py-2 rounded-lg primary-bg text-white">儲存</button>
-                    <button onClick={clearPrivatePwd} className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-red-600">清除</button>
-                  </div>
-                </div>
-              </section>
+                    <div className="mt-3 grid sm:grid-cols-2 gap-2">
+                      <input value={couponCode} onChange={e=>setCouponCode(e.target.value)} className="border rounded-lg p-2" placeholder="輸入優惠券代碼"/>
+                      <button onClick={()=>onApplyCoupon(couponCode)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用優惠券</button>
+                    </div>
 
-              {/* ③ 外觀 */}
-              <section>
-                <h3 className="font-semibold mb-2">外觀</h3>
-                <div className="flex items-center gap-3 mb-3">
-                  <label className="text-sm text-gray-500">主題色</label>
-                  <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)} />
-                  <button onClick={()=>setThemeColor('#7c3aed')} className="px-2 py-1 rounded bg-gray-100">預設紫</button>
-                  <button onClick={()=>setThemeColor('#0ea5e9')} className="px-2 py-1 rounded bg-gray-100">藍</button>
-                  <button onClick={()=>setThemeColor('#f97316')} className="px-2 py-1 rounded bg-gray-100">橘</button>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-500">深色模式</span>
-                  <label className="switch">
-                    <input type="checkbox" checked={darkMode} onChange={e=>setDarkMode(e.target.checked)}/>
-                    <span className="slider"></span>
-                  </label>
-                </div>
-              </section>
-
-              {/* ④ 匯入匯出 / 備份 */}
-              <section>
-                <h3 className="font-semibold mb-2">資料匯入 / 匯出</h3>
-                <div className="flex flex-wrap items-center gap-3">
-                  <button onClick={exportDiaries} className="px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
-                    <Icon name="download"/><span>匯出 JSON</span>
-                  </button>
-                  <label className="px-3 py-2 rounded-lg border hover:bg-gray-50 cursor-pointer flex items-center gap-2">
-                    <Icon name="import"/><span>匯入 JSON</span>
-                    <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0]&&importDiaries(e.target.files[0])}/>
-                  </label>
-                  <button onClick={onBackupToStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50" disabled={!user}>備份到 Firebase Storage</button>
-                  <button onClick={onRestoreFromStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50" disabled={!user}>從 Storage 還原</button>
-                </div>
-              </section>
-
-              {/* ⑤ 提醒 */}
-              <section>
-                <h3 className="font-semibold mb-2">提醒</h3>
-                <div className="grid sm:grid-cols-2 gap-3 items-end">
-                  <input value={title} onChange={e=>setTitle(e.target.value)} className="border rounded-lg p-2" placeholder="提醒內容，如：晚上 9 點寫日記"/>
-                  <div className="flex items-center gap-2">
-                    <input type="datetime-local" value={when} onChange={e=>setWhen(e.target.value)} className="border rounded-lg p-2"/>
-                    <select value={freq} onChange={e=>setFreq(e.target.value)} className="border rounded-lg p-2">
-                      <option value="ONCE">一次性</option>
-                      <option value="DAILY">每天</option>
-                      <option value="WEEKLY">每週</option>
-                    </select>
-                    <button onClick={()=>onAddReminder({title, when, freq})} className="px-3 py-2 rounded-lg primary-bg text-white">新增</button>
-                  </div>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  {reminders.length===0 ? (
-                    <p className="text-sm text-gray-400">目前沒有設定提醒</p>
-                  ) : reminders.map(r=>(
-                    <div key={r.id} className="p-3 rounded-lg border flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold">{r.title || '（無標題）'}</div>
-                        <div className="text-sm text-gray-600">
-                          {toDate(r.at).toLocaleString('zh-TW')}
-                          {r.freq==='DAILY'?' (每天)':r.freq==='WEEKLY'?' (每週)':''}
+                    {isAdmin && (
+                      <div className="mt-4 border-t pt-4">
+                        <div className="text-sm text-gray-600 mb-2">（管理員）建立優惠券</div>
+                        <div className="grid sm:grid-cols-4 gap-2">
+                          <input value={newCoupon.code} onChange={e=>setNewCoupon({...newCoupon, code:e.target.value})} className="border rounded-lg p-2" placeholder="代碼，如 OFF200"/>
+                          <input type="number" min="0" value={newCoupon.discountAmount} onChange={e=>setNewCoupon({...newCoupon, discountAmount: parseInt(e.target.value||0)})} className="border rounded-lg p-2" placeholder="折抵金額 NT$ (優先)"/>
+                          <input type="number" min="0" value={newCoupon.months} onChange={e=>setNewCoupon({...newCoupon, months: parseInt(e.target.value||0)})} className="border rounded-lg p-2" placeholder="延長月數 (次要)"/>
+                          <button onClick={()=>onCreateCoupon(newCoupon)} className={`px-3 py-2 rounded-lg border ${newCoupon.active?'bg-green-100':'bg-red-100'} hover:opacity-80`}
+                                  title={newCoupon.active?'點擊設為禁用':'點擊設為啟用'}>
+                            {newCoupon.active?'✅ 啟用中':'❌ 禁用中'}
+                          </button>
                         </div>
                       </div>
-                      <button onClick={()=>onRemoveReminder(r.id)} className="text-red-500 hover:text-red-700">刪除</button>
+                    )}
+                  </section>
+
+                  {/* ② 安全性 (私密日記密碼) */}
+                  <section>
+                    <h3 className="font-semibold mb-2">安全性</h3>
+                    <div className="text-sm text-gray-600 mb-2">
+                      設定密碼保護私密日記內容。狀態：
+                      <span className={`font-semibold ml-1 ${currentHashed?'text-green-600':'text-red-600'}`}>{currentHashed?'已設定':'未設定'}</span>
                     </div>
-                  ))}
+                    <div className="grid sm:grid-cols-3 gap-2">
+                      <input type="password" value={privPwdInput} onChange={e=>setPrivPwdInput(e.target.value)} className="sm:col-span-2 border rounded-lg p-2" placeholder="輸入私密日記密碼"/>
+                      <div className="flex gap-2">
+                        <button onClick={savePrivatePwd} className="flex-1 px-3 py-2 rounded-lg primary-bg text-white">儲存</button>
+                        <button onClick={clearPrivatePwd} className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-red-600">清除</button>
+                      </div>
+                    </div>
+                  </section>
                 </div>
-              </section>
+              )}
+
+              {/* 通用設定 Tab (原有的 ③, ④, ⑤) */}
+              {activeTab === 'general' && (
+                <div className="space-y-8">
+                  {/* ③ 外觀 */}
+                  <section>
+                    <h3 className="font-semibold mb-2">外觀</h3>
+                    <div className="flex items-center gap-3 mb-3">
+                      <label className="text-sm text-gray-500">主題色</label>
+                      <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)} />
+                      <button onClick={()=>setThemeColor('#7c3aed')} className="px-2 py-1 rounded bg-gray-100">預設紫</button>
+                      <button onClick={()=>setThemeColor('#0ea5e9')} className="px-2 py-1 rounded bg-gray-100">藍</button>
+                      <button onClick={()=>setThemeColor('#f97316')} className="px-2 py-1 rounded bg-gray-100">橘</button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-500">深色模式</span>
+                      <label className="switch">
+                        <input type="checkbox" checked={darkMode} onChange={e=>setDarkMode(e.target.checked)}/>
+                        <span className="slider"></span>
+                      </label>
+                    </div>
+                  </section>
+
+                  {/* ④ 匯入匯出 / 備份 */}
+                  <section>
+                    <h3 className="font-semibold mb-2">資料匯入 / 匯出</h3>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button onClick={exportDiaries} className="px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
+                        <Icon name="download"/><span>匯出 JSON</span>
+                      </button>
+                      <label className="px-3 py-2 rounded-lg border hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+                        <Icon name="import"/><span>匯入 JSON</span>
+                        <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0]&&importDiaries(e.target.files[0])}/>
+                      </label>
+                      <button onClick={onBackupToStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50" disabled={!user}>備份到 Firebase Storage</button>
+                      <button onClick={onRestoreFromStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50" disabled={!user}>從 Storage 還原</button>
+                    </div>
+                  </section>
+
+                  {/* ⑤ 提醒 */}
+                  <section>
+                    <h3 className="font-semibold mb-2">提醒</h3>
+                    <div className="grid sm:grid-cols-2 gap-3 items-end">
+                      <input value={title} onChange={e=>setTitle(e.target.value)} className="border rounded-lg p-2" placeholder="提醒內容，如：晚上 9 點寫日記"/>
+                      <div className="flex items-center gap-2">
+                        <input type="datetime-local" value={when} onChange={e=>setWhen(e.target.value)} className="border rounded-lg p-2"/>
+                        <select value={freq} onChange={e=>setFreq(e.target.value)} className="border rounded-lg p-2">
+                          <option value="ONCE">一次性</option>
+                          <option value="DAILY">每天</option>
+                          <option value="WEEKLY">每週</option>
+                        </select>
+                        <button onClick={()=>onAddReminder({title, when, freq})} className="px-3 py-2 rounded-lg primary-bg text-white">新增</button>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 space-y-2">
+                      {reminders.length===0 ? (
+                        <p className="text-sm text-gray-400">目前沒有設定提醒</p>
+                      ) : reminders.map(r=>(
+                        <div key={r.id} className="p-3 rounded-lg border flex items-center justify-between">
+                          <div>
+                            <div className="font-semibold">{r.title || '（無標題）'}</div>
+                            <div className="text-sm text-gray-600">
+                              {toDate(r.at).toLocaleString('zh-TW')}
+                              {r.freq==='DAILY'?' (每天)':r.freq==='WEEKLY'?' (每週)':''}
+                            </div>
+                          </div>
+                          <button onClick={()=>onRemoveReminder(r.id)} className="text-red-500 hover:text-red-700">刪除</button>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1594,7 +1625,7 @@
                   </div>
                   {/* === 篩選區 結束 === */}
                   
-                  {/* [✅ 新增：數據分析按鈕 - 在圈起來的篩選區下方] */}
+                  {/* [數據分析按鈕] */}
                   <button onClick={()=>setActiveView('summary')}
                     className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 flex items-center justify-center gap-2 font-medium">
                     <Icon name="chart"/> 數據分析
@@ -1662,7 +1693,7 @@
                     <CalendarView diaries={diaries} onPickDate={(d)=>{ setDateFilter(d); setCurrentDiary(null); setShowNewDiary(false); }} />
                     {dateFilter && (
                       <div className="mt-3 text-sm">
-                        目前篩選日期：<span className="font-semibold">{dateFilter}</span>
+                        日期篩選：<span className="font-semibold">{dateFilter}</span>
                         <button onClick={()=>setDateFilter('')} className="ml-2 px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">清除</button>
                       </div>
                     )}
