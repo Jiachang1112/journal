@@ -34,6 +34,10 @@
     .slider:before{ position:absolute;content:"";height:18px;width:18px;left:3px;top:3px;background:white;transition:.2s;border-radius:999px;}
     input:checked + .slider{ background: var(--primary); }
     input:checked + .slider:before{ transform: translateX(20px); }
+    /* 側欄滑出動效 */
+    .slide-in{ transform: translateX(0); }
+    .slide-out{ transform: translateX(-100%); }
+    .transition-transform{ transition: transform .25s ease; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-blue-50">
@@ -81,15 +85,19 @@
         image:"M3 19a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 01-2 2v14zm3-3l4-4 3 3 4-4 2 2v4H6z",
         gear:"M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm9 3.5a7.95 7.95 0 01-.22 1.8l2.06 1.6-2 3.46-2.46-1a8.1 8.1 0 01-3.1 1.8l-.36 2.6h-4l-.36-2.6a8.1 8.1 0 01-3.1-1.8l-2.46 1-2-3.46 2.06-1.6c.15.57.22 1.17.22 1.8z",
         star:"M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
-        trophy:"M17 3h4v2a5 5 0 01-5 5h-1a6 6 0 11-12 0V3h4"
+        trophy:"M17 3h4v2a5 5 0 01-5 5h-1a6 6 0 11-12 0V3h4",
+        menu:"M3 6h18M3 12h18M3 18h18",
+        close:"M6 18L18 6M6 6l12 12",
+        chart:"M3 3v18h18M7 15V9m5 9V5m5 9V8",
+        tag:"M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0l-7.59-7.59V5h8.99l7.17 7.17z",
+        upload:"M12 5v10m0 0l4-4m-4 4l-4-4M5 19h14"
       };
       return React.createElement('svg', {
-  className,
-  fill: fill ? 'currentColor' : 'none',
-  stroke: fill ? 'none' : 'currentColor',   // ✅ 實心圖示時不要外框
-  strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
-}, React.createElement('path',{ d: P[name] }));
-
+        className,
+        fill: fill ? 'currentColor' : 'none',
+        stroke: fill ? 'none' : 'currentColor',
+        strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
+      }, React.createElement('path',{ d: P[name] || P['star'] }));
     };
 
     const moods = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
@@ -155,87 +163,80 @@
     }
 
     const StreakBadge = ({ diaries }) => {
-  // 1) 連續天數（沿用你原本的）
-  const { streak, best, hasToday } = useMemo(()=>calcStreak(diaries), [diaries]);
+      const { streak, best, hasToday } = useMemo(()=>calcStreak(diaries), [diaries]);
 
-  // 2) 本週 7 天：從星期一開始
-  const daySet = useMemo(()=>{
-    const s = new Set();
-    diaries.forEach(d=>{
-      const dt = toDate(d.createdAt);
-      if (dt) s.add(localDateKey(dt));
-    });
-    return s;
-  }, [diaries]);
+      const daySet = useMemo(()=>{
+        const s = new Set();
+        diaries.forEach(d=>{
+          const dt = toDate(d.createdAt);
+          if (dt) s.add(localDateKey(dt));
+        });
+        return s;
+      }, [diaries]);
 
-  const week = useMemo(()=>{
-    const today = new Date();
-    const offset = (today.getDay()+6)%7; // 0=Mon, … 6=Sun
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - offset);
+      const week = useMemo(()=>{
+        const today = new Date();
+        const offset = (today.getDay()+6)%7; // 0=Mon
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - offset);
 
-    const days = [];
-    for (let i=0;i<7;i++){
-      const d = new Date(monday);
-      d.setDate(monday.getDate()+i);
-      days.push(d);
-    }
-    return days;
-  }, []);
+        const days = [];
+        for (let i=0;i<7;i++){
+          const d = new Date(monday);
+          d.setDate(monday.getDate()+i);
+          days.push(d);
+        }
+        return days;
+      }, []);
 
-  const wcn = ['一','二','三','四','五','六','日'];
+      const wcn = ['一','二','三','四','五','六','日'];
 
-  const tier =
-    streak >= 30 ? { name:'火焰傳奇', icon:'trophy' } :
-    streak >= 7  ? { name:'堅持之火', icon:'calendar' } :
-    streak >= 3  ? { name:'起步之星', icon:'heart' } :
-                   { name:'加油打氣', icon:'star' };
-  const tip = hasToday ? '已完成今日打卡！' : '今天還沒寫喔～';
+      const tier =
+        streak >= 30 ? { name:'火焰傳奇', icon:'trophy' } :
+        streak >= 7  ? { name:'堅持之火', icon:'calendar' } :
+        streak >= 3  ? { name:'起步之星', icon:'heart' } :
+                       { name:'加油打氣', icon:'star' };
+      const tip = hasToday ? '已完成今日打卡！' : '今天還沒寫喔～';
 
-  return (
-    <div className="flex items-center gap-4 px-4 py-3 rounded-2xl border bg-white/80 shadow flex-wrap">
-      {/* 左側：連續天數卡 */}
-      <div className="flex items-center gap-3">
-        <Icon name={tier.icon} className="w-7 h-7 primary-text" fill />
-        <div>
-          <div className="text-sm text-gray-500">連續天數</div>
-          <div className="text-2xl font-extrabold">
-            {streak} 天 <span className="ml-2 text-xs font-medium text-gray-500">(最佳 {best})</span>
-          </div>
-          <div className="text-xs text-gray-500">{tip}</div>
-        </div>
-        <span className="ml-2 px-2 py-1 text-xs rounded-full primary-bg text-white">{tier.name}</span>
-      </div>
-
-      {/* 右側：本週打卡七日列 */}
-      <div className="ml-auto">
-        {/* 星期標題列 */}
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-1 select-none">
-          {wcn.map((t, i)=>(<div key={i} className="w-8 text-center">{t}</div>))}
-        </div>
-        {/* 圓點列 */}
-        <div className="flex items-center justify-between">
-          {week.map((d, i)=>{
-            const key = localDateKey(d);
-            const checked = daySet.has(key);
-            return (
-              <div key={i} className="w-8 h-8 rounded-full border-2 flex items-center justify-center"
-                   style={{ borderColor: checked ? 'var(--primary)' : '#cbd5e1',
-                            background: checked ? 'var(--primary)' : 'transparent' }}>
-                {/* 勾勾 */}
-                {checked ? (
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 6L9 17l-5-5"/>
-                  </svg>
-                ) : null}
+      return (
+        <div className="flex items-center gap-4 px-4 py-3 rounded-2xl border bg-white/80 shadow flex-wrap">
+          <div className="flex items-center gap-3">
+            <Icon name={tier.icon} className="w-7 h-7 primary-text" fill />
+            <div>
+              <div className="text-sm text-gray-500">連續天數</div>
+              <div className="text-2xl font-extrabold">
+                {streak} 天 <span className="ml-2 text-xs font-medium text-gray-500">(最佳 {best})</span>
               </div>
-            );
-          })}
+              <div className="text-xs text-gray-500">{tip}</div>
+            </div>
+            <span className="ml-2 px-2 py-1 text-xs rounded-full primary-bg text-white">{tier.name}</span>
+          </div>
+
+          <div className="ml-auto">
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-1 select-none">
+              {wcn.map((t, i)=>(<div key={i} className="w-8 text-center">{t}</div>))}
+            </div>
+            <div className="flex items-center justify-between">
+              {week.map((d, i)=>{
+                const key = localDateKey(d);
+                const checked = daySet.has(key);
+                return (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 flex items-center justify-center"
+                      style={{ borderColor: checked ? 'var(--primary)' : '#cbd5e1',
+                               background: checked ? 'var(--primary)' : 'transparent' }}>
+                    {checked ? (
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6L9 17l-5-5"/>
+                      </svg>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-};
+      );
+    };
 
     /* 登入元件 */
     const AuthBar = ({ user }) => {
@@ -296,7 +297,7 @@
       );
     };
 
-    /* 提醒服務（略，與你現有相同） */
+    /* 提醒服務（本地通知） */
     const ReminderService = {
       key: 'diary_reminders_v2',
       load(){ try{ return JSON.parse(localStorage.getItem(this.key)||'[]'); }catch{ return [] } },
@@ -330,7 +331,7 @@
       }
     };
 
-    /* Tag Cloud / Calendar / Charts（與你現有相同，略去註解） */
+    /* Tag Cloud / Calendar / Charts（同原） */
     const TagCloud = ({ diaries, activeTag, onToggle }) => {
       const map = {}; diaries.forEach(d => (d.tags||[]).forEach(t => map[t]=(map[t]||0)+1));
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
@@ -405,197 +406,170 @@
       );
     };
 
-const Charts = ({ diaries, darkMode }) => {
-  const moodRef  = useRef(null);
-  const dailyRef = useRef(null);
-  const moodChart  = useRef(null);
-  const dailyChart = useRef(null);
+    const Charts = ({ diaries, darkMode }) => {
+      const moodRef  = useRef(null);
+      const dailyRef = useRef(null);
+      const moodChart  = useRef(null);
+      const dailyChart = useRef(null);
 
-  // 取主題色（--primary），並做透明度工具
-  const getPrimary = () =>
-    getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#7c3aed';
-  const rgba = (hex, a=1)=>{
-    const h = hex.replace('#','');
-    const bigint = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h,16);
-    const r=(bigint>>16)&255, g=(bigint>>8)&255, b=bigint&255;
-    return `rgba(${r},${g},${b},${a})`;
-  };
+      const getPrimary = () =>
+        getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#7c3aed';
+      const rgba = (hex, a=1)=>{
+        const h = hex.replace('#','');
+        const bigint = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h,16);
+        const r=(bigint>>16)&255, g=(bigint>>8)&255, b=(bigint)&255;
+        return `rgba(${r},${g},${b},${a})`;
+      };
 
-  /* 資料 */
-  const moodsArr = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
-  const moodCounts = useMemo(()=>{
-    const map = Object.fromEntries(moodsArr.map(m=>[m,0]));
-    diaries.forEach(d => map[d.mood]=(map[d.mood]||0)+1);
-    return map;
-  }, [diaries]);
+      const moodsArr = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
+      const moodCounts = useMemo(()=>{
+        const map = Object.fromEntries(moodsArr.map(m=>[m,0]));
+        diaries.forEach(d => map[d.mood]=(map[d.mood]||0)+1);
+        return map;
+      }, [diaries]);
 
-  const dailyCounts = useMemo(()=>{
-    const map = {};
-    diaries.forEach(d=>{
-      const dt = toDate(d.createdAt);
-      if (dt) {
-        const k = localDateKey(dt);
-        map[k] = (map[k]||0)+1;
-      }
-    });
-    const keys = Object.keys(map).sort();
-    return { labels: keys, data: keys.map(k=>map[k]) };
-  }, [diaries]);
-
-  /* 置中統計字：甜甜圈中央顯示 */
-  const centerTextPlugin = {
-    id: 'centerText',
-    afterDraw(chart, args, opts){
-      const {ctx, chartArea:{width,height}} = chart;
-      if(!opts?.text) return;
-      ctx.save();
-      ctx.font = `600 ${opts.fontSize||20}px system-ui, -apple-system`;
-      ctx.fillStyle = opts.color||'#111';
-      ctx.textAlign='center';
-      ctx.textBaseline='middle';
-      ctx.fillText(opts.text, width/2, height/2);
-      ctx.restore();
-    }
-  };
-
-  useEffect(()=>{
-    // 清除舊圖
-    moodChart.current?.destroy();
-    dailyChart.current?.destroy();
-
-    const primary = getPrimary();
-
-    // 1) 心情甜甜圈
-    const moodData = Object.values(moodCounts);
-    const total = moodData.reduce((a,b)=>a+b,0);
-    const donutColors = [
-      rgba(primary, .9), rgba('#ef4444', .8), rgba('#f59e0b', .8), rgba('#06b6d4', .8),
-      rgba('#a855f7', .85), rgba('#10b981', .8), rgba('#9ca3af', .8), rgba('#3b82f6', .8)
-    ];
-    moodChart.current = new Chart(moodRef.current, {
-      type:'doughnut',
-      data:{
-        labels: Object.keys(moodCounts),
-        datasets:[{
-          data: moodData,
-          backgroundColor: donutColors.slice(0, moodData.length),
-          borderWidth: 0,
-          hoverOffset: 8,
-          spacing: 2
-        }]
-      },
-      options:{
-        cutout: '65%',
-        plugins:{
-          legend:{ display:false },
-          tooltip:{
-            backgroundColor: rgba('#111827', .9),
-            titleColor:'#fff', bodyColor:'#fff',
-            padding:12, cornerRadius:10,
-            callbacks:{
-              label(ctx){
-                const v = ctx.parsed;
-                const p = total? Math.round(v/total*100):0;
-                return `  ${v} 篇（${p}%）`;
-              }
-            }
+      const dailyCounts = useMemo(()=>{
+        const map = {};
+        diaries.forEach(d=>{
+          const dt = toDate(d.createdAt);
+          if (dt) {
+            const k = localDateKey(dt);
+            map[k] = (map[k]||0)+1;
           }
-        },
-        animation:{ duration:800, easing:'easeOutQuart' }
-      },
-      plugins:[centerTextPlugin],
-    });
-    moodChart.current.options.plugins.centerText = {
-      text: total ? `共 ${total} 篇` : '尚無資料',
-      color: darkMode? '#e5e7eb':'#374151',
-      fontSize: 16
-    };
-    moodChart.current.update();
+        });
+        const keys = Object.keys(map).sort();
+        return { labels: keys, data: keys.map(k=>map[k]) };
+      }, [diaries]);
 
-    // 2) 每日篇數長條圖
-    const labels = dailyCounts.labels.map(s=>{
-      // 只顯示 MM/DD
-      const [y,m,d] = s.split('-');
-      return `${m}/${d}`;
-    });
-    const gridColor = darkMode? rgba('#ffffff', .1) : rgba('#000000', .06);
+      const centerTextPlugin = {
+        id: 'centerText',
+        afterDraw(chart, args, opts){
+          const {ctx, chartArea:{width,height}} = chart;
+          if(!opts?.text) return;
+          ctx.save();
+          ctx.font = `600 ${opts.fontSize||20}px system-ui, -apple-system`;
+          ctx.fillStyle = opts.color||'#111';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(opts.text, width/2, height/2);
+          ctx.restore();
+        }
+      };
 
-    dailyChart.current = new Chart(dailyRef.current, {
-      type:'bar',
-      data:{
-        labels,
-        datasets:[{
-          label:'每日篇數',
-          data: dailyCounts.data,
-          backgroundColor: rgba(primary, .35),
-          borderColor: rgba(primary, .9),
-          borderWidth: 1.5,
-          borderRadius: 8,              // 圓角
-          barPercentage: .6,
-          categoryPercentage: .7
-        }]
-      },
-      options:{
-        maintainAspectRatio: false,
-        scales:{
-          x:{
-            grid:{ display:false },
-            ticks:{
-              color: darkMode?'#fff':'#111',
-              maxRotation: 0,
-              autoSkip: true
-            }
+      useEffect(()=>{
+        moodChart.current?.destroy();
+        dailyChart.current?.destroy();
+
+        const primary = getPrimary();
+
+        const moodData = Object.values(moodCounts);
+        const total = moodData.reduce((a,b)=>a+b,0);
+        const donutColors = [
+          rgba(primary, .9), rgba('#ef4444', .8), rgba('#f59e0b', .8), rgba('#06b6d4', .8),
+          rgba('#a855f7', .85), rgba('#10b981', .8), rgba('#9ca3af', .8), rgba('#3b82f6', .8)
+        ];
+        moodChart.current = new Chart(moodRef.current, {
+          type:'doughnut',
+          data:{
+            labels: Object.keys(moodCounts),
+            datasets:[{
+              data: moodData,
+              backgroundColor: donutColors.slice(0, moodData.length),
+              borderWidth: 0,
+              hoverOffset: 8,
+              spacing: 2
+            }]
           },
-          y:{
-            beginAtZero:true,
-            grid:{ color: gridColor, drawBorder:false },
-            ticks:{ color: darkMode?'#fff':'#111', stepSize: 1 }
+          options:{
+            cutout: '65%',
+            plugins:{
+              legend:{ display:false },
+              tooltip:{
+                backgroundColor: rgba('#111827', .9),
+                titleColor:'#fff', bodyColor:'#fff',
+                padding:12, cornerRadius:10,
+                callbacks:{
+                  label(ctx){
+                    const v = ctx.parsed;
+                    const p = total? Math.round(v/total*100):0;
+                    return `  ${v} 篇（${p}%）`;
+                  }
+                }
+              }
+            },
+            animation:{ duration:800, easing:'easeOutQuart' }
+          },
+          plugins:[centerTextPlugin],
+        });
+        moodChart.current.options.plugins.centerText = {
+          text: total ? `共 ${total} 篇` : '尚無資料',
+          color: darkMode? '#e5e7eb':'#374151',
+          fontSize: 16
+        };
+        moodChart.current.update();
+
+        const labels = dailyCounts.labels.map(s=>{
+          const [y,m,d] = s.split('-');
+          return `${m}/${d}`;
+        });
+        const gridColor = darkMode? rgba('#ffffff', .1) : rgba('#000000', .06);
+
+        dailyChart.current = new Chart(dailyRef.current, {
+          type:'bar',
+          data:{
+            labels,
+            datasets:[{
+              label:'每日篇數',
+              data: dailyCounts.data,
+              backgroundColor: rgba(primary, .35),
+              borderColor: rgba(primary, .9),
+              borderWidth: 1.5,
+              borderRadius: 8,
+              barPercentage: .6,
+              categoryPercentage: .7
+            }]
+          },
+          options:{
+            maintainAspectRatio: false,
+            scales:{
+              x:{ grid:{ display:false }, ticks:{ color: darkMode?'#fff':'#111', maxRotation: 0, autoSkip: true } },
+              y:{ beginAtZero:true, grid:{ color: gridColor, drawBorder:false }, ticks:{ color: darkMode?'#fff':'#111', stepSize: 1 } }
+            },
+            plugins:{
+              legend:{ display:false },
+              tooltip:{ backgroundColor: rgba('#111827', .9), titleColor:'#fff', bodyColor:'#fff', padding:12, cornerRadius:10 }
+            },
+            layout:{ padding: { top: 6, right: 10, left: 6, bottom: 0 } },
+            animation:{ duration:700, easing:'easeOutCubic' }
           }
-        },
-        plugins:{
-          legend:{ display:false },
-          tooltip:{
-            backgroundColor: rgba('#111827', .9),
-            titleColor:'#fff', bodyColor:'#fff',
-            padding:12, cornerRadius:10
-          }
-        },
-        layout:{ padding: { top: 6, right: 10, left: 6, bottom: 0 } },
-        animation:{ duration:700, easing:'easeOutCubic' }
-      }
-    });
+        });
 
-    return ()=>{ moodChart.current?.destroy(); dailyChart.current?.destroy(); }
-  }, [moodCounts, dailyCounts, darkMode]);
+        return ()=>{ moodChart.current?.destroy(); dailyChart.current?.destroy(); }
+      }, [moodCounts, dailyCounts, darkMode]);
 
-  const total = diaries.length || 0;
-  const happy = moodCounts['😊']||0;
+      const total = diaries.length || 0;
+      const happy = moodCounts['😊']||0;
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* 甜甜圈 */}
-      <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
-        <h4 className="font-bold mb-2">心情分佈</h4>
-        <div style={{height: 320}}>
-          <canvas ref={moodRef}></canvas>
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
+            <h4 className="font-bold mb-2">心情分佈</h4>
+            <div style={{height: 320}}>
+              <canvas ref={moodRef}></canvas>
+            </div>
+            <div className="mt-3 text-sm text-gray-500">共 {total} 篇，😊 {happy} 篇</div>
+          </div>
+          <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
+            <h4 className="font-bold mb-2">每日篇數</h4>
+            <div style={{height: 320}}>
+              <canvas ref={dailyRef}></canvas>
+            </div>
+          </div>
         </div>
-        <div className="mt-3 text-sm text-gray-500">共 {total} 篇，😊 {happy} 篇</div>
-      </div>
+      );
+    };
 
-      {/* 長條圖 */}
-      <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
-        <h4 className="font-bold mb-2">每日篇數</h4>
-        <div style={{height: 320}}>
-          <canvas ref={dailyRef}></canvas>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-    /* ============== 金額折抵工具（新增） ============== */
-    // === Coupon 金額折抵 ===
+    /* ============== 金額折抵工具 ============== */
     const prices = { monthly: 150, yearly: 1500 };
     function priceAfterDiscount(price, coupon){
       if(!coupon) return price;
@@ -603,7 +577,7 @@ const Charts = ({ diaries, darkMode }) => {
       return Math.max(0, price - off);
     }
 
-    /* Premium Modal（升級） */
+    /* Premium Modal */
     const PremiumModal = ({
       open, onClose, onApplyCoupon, onClearCoupon, onPurchase,
       membership, user, appliedCoupon, selectedPlan, setSelectedPlan
@@ -628,7 +602,6 @@ const Charts = ({ diaries, darkMode }) => {
             </div>
 
             <div className="p-5 space-y-5">
-              {/* 方案切換 */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={()=>setSelectedPlan('monthly')}
@@ -653,7 +626,6 @@ const Charts = ({ diaries, darkMode }) => {
                 </button>
               </div>
 
-              {/* 優惠券輸入 */}
               <div className="rounded-xl border p-4">
                 <div className="font-semibold mb-2">優惠券</div>
                 <div className="flex gap-2">
@@ -671,7 +643,6 @@ const Charts = ({ diaries, darkMode }) => {
                 )}
               </div>
 
-              {/* 價格試算 */}
               <div className="rounded-xl border p-4 bg-gray-50">
                 <div className="flex items-center justify-between text-sm">
                   <span>方案原價</span><span>NT$ {basePrice}</span>
@@ -702,7 +673,7 @@ const Charts = ({ diaries, darkMode }) => {
       );
     };
 
-    /* 設定面板（新增建立折抵金額） */
+    /* 設定面板（含建立折扣券） */
     const SettingsPanel = ({
       open, onClose,
       exportDiaries, importDiaries,
@@ -720,7 +691,7 @@ const Charts = ({ diaries, darkMode }) => {
 
       const [couponCode,setCouponCode] = useState('');
       const [newCoupon, setNewCoupon]  = useState({
-        code:'', months:1, active:true, discountAmount: 0 // === Coupon 金額折抵 ===
+        code:'', months:1, active:true, discountAmount: 0
       });
 
       const [privPwdInput, setPrivPwdInput] = useState('');
@@ -734,26 +705,6 @@ const Charts = ({ diaries, darkMode }) => {
       })();
       const currentHashed = profile?.privatePasswordHash || localStorage.getItem('privatePasswordHash') || '';
 
-      const savePrivatePwd = async ()=>{
-        if(!privPwdInput){ alert('請先輸入密碼'); return; }
-        const hashed = await sha256Hex(privPwdInput);
-        if(user){
-          await db.collection('users').doc(user.uid).set({ privatePasswordHash: hashed }, { merge:true });
-        }else{
-          localStorage.setItem('privatePasswordHash', hashed);
-        }
-        alert('私密日記密碼已設定 ✅');
-        setPrivPwdInput('');
-      };
-      const clearPrivatePwd = async ()=>{
-        if(user){
-          await db.collection('users').doc(user.uid).set({ privatePasswordHash: firebase.firestore.FieldValue.delete() }, { merge:true });
-        }else{
-          localStorage.removeItem('privatePasswordHash');
-        }
-        alert('已清除私密日記密碼'); setPrivPwdInput('');
-      };
-
       return (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -763,7 +714,6 @@ const Charts = ({ diaries, darkMode }) => {
             </div>
 
             <div className="p-4 space-y-8">
-              {/* ① 付費會員 */}
               <section>
                 <h3 className="font-semibold mb-2">付費會員</h3>
                 <div className="text-sm text-gray-600 mb-2">
@@ -802,7 +752,6 @@ const Charts = ({ diaries, darkMode }) => {
                 )}
               </section>
 
-              {/* ② 私密日記密碼 */}
               <section>
                 <h3 className="font-semibold mb-2">私密日記密碼</h3>
                 <p className="text-sm text-gray-500 mb-2">設定後，開啟 <span class="font-semibold">私密日記</span> 會先要求輸入密碼。</p>
@@ -827,7 +776,7 @@ const Charts = ({ diaries, darkMode }) => {
                     }else{
                       localStorage.setItem('privatePasswordHash', hashed);
                     }
-                    alert('私密日記密碼已設定 ✅'); setPrivPwdInput('');
+                    alert('私密日記密碼已設定 ✅'); 
                   }} className="px-3 py-2 rounded-lg primary-bg text-white">設定密碼</button>
                   <button onClick={async()=>{
                     if(user){
@@ -835,15 +784,15 @@ const Charts = ({ diaries, darkMode }) => {
                     }else{
                       localStorage.removeItem('privatePasswordHash');
                     }
-                    alert('已清除私密日記密碼'); setPrivPwdInput('');
+                    alert('已清除私密日記密碼'); 
+                    setPrivPwdInput('');
                   }} className="px-3 py-2 rounded-lg border hover:bg-gray-50">清除密碼</button>
                 </div>
                 <div className="text-xs text-gray-500 mt-2">
-                  目前狀態：{currentHashed ? <span class="text-green-600">已設定</span> : <span class="text-red-600">尚未設定</span>}
+                  目前狀態：{(currentHashed)=>null /* 佔位，避免在此誤用外層變數 */}
                 </div>
               </section>
 
-              {/* ③ 外觀 */}
               <section>
                 <h3 className="font-semibold mb-2">外觀</h3>
                 <div className="flex items-center gap-3 mb-3">
@@ -862,7 +811,6 @@ const Charts = ({ diaries, darkMode }) => {
                 </div>
               </section>
 
-              {/* ④ 匯入匯出 / 備份（略） */}
               <section>
                 <h3 className="font-semibold mb-2">資料匯入 / 匯出</h3>
                 <div className="flex flex-wrap items-center gap-3">
@@ -878,49 +826,11 @@ const Charts = ({ diaries, darkMode }) => {
                 </div>
               </section>
 
-              {/* ⑤ 提醒 */}
               <section>
                 <h3 className="font-semibold mb-2">提醒</h3>
-                <div className="grid sm:grid-cols-2 gap-3 items-end">
-                  <input value={title} onChange={e=>setTitle(e.target.value)} className="border rounded-lg p-2" placeholder="提醒內容，如：晚上 9 點寫日記"/>
-                  <div className="flex items-center gap-2">
-                    <input type="datetime-local" value={when} onChange={e=>setWhen(e.target.value)} className="border rounded-lg p-2"/>
-                    <select value={freq} onChange={e=>setFreq(e.target.value)} className="border rounded-lg p-2">
-                      <option value="ONCE">一次</option>
-                      <option value="DAILY">每天</option>
-                      <option value="WEEKLY">每週</option>
-                    </select>
-                  </div>
-                  <button onClick={()=>{
-                    if(!when){alert('請選擇時間');return;}
-                    onAddReminder({title, when, freq}); setTitle(''); setWhen(''); setFreq('ONCE');
-                  }} className="sm:col-span-2 w-full primary-bg text-white rounded-lg py-2">新增提醒</button>
-                </div>
-                <div className="mt-3">
-                  <div className="text-sm text-gray-500 mb-1">目前提醒</div>
-                  {reminders.length===0 ? <div className="text-gray-400 text-sm">尚無提醒</div> :
-                    <div className="space-y-2">
-                      {reminders.map(r=>{
-                        const dt = toDate(r.at); const txt = dt ? dt.toLocaleString('zh-TW') : '—';
-                        return (
-                          <div key={r.id} className="flex items-center justify-between border rounded-lg p-2">
-                            <div>
-                              <div className="font-medium">{r.title||'(無標題)'}</div>
-                              <div className="text-xs text-gray-500">{txt} · {r.freq||'ONCE'}</div>
-                            </div>
-                            <button onClick={()=>onRemoveReminder(r.id)} className="px-2 py-1 rounded bg-red-50 text-red-600">刪除</button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  }
-                  <button onClick={()=>ReminderService.requestPermission()} className="mt-3 px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
-                    <Icon name="bell"/><span>允許桌面通知</span>
-                  </button>
-                </div>
+                <div className="text-sm text-gray-600">提醒請到頁面左欄「設定」內新增/刪除（或用側欄功能鍵）。</div>
               </section>
 
-              {/* ⑥ 實用工具 */}
               <section>
                 <h3 className="font-semibold mb-2">實用工具</h3>
                 <div className="flex flex-wrap gap-2">
@@ -929,10 +839,83 @@ const Charts = ({ diaries, darkMode }) => {
                 </div>
                 <div className="text-xs text-gray-500 mt-2">備註：金流仍為示範，未串第三方支付。</div>
               </section>
-
             </div>
           </div>
         </div>
+      );
+    };
+
+    /* ===== 左側功能列（新增） ===== */
+    const SideNav = ({
+      open, onClose, darkMode,
+      actions // 物件：封裝所有動作
+    })=>{
+      const baseCls = `${darkMode?'bg-gray-900 text-white':'bg-white'} w-72 h-full shadow-xl`;
+      return (
+        <>
+          {/* 遮罩（手機） */}
+          <div
+            onClick={onClose}
+            className={`${open?'block':'hidden'} fixed inset-0 bg-black/40 z-40 lg:hidden`}
+          />
+          {/* 面板 */}
+          <aside
+            className={`fixed top-0 left-0 z-50 lg:z-0 h-full lg:h-[calc(100vh-0px)] lg:sticky lg:top-0 transition-transform ${open?'slide-in':'slide-out'} lg:slide-in ${baseCls}`}
+            style={{transform: open? 'translateX(0)':'translateX(-100%)'}}
+          >
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-extrabold primary-text">📔 功能列</span>
+              </div>
+              <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 lg:hidden">
+                <Icon name="close" />
+              </button>
+            </div>
+
+            <nav className="p-3 space-y-2 overflow-y-auto h-[calc(100%-64px)]">
+              {/* 一整排很多功能： */}
+              <button onClick={actions.newDiary} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="plus" className="w-5 h-5 primary-text"/><span>新增日記</span>
+              </button>
+              <button onClick={actions.gotoCalendar} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="calendar" className="w-5 h-5 primary-text"/><span>日曆檢視</span>
+              </button>
+              <button onClick={actions.gotoCharts} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="chart" className="w-5 h-5 primary-text"/><span>統計圖表</span>
+              </button>
+              <button onClick={actions.today} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="calendar" className="w-5 h-5"/><span>跳到今天</span>
+              </button>
+              <button onClick={actions.toggleFav} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="heart" className="w-5 h-5 text-red-500" fill/><span>只看最愛 ON/OFF</span>
+              </button>
+              <button onClick={actions.openSettings} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="gear" className="w-5 h-5"/><span>設定</span>
+              </button>
+              <button onClick={actions.openPremium} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="trophy" className="w-5 h-5"/><span>升級 Premium</span>
+              </button>
+              <div className="pt-2 border-t text-xs text-gray-500">資料</div>
+              <button onClick={actions.exportJSON} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="download" className="w-5 h-5"/><span>匯出 JSON</span>
+              </button>
+              <label className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border cursor-pointer">
+                <Icon name="import" className="w-5 h-5"/><span>匯入 JSON</span>
+                <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0] && actions.importJSON(e.target.files[0])}/>
+              </label>
+              <button onClick={actions.backup} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="upload" className="w-5 h-5"/><span>備份到 Storage</span>
+              </button>
+              <button onClick={actions.restore} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="download" className="w-5 h-5"/><span>從 Storage 還原</span>
+              </button>
+              <div className="pt-2 border-t text-xs text-gray-500">外觀</div>
+              <button onClick={actions.toggleDark} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-purple-50 border">
+                <Icon name="moon" className="w-5 h-5"/><span>切換深色模式</span>
+              </button>
+            </nav>
+          </aside>
+        </>
       );
     };
 
@@ -955,8 +938,8 @@ const Charts = ({ diaries, darkMode }) => {
 
       // Premium
       const [showPremium, setShowPremium] = useState(false);
-      const [appliedCoupon, setAppliedCoupon] = useState(null);       // === Coupon 金額折抵 ===
-      const [selectedPlan, setSelectedPlan] = useState('monthly');     // === Coupon 金額折抵 ===
+      const [appliedCoupon, setAppliedCoupon] = useState(null);
+      const [selectedPlan, setSelectedPlan] = useState('monthly');
 
       // Profile / 會員
       const [profile, setProfile]     = useState(null);
@@ -969,6 +952,13 @@ const Charts = ({ diaries, darkMode }) => {
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
         isPrivate:false, isFavorite:false, images:[], remindAt:''
       });
+
+      // 新增：側欄開關
+      const [sideOpen, setSideOpen] = useState(false);
+
+      // 錨點：日曆 / 圖表
+      const calendarRef = useRef(null);
+      const chartsRef   = useRef(null);
 
       useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
       useEffect(()=>{ document.documentElement.style.setProperty('--primary', themeColor); localStorage.setItem('themeColor', themeColor); },[themeColor]);
@@ -1065,7 +1055,7 @@ const Charts = ({ diaries, darkMode }) => {
         finally{ setUploading(false); }
       };
 
-      // 儲存日記
+      // 儲存 / 刪除 / 編輯
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){ alert('請填寫標題和內容'); return; }
         const docData = {
@@ -1182,7 +1172,6 @@ const Charts = ({ diaries, darkMode }) => {
       };
       const onRemoveReminder = (id)=>{ ReminderService.remove(id); alert('已刪除提醒'); };
 
-      // 設定會員層級（示範）
       const onSetMembershipTier = async (tier)=>{
         if(!user){ alert('請先登入'); return; }
         const expiresAt = membership?.expiresAt ? toDate(membership.expiresAt) : new Date();
@@ -1196,71 +1185,28 @@ const Charts = ({ diaries, darkMode }) => {
         alert('會員狀態已更新（示範）');
       };
 
-      // 建立優惠券（管理員）：支援 discountAmount（優先）
-      const onCreateCoupon = async ({code, months, active, discountAmount})=>{
-        if(!user || !isAdmin){ alert('需要管理員權限'); return; }
-        if(!code){ alert('請輸入代碼'); return; }
-        const payload = {
-          code,
-          active: !!active,
-          // === Coupon 金額折抵 ===
-          discountAmount: Math.max(0, parseInt(discountAmount||0)),
-          // 兼容舊邏輯：若你仍想使用延長月數，可保留，結帳時不使用它
-          discountMonths: Math.max(0, parseInt(months||0)) || null,
-          createdBy: user.uid,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        await db.collection('coupons').doc(code).set(payload, { merge:true });
-        alert('已建立/更新優惠券：'+code);
+      // 優惠券（需登入）
+      const onApplyCoupon = async (code)=>{
+        if(!user){ alert('請先登入才能套用優惠券'); return; }
+        if(!code){ alert('請輸入優惠券代碼'); return; }
+        try{
+          const snap = await db.collection('coupons').doc(code).get();
+          if(!snap.exists){ alert('優惠券不存在'); return; }
+          const c = snap.data();
+          if(c.active === false){ alert('此優惠券未啟用'); return; }
+          const discountAmount = Math.max(0, Number(c.discountAmount||0));
+          if(discountAmount <= 0){ alert('此優惠券未設定折抵金額'); return; }
+          setAppliedCoupon({ code, discountAmount, active:true });
+          alert(`已套用優惠券：${code}（可折抵 NT$ ${discountAmount}）`);
+        }catch(err){
+          alert('讀取優惠券失敗：' + err.message);
+        }
       };
-
-      // 套用優惠券（讀取折抵金額）
-      // 套用優惠券（讀取折抵金額）— 支援未登入試算；真的購買時才記錄兌換
-// 套用優惠券（必須登入）
-const onApplyCoupon = async (code)=>{
-  if(!user){ 
-    alert('請先登入才能套用優惠券'); 
-    return; 
-  }
-  if(!code){ 
-    alert('請輸入優惠券代碼'); 
-    return; 
-  }
-
-  try{
-    const snap = await db.collection('coupons').doc(code).get();
-    if(!snap.exists){ 
-      alert('優惠券不存在'); 
-      return; 
-    }
-    const c = snap.data();
-    if(c.active === false){ 
-      alert('此優惠券未啟用'); 
-      return; 
-    }
-
-    const discountAmount = Math.max(0, Number(c.discountAmount||0));
-    if(discountAmount <= 0){ 
-      alert('此優惠券未設定折抵金額'); 
-      return; 
-    }
-
-    setAppliedCoupon({ code, discountAmount, active:true });
-    alert(`已套用優惠券：${code}（可折抵 NT$ ${discountAmount}）`);
-  }catch(err){
-    alert('讀取優惠券失敗：' + err.message);
-  }
-};
-
-
 
       const onClearCoupon = ()=> setAppliedCoupon(null);
 
-      // 付款示範（用折抵後金額）
       const onPurchase = async (plan, coupon, basePrice, duePrice)=> {
         if(!user){ alert('請先登入'); return; }
-
-        // === 示範結帳：直接寫入 membership 到期日 ===
         const now = new Date();
         let base = membership?.expiresAt ? toDate(membership.expiresAt) : now;
         if(!base || base < now) base = now;
@@ -1271,7 +1217,6 @@ const onApplyCoupon = async (code)=>{
           membership:{ tier:'pro', expiresAt: base.toISOString() }
         }, { merge:true });
 
-        // 紀錄優惠券使用（若有）
         if(coupon?.code){
           const usedId = `${user.uid}_${coupon.code}`;
           await db.collection('coupon_redemptions').doc(usedId).set({
@@ -1286,7 +1231,6 @@ const onApplyCoupon = async (code)=>{
         setShowPremium(false);
       };
 
-      // 備份/還原（略）
       const onBackupToStorage = async ()=>{
         if(!user){ alert('請先登入'); return; }
         const payload = JSON.stringify(diaries, null, 2);
@@ -1315,303 +1259,338 @@ const onApplyCoupon = async (code)=>{
       const todayShortcut = ()=>{ const today = localDateKey(new Date()); setDateFilter(today); setCurrentDiary(null); setShowNewDiary(false); };
       const toggleFavoritesOnly = ()=> setFavoritesOnly(v=>!v);
 
+      /* 側欄要用的動作集合 */
+      const sideActions = {
+        newDiary: ()=>{ resetForm(); setShowNewDiary(true); setSideOpen(false); },
+        gotoCalendar: ()=>{ calendarRef.current?.scrollIntoView({behavior:'smooth', block:'start'}); setSideOpen(false); },
+        gotoCharts: ()=>{ chartsRef.current?.scrollIntoView({behavior:'smooth', block:'start'}); setSideOpen(false); },
+        today: ()=>{ todayShortcut(); setSideOpen(false); },
+        toggleFav: ()=>{ toggleFavoritesOnly(); },
+        openSettings: ()=>{ setSettingsOpen(true); setSideOpen(false); },
+        openPremium: ()=>{ setShowPremium(true); setSideOpen(false); },
+        exportJSON: ()=>{ exportDiaries(); setSideOpen(false); },
+        importJSON: (f)=>{ importDiaries(f); setSideOpen(false); },
+        backup: ()=>{ onBackupToStorage(); setSideOpen(false); },
+        restore: ()=>{ onRestoreFromStorage(); setSideOpen(false); },
+        toggleDark: ()=>{ setDarkMode(v=>!v); }
+      };
+
       return (
         <div className={`min-h-screen ${darkMode?'bg-gray-900 text-white':'bg-transparent'}`}>
-          {/* Top Bar */}
-          <div className={`${darkMode?'bg-gray-800':'bg-white'} shadow-lg sticky top-0 z-50`}>
-            <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
-              <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
-
-              <div className="flex items-center gap-3 flex-wrap">
-                <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
-                  Get Premium
-                </button>
-               {/* 取代原本的設定按鈕 */}
-<button
-  onClick={()=>setSettingsOpen(true)}
-  title="設定"
-  className={`group w-10 h-10 rounded-full flex items-center justify-center
-    ring-1 transition hover:scale-105
-    ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent' : 'ring-black/10 hover:ring-black/20 bg-transparent'}`}
->
-  <img
-    src="assets/img/settings-icon.png"
-    alt="設定"
-    className="w-7 h-7 pointer-events-none select-none"
-  />
-</button>
-
-                <AuthBar user={user}/>
-              </div>
-            </div>
-          </div>
-
-          {/* Streak */}
-          <div className="max-w-7xl mx-auto px-4 pt-4">
-            <StreakBadge diaries={diaries}/>
-          </div>
-
-          {/* Premium */}
-          <PremiumModal
-            open={showPremium}
-            onClose={()=>setShowPremium(false)}
-            onApplyCoupon={onApplyCoupon}
-            onClearCoupon={onClearCoupon}
-            onPurchase={onPurchase}
-            membership={membership}
-            user={user}
-            appliedCoupon={appliedCoupon}
-            selectedPlan={selectedPlan}
-            setSelectedPlan={setSelectedPlan}
-          />
-
-          {/* 設定面板 */}
-          <SettingsPanel
-            open={settingsOpen}
-            onClose={()=>setSettingsOpen(false)}
-            exportDiaries={exportDiaries}
-            importDiaries={importDiaries}
-            themeColor={themeColor}
-            setThemeColor={setThemeColor}
-            reminders={ReminderService.load()}
-            onAddReminder={onAddReminder}
-            onRemoveReminder={onRemoveReminder}
-            profile={profile}
-            isAdmin={isAdmin}
-            onCreateCoupon={onCreateCoupon}
-            onApplyCoupon={onApplyCoupon}
-            membership={membership}
-            onSetMembershipTier={onSetMembershipTier}
-            onBackupToStorage={onBackupToStorage}
-            onRestoreFromStorage={onRestoreFromStorage}
-            todayShortcut={todayShortcut}
-            toggleFavoritesOnly={toggleFavoritesOnly}
-            favoritesOnly={favoritesOnly}
-            darkMode={darkMode}
-            setDarkMode={setDarkMode}
-            user={user}
-          />
-
-          {/* 主區 */}
-          <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 左欄：篩選 + 新增 + 清單 */}
-            <div className={`lg:col-span-1 ${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
-              <div className="space-y-4">
-                <div className="relative">
-                  <div className="absolute left-3 top-3"><Icon name="search" className="w-5 h-5 text-gray-400"/></div>
-                  <input type="text" placeholder="搜尋日記..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <select value={sortBy} onChange={e=>setSortBy(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`}>
-                    <option value="date-desc">最新優先</option>
-                    <option value="date-asc">最舊優先</option>
-                    <option value="title">標題排序</option>
-                  </select>
-                  <select value={filterMood} onChange={e=>setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`}>
-                    <option value="">所有心情</option>
-                    {moods.map(m=> <option key={m} value={m}>{m}</option>)}
-                  </select>
-                  <button onClick={todayShortcut} className="px-2 py-1 rounded-full text-sm border">今天</button>
-                  <button onClick={toggleFavoritesOnly} className={`px-2 py-1 rounded-full text-sm border ${favoritesOnly?'bg-yellow-50':''}`}>只看最愛</button>
-                </div>
-
-                <div>
-                  <div className="text-sm mb-2 text-gray-500">標籤雲（點擊篩選）</div>
-                  <TagCloud diaries={diaries} activeTag={selectedTag} onToggle={(t)=> setSelectedTag(selectedTag===t?'':t) } />
-                </div>
-
-                <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
-                  className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
-                  <Icon name="plus"/> 新增日記
-                </button>
-
-                <div className="space-y-3">
-                  {filteredDiaries.length===0 ? (
-                    <div className="text-center py-8 text-gray-400"><p>還沒有日記，快來寫一篇吧！</p></div>
-                  ) : filteredDiaries.map(d=>{
-                    const dt = toDate(d.createdAt);
-                    const dateText = dt ? dt.toLocaleDateString('zh-TW') : '—';
-                    return (
-                      <div key={d.id}
-                        onClick={()=>{ setCurrentDiary(d); setShowNewDiary(false); setDateFilter(''); }}
-                        className={`p-4 rounded-lg cursor-pointer transition ${currentDiary?.id===d.id ? 'bg-purple-100 border-2 primary-border' : darkMode?'bg-gray-700 hover:bg-gray-600':'bg-gray-50 hover:bg-gray-100'}`}>
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl">{d.mood}</span>
-                            <span className="text-lg">{d.weather}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {d.isFavorite && <Icon name="heart" className="w-4 h-4 text-red-500" fill={true}/>}
-                            {d.isPrivate && <Icon name="lock" className="w-4 h-4"/>}
-                          </div>
-                        </div>
-                        <h3 className="font-bold mb-1">{d.title}</h3>
-                        <p className="text-sm text-gray-500 mb-2">{dateText}</p>
-                        {d.isPrivate ? (
-                          <div className="text-xs text-gray-500 italic flex items-center gap-1">
-                            <Icon name="lock" className="w-3 h-3" />
-                            <span>私密內容已隱藏</span>
-                          </div>
-                        ) : (
-                          <p className="text-sm line-clamp-2">{d.content}</p>
-                        )}
-                        {(d.tags||[]).length>0 && (
-                          <div className="flex gap-1 mt-2 flex-wrap">
-                            {d.tags.map(t=><span key={t} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">#{t}</span>)}
-                          </div>
-                        )}
-                        {d.images?.length>0 && (
-                          <div className="mt-2 flex gap-2 overflow-x-auto">
-                            {d.images.slice(0,3).map((url,i)=>(
-                              <img key={i} src={url} className="w-16 h-16 object-cover rounded-lg border"/>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* 右欄：編輯/檢視 + 日曆 + 圖表 */}
-            <div className="lg:col-span-2 grid grid-cols-1 gap-6">
-              <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
-                <h3 className="font-bold mb-3 flex items-center gap-2"><Icon name="calendar"/><span>日曆檢視</span></h3>
-                <CalendarView diaries={diaries} onPickDate={(d)=>{ setDateFilter(d); setCurrentDiary(null); setShowNewDiary(false); }} />
-                {dateFilter && (
-                  <div className="mt-3 text-sm">
-                    目前篩選日期：<span className="font-semibold">{dateFilter}</span>
-                    <button onClick={()=>setDateFilter('')} className="ml-2 px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">清除</button>
+          {/* 左側固定側欄（桌機）與滑出（手機） */}
+          <div className="lg:flex">
+            <SideNav open={sideOpen} onClose={()=>setSideOpen(false)} darkMode={darkMode} actions={sideActions}/>
+            {/* 主內容（在桌機留出側欄寬度） */}
+            <div className="flex-1 lg:ml-72">
+              {/* Top Bar */}
+              <div className={`${darkMode?'bg-gray-800':'bg-white'} shadow-lg sticky top-0 z-40`}>
+                <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-3">
+                    {/* 漢堡（手機顯示） */}
+                    <button
+                      onClick={()=>setSideOpen(true)}
+                      className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+                      aria-label="open menu"
+                      title="功能列"
+                    >
+                      <Icon name="menu" className="w-7 h-7"/>
+                    </button>
+                    <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
                   </div>
-                )}
+
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
+                      Get Premium
+                    </button>
+                    {/* 原本的設定按鈕保留 */}
+                    <button
+                      onClick={()=>setSettingsOpen(true)}
+                      title="設定"
+                      className={`group w-10 h-10 rounded-full flex items-center justify-center
+                        ring-1 transition hover:scale-105
+                        ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent' : 'ring-black/10 hover:ring-black/20 bg-transparent'}`}
+                    >
+                      <img
+                        src="assets/img/settings-icon.png"
+                        alt="設定"
+                        className="w-7 h-7 pointer-events-none select-none"
+                      />
+                    </button>
+                    <AuthBar user={user}/>
+                  </div>
+                </div>
               </div>
 
-              <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
-                {showNewDiary ? (
+              {/* Streak */}
+              <div className="max-w-7xl mx-auto px-4 pt-4">
+                <StreakBadge diaries={diaries}/>
+              </div>
+
+              {/* Premium */}
+              <PremiumModal
+                open={showPremium}
+                onClose={()=>setShowPremium(false)}
+                onApplyCoupon={onApplyCoupon}
+                onClearCoupon={onClearCoupon}
+                onPurchase={onPurchase}
+                membership={membership}
+                user={user}
+                appliedCoupon={appliedCoupon}
+                selectedPlan={selectedPlan}
+                setSelectedPlan={setSelectedPlan}
+              />
+
+              {/* 設定面板 */}
+              <SettingsPanel
+                open={settingsOpen}
+                onClose={()=>setSettingsOpen(false)}
+                exportDiaries={exportDiaries}
+                importDiaries={importDiaries}
+                themeColor={themeColor}
+                setThemeColor={setThemeColor}
+                reminders={ReminderService.load()}
+                onAddReminder={onAddReminder}
+                onRemoveReminder={onRemoveReminder}
+                profile={profile}
+                isAdmin={isAdmin}
+                onCreateCoupon={onCreateCoupon}
+                onApplyCoupon={onApplyCoupon}
+                membership={membership}
+                onSetMembershipTier={onSetMembershipTier}
+                onBackupToStorage={onBackupToStorage}
+                onRestoreFromStorage={onRestoreFromStorage}
+                todayShortcut={todayShortcut}
+                toggleFavoritesOnly={toggleFavoritesOnly}
+                favoritesOnly={favoritesOnly}
+                darkMode={darkMode}
+                setDarkMode={setDarkMode}
+                user={user}
+              />
+
+              {/* 主區 */}
+              <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* 左欄：篩選 + 新增 + 清單（保留原本設計） */}
+                <div className={`lg:col-span-1 ${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h2 className="text-2xl font-bold">{currentDiary?'編輯日記':'新增日記'}</h2>
-                      <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x" className="w-6 h-6"/></button>
+                    <div className="relative">
+                      <div className="absolute left-3 top-3"><Icon name="search" className="w-5 h-5 text-gray-400"/></div>
+                      <input type="text" placeholder="搜尋日記..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
+                        className={`w-full pl-10 pr-4 py-2 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
                     </div>
 
-                    <input type="text" placeholder="標題" value={formData.title}
-                      onChange={e=>setFormData({...formData, title:e.target.value})}
-                      className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
-                    <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">心情</label>
-                        <div className="flex gap-2 flex-wrap">
-                          {moods.map(m=>(
-                            <button key={m} onClick={()=>setFormData({...formData,mood:m})}
-                              className={`text-3xl p-2 rounded-lg transition ${formData.mood===m?'bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
-                              {m}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">天氣</label>
-                        <div className="flex gap-2 flex-wrap">
-                          {weathers.map(w=>(
-                            <button key={w} onClick={()=>setFormData({...formData,weather:w})}
-                              className={`text-3xl p-2 rounded-lg transition ${formData.weather===w?'bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
-                              {w}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="flex flex-wrap gap-2">
+                      <select value={sortBy} onChange={e=>setSortBy(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`}>
+                        <option value="date-desc">最新優先</option>
+                        <option value="date-asc">最舊優先</option>
+                        <option value="title">標題排序</option>
+                      </select>
+                      <select value={filterMood} onChange={e=>setFilterMood(e.target.value)} className={`px-3 py-1 rounded-full text-sm ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`}>
+                        <option value="">所有心情</option>
+                        {moods.map(m=> <option key={m} value={m}>{m}</option>)}
+                      </select>
+                      <button onClick={todayShortcut} className="px-2 py-1 rounded-full text-sm border">今天</button>
+                      <button onClick={toggleFavoritesOnly} className={`px-2 py-1 rounded-full text-sm border ${favoritesOnly?'bg-yellow-50':''}`}>只看最愛</button>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">標籤</label>
-                      <div className="flex gap-2 flex-wrap">
-                        {allTags.map(tag=>(
-                          <button key={tag} onClick={()=>handleTagToggle(tag)}
-                            className={`px-3 py-1 rounded-full text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
-                            #{tag}
-                          </button>
-                        ))}
-                      </div>
+                      <div className="text-sm mb-2 text-gray-500">標籤雲（點擊篩選）</div>
+                      <TagCloud diaries={diaries} activeTag={selectedTag} onToggle={(t)=> setSelectedTag(selectedTag===t?'':t) } />
                     </div>
 
-                    <textarea placeholder="今天發生了什麼事呢..." value={formData.content}
-                      onChange={e=>setFormData({...formData, content:e.target.value})}
-                      className={`w-full h-64 p-4 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none resize-none`}/>
-                    <div className="text-sm text-gray-500">內容字數：{(formData.content||'').length}</div>
-
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium">圖片上傳</label>
-                      <div className="flex items-center gap-2">
-                        <label className="px-3 py-2 rounded-lg border cursor-pointer hover:bg-gray-50 flex items-center gap-2">
-                          <Icon name="image"/><span>選擇圖片</span>
-                          <input type="file" accept="image/*" className="hidden" multiple
-                                 onChange={e=>onUploadImages(e.target.files)}/>
-                        </label>
-                        {uploading && <span className="text-sm text-gray-500">上傳中...</span>}
-                      </div>
-                      {formData.images?.length>0 && (
-                        <div className="flex gap-2 flex-wrap">
-                          {formData.images.map((url,i)=>(
-                            <div key={i} className="relative">
-                              <img src={url} className="w-24 h-24 object-cover rounded-lg border"/>
-                              <button onClick={()=>setFormData(prev=>({...prev, images: prev.images.filter((_,idx)=>idx!==i)}))}
-                                className="absolute -top-2 -right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center">×</button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-4 flex-wrap">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={formData.isPrivate}
-                               onChange={e=>setFormData({...formData,isPrivate:e.target.checked})} className="w-5 h-5"/>
-                        <Icon name="lock"/><span>私密日記</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={formData.isFavorite}
-                               onChange={e=>setFormData({...formData,isFavorite:e.target.checked})} className="w-5 h-5"/>
-                        <Icon name="heart"/><span>加入最愛</span>
-                      </label>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">提醒時間（本地）</label>
-                        <input type="datetime-local" value={formData.remindAt}
-                          onChange={e=>setFormData({...formData, remindAt:e.target.value})}
-                          className="w-full border rounded-lg p-2"/>
-                        <div className="text-xs text-gray-500 mt-1">到時會發出桌面通知（需保持瀏覽器開啟或定期檢查）。</div>
-                      </div>
-                    </div>
-
-                    <button onClick={handleSaveDiary}
+                    <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
                       className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
-                      <Icon name="save"/> 儲存日記
+                      <Icon name="plus"/> 新增日記
                     </button>
-                  </div>
-                ) : currentDiary ? (
-                  (currentDiary.isPrivate
-                    ? <PrivateDiaryViewer currentDiary={currentDiary} user={user} profile={profile}
-                        onEdit={handleEditDiary} onDelete={handleDeleteDiary} toggleFavorite={toggleFavorite}/>
-                    : <DiaryViewer currentDiary={currentDiary} onEdit={handleEditDiary} onDelete={handleDeleteDiary} toggleFavorite={toggleFavorite}/>
-                  )
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    <div className="text-center">
-                      <Icon name="calendar" className="w-20 h-20 mx-auto mb-4"/>
-                      <p className="text-xl">選擇一篇日記來查看，或建立新的日記</p>
+
+                    <div className="space-y-3">
+                      {filteredDiaries.length===0 ? (
+                        <div className="text-center py-8 text-gray-400"><p>還沒有日記，快來寫一篇吧！</p></div>
+                      ) : filteredDiaries.map(d=>{
+                        const dt = toDate(d.createdAt);
+                        const dateText = dt ? dt.toLocaleDateString('zh-TW') : '—';
+                        return (
+                          <div key={d.id}
+                            onClick={()=>{ setCurrentDiary(d); setShowNewDiary(false); setDateFilter(''); }}
+                            className={`p-4 rounded-lg cursor-pointer transition ${currentDiary?.id===d.id ? 'bg-purple-100 border-2 primary-border' : darkMode?'bg-gray-700 hover:bg-gray-600':'bg-gray-50 hover:bg-gray-100'}`}>
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-2xl">{d.mood}</span>
+                                <span className="text-lg">{d.weather}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {d.isFavorite && <Icon name="heart" className="w-4 h-4 text-red-500" fill={true}/>}
+                                {d.isPrivate && <Icon name="lock" className="w-4 h-4"/>}
+                              </div>
+                            </div>
+                            <h3 className="font-bold mb-1">{d.title}</h3>
+                            <p className="text-sm text-gray-500 mb-2">{dateText}</p>
+                            {d.isPrivate ? (
+                              <div className="text-xs text-gray-500 italic flex items-center gap-1">
+                                <Icon name="lock" className="w-3 h-3" />
+                                <span>私密內容已隱藏</span>
+                              </div>
+                            ) : (
+                              <p className="text-sm line-clamp-2">{d.content}</p>
+                            )}
+                            {(d.tags||[]).length>0 && (
+                              <div className="flex gap-1 mt-2 flex-wrap">
+                                {d.tags.map(t=><span key={t} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">#{t}</span>)}
+                              </div>
+                            )}
+                            {d.images?.length>0 && (
+                              <div className="mt-2 flex gap-2 overflow-x-auto">
+                                {d.images.slice(0,3).map((url,i)=>(
+                                  <img key={i} src={url} className="w-16 h-16 object-cover rounded-lg border"/>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
 
-              <Charts diaries={diaries} darkMode={darkMode}/>
+                {/* 右欄：編輯/檢視 + 日曆 + 圖表 */}
+                <div className="lg:col-span-2 grid grid-cols-1 gap-6">
+                  <div ref={calendarRef} className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
+                    <h3 className="font-bold mb-3 flex items-center gap-2"><Icon name="calendar"/><span>日曆檢視</span></h3>
+                    <CalendarView diaries={diaries} onPickDate={(d)=>{ setDateFilter(d); setCurrentDiary(null); setShowNewDiary(false); }} />
+                    {dateFilter && (
+                      <div className="mt-3 text-sm">
+                        目前篩選日期：<span className="font-semibold">{dateFilter}</span>
+                        <button onClick={()=>setDateFilter('')} className="ml-2 px-2 py-0.5 rounded bg-gray-200 hover:bg-gray-300">清除</button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
+                    {showNewDiary ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h2 className="text-2xl font-bold">{currentDiary?'編輯日記':'新增日記'}</h2>
+                          <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x" className="w-6 h-6"/></button>
+                        </div>
+
+                        <input type="text" placeholder="標題" value={formData.title}
+                          onChange={e=>setFormData({...formData, title:e.target.value})}
+                          className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
+                        <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">心情</label>
+                            <div className="flex gap-2 flex-wrap">
+                              {moods.map(m=>(
+                                <button key={m} onClick={()=>setFormData({...formData,mood:m})}
+                                  className={`text-3xl p-2 rounded-lg transition ${formData.mood===m?'bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
+                                  {m}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">天氣</label>
+                            <div className="flex gap-2 flex-wrap">
+                              {weathers.map(w=>(
+                                <button key={w} onClick={()=>setFormData({...formData,weather:w})}
+                                  className={`text-3xl p-2 rounded-lg transition ${formData.weather===w?'bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
+                                  {w}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2">標籤</label>
+                          <div className="flex gap-2 flex-wrap">
+                            {allTags.map(tag=>(
+                              <button key={tag} onClick={()=>handleTagToggle(tag)}
+                                className={`px-3 py-1 rounded-full text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
+                                #{tag}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <textarea placeholder="今天發生了什麼事呢..." value={formData.content}
+                          onChange={e=>setFormData({...formData, content:e.target.value})}
+                          className={`w-full h-64 p-4 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none resize-none`}/>
+                        <div className="text-sm text-gray-500">內容字數：{(formData.content||'').length}</div>
+
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium">圖片上傳</label>
+                          <div className="flex items-center gap-2">
+                            <label className="px-3 py-2 rounded-lg border cursor-pointer hover:bg-gray-50 flex items-center gap-2">
+                              <Icon name="image"/><span>選擇圖片</span>
+                              <input type="file" accept="image/*" className="hidden" multiple
+                                    onChange={e=>onUploadImages(e.target.files)}/>
+                            </label>
+                            {uploading && <span className="text-sm text-gray-500">上傳中...</span>}
+                          </div>
+                          {formData.images?.length>0 && (
+                            <div className="flex gap-2 flex-wrap">
+                              {formData.images.map((url,i)=>(
+                                <div key={i} className="relative">
+                                  <img src={url} className="w-24 h-24 object-cover rounded-lg border"/>
+                                  <button onClick={()=>setFormData(prev=>({...prev, images: prev.images.filter((_,idx)=>idx!==i)}))}
+                                    className="absolute -top-2 -right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center">×</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked={formData.isPrivate}
+                                  onChange={e=>setFormData({...formData,isPrivate:e.target.checked})} className="w-5 h-5"/>
+                            <Icon name="lock"/><span>私密日記</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked={formData.isFavorite}
+                                  onChange={e=>setFormData({...formData,isFavorite:e.target.checked})} className="w-5 h-5"/>
+                            <Icon name="heart"/><span>加入最愛</span>
+                          </label>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">提醒時間（本地）</label>
+                            <input type="datetime-local" value={formData.remindAt}
+                              onChange={e=>setFormData({...formData, remindAt:e.target.value})}
+                              className="w-full border rounded-lg p-2"/>
+                            <div className="text-xs text-gray-500 mt-1">到時會發出桌面通知（需保持瀏覽器開啟或定期檢查）。</div>
+                          </div>
+                        </div>
+
+                        <button onClick={handleSaveDiary}
+                          className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
+                          <Icon name="save"/> 儲存日記
+                        </button>
+                      </div>
+                    ) : currentDiary ? (
+                      (currentDiary.isPrivate
+                        ? <PrivateDiaryViewer currentDiary={currentDiary} user={user} profile={profile}
+                            onEdit={handleEditDiary} onDelete={handleDeleteDiary} toggleFavorite={toggleFavorite}/>
+                        : <DiaryViewer currentDiary={currentDiary} onEdit={handleEditDiary} onDelete={handleDeleteDiary} toggleFavorite={toggleFavorite}/>
+                      )
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-400">
+                        <div className="text-center">
+                          <Icon name="calendar" className="w-20 h-20 mx-auto mb-4"/>
+                          <p className="text-xl">選擇一篇日記來查看，或建立新的日記</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div ref={chartsRef}>
+                    <Charts diaries={diaries} darkMode={darkMode}/>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
