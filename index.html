@@ -79,7 +79,6 @@
         gear:"M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm9 3.5a7.95 7.95 0 01-.22 1.8l2.06 1.6-2 3.46-2.46-1a8.1 8.1 0 01-3.1 1.8l-.36 2.6h-4l-.36-2.6a8.1 8.1 0 01-3.1-1.8l-2.46 1-2-3.46 2.06-1.6c.15.57.22 1.17.22 1.8z",
         star:"M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
         trophy:"M17 3h4v2a5 5 0 01-5 5h-1a6 6 0 11-12 0V3h4",
-        // === [✅ 新增] 側邊欄所需的圖示 ===
         menu: "M3 12h18M3 6h18M3 18h18",
         archive: "M21 8v13H3V8M1 3h22v5H1zM10 12h4",
         'refresh-ccw': "M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 0 0 3.51 9M3.51 15a9 9 0 0 0 16.98 0",
@@ -872,11 +871,11 @@
       );
     };
 
-    {/* === [✅ 新增] 側邊欄元件 === */}
-    const SidebarContent = ({ darkMode }) => {
+    {/* === [🔄 修改] 側邊欄元件 (SidebarContent) === */}
+    const SidebarContent = ({ darkMode, user }) => {
       const dark = darkMode;
-      const user = { name: "洪嘉成" }; // 來自圖片的模擬用戶
 
+      // 側邊欄項目
       const NavItem = ({ icon, text, active = false, badge = null }) => (
         <button className={`
           flex items-center gap-4 w-full text-left px-5 py-3 rounded-lg transition
@@ -898,12 +897,13 @@
         </button>
       );
 
-      const SectionHeader = ({ title }) => (
+      // 側邊欄標籤 (根據 image_75c362.png 改為純文字)
+      const LabelHeader = ({ title }) => (
          <div className={`
            px-5 py-2 mt-2
-           ${dark ? 'text-gray-400' : 'text-gray-500'}
+           ${dark ? 'text-gray-500' : 'text-gray-600'}
          `}>
-           <span className="text-xs font-bold uppercase tracking-wider">{title}</span>
+           <span className="text-sm">{title}</span>
          </div>
       );
 
@@ -912,37 +912,53 @@
           flex flex-col h-full w-full
           ${dark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900 border-r border-gray-200'}
         `}>
-          {/* User Header */}
+          
+          {/* 使用者標頭 (User Header) - [🔄 已修改] */}
           <div className={`flex items-center gap-3 p-4 ${dark ? 'border-b border-gray-700' : 'border-b'}`}>
-            <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold">
-              嘉
-            </div>
-            <span className="font-semibold text-lg">
-              {user.name}
-            </span>
+            {user ? (
+              // 已登入狀態 (根據圖片)
+              <>
+                <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
+                  嘉
+                </div>
+                <span className="font-semibold text-lg">
+                  洪嘉成
+                </span>
+              </>
+            ) : (
+              // 未登入狀態
+              <>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${dark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                  <Icon name="user" className={`w-6 h-6 ${dark ? 'text-gray-400' : 'text-gray-500'}`} />
+                </div>
+                <span className="font-semibold text-lg text-gray-500">
+                  未登入
+                </span>
+              </>
+            )}
           </div>
 
-          {/* Nav List */}
+          {/* 導覽列表 (Nav List) - [🔄 已修改] */}
           <div className="flex-1 overflow-y-auto p-3 space-y-1">
             <NavItem icon="archive" text="所有記錄" active={true} />
 
-            {/* 時間 */}
-            <SectionHeader title="時間" />
+            {/* 時間 (改用 LabelHeader) */}
+            <LabelHeader title="時間" />
             <NavItem icon="sun" text="早上" />
             <NavItem icon="sun" text="下午" />
             <NavItem icon="moon" text="晚上" badge="● 現在" />
 
-            {/* 區域 */}
-            <SectionHeader title="區域" />
+            {/* 區域 (改用 LabelHeader) */}
+            <LabelHeader title="區域" />
             <NavItem icon="plus" text="新區域" />
 
-            {/* 參考 */}
-            <SectionHeader title="參考" />
+            {/* 參考 (改用 LabelHeader) */}
+            <LabelHeader title="參考" />
             <NavItem icon="refresh-ccw" text="習慣" />
             <NavItem icon="scissors" text="休假模式" />
             <NavItem icon="star" text="付款" />
             <NavItem icon="gear" text="應用設置" />
-            <NavItem icon="share" text="資源" />
+            {/* "資源" 選項已移除 */}
           </div>
         </div>
       );
@@ -976,8 +992,6 @@
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
         isPrivate:false, isFavorite:false, images:[], remindAt:''
       });
-
-      // === [✅ 新增] 側邊欄狀態 ===
       const [sidebarOpen, setSidebarOpen] = useState(false);
 
       useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
@@ -1303,17 +1317,17 @@
           ${darkMode ? 'bg-gray-900 text-white' : 'bg-transparent'}
         `}>
           
-          {/* === 1. 桌面版側邊欄 (Desktop Sidebar) === */}
+          {/* === 1. 桌面版側邊欄 (Desktop Sidebar) - [🔄 已修改] === */}
           <div className="hidden md:block w-64 flex-shrink-0 h-full">
-            <SidebarContent darkMode={darkMode} />
+            <SidebarContent darkMode={darkMode} user={user} />
           </div>
 
-          {/* === 2. 手機版側邊欄 (Mobile Sidebar) === */}
+          {/* === 2. 手機版側邊欄 (Mobile Sidebar) - [🔄 已修改] === */}
           {sidebarOpen && (
             <div className="fixed inset-0 flex z-50 md:hidden">
               {/* 側邊欄本體 */}
               <div className="w-64 h-full">
-                <SidebarContent darkMode={darkMode} />
+                <SidebarContent darkMode={darkMode} user={user} />
               </div>
               {/* 遮罩 (Overlay) */}
               <div
