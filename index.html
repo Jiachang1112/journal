@@ -1011,9 +1011,6 @@
       const membership = profile?.membership || { tier:'free', expiresAt:null };
       const [favoritesOnly, setFavoritesOnly] = useState(false);
       const [formData, setFormData] = useState({
-        // [新增] 日曆分析開關
-const [showCalendarAnalysis, setShowCalendarAnalysis] = useState(false);
-
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
         isPrivate:false, isFavorite:false, images:[], remindAt:''
       });
@@ -1557,39 +1554,20 @@ const [showCalendarAnalysis, setShowCalendarAnalysis] = useState(false);
             );
           
           case 'calendar':
-  return (
-    <div className="max-w-7xl mx-auto p-4">
-      <h2 className="text-3xl font-bold mb-4">🗓️ 日曆檢視</h2>
-
-      <CalendarView
-        diaries={diaries}
-        onPickDate={(date) => {
-          setDateFilter(date);
-          setActiveView('list');       // 點日期後回列表並帶入篩選
-          setCurrentDiary(null);
-          setShowNewDiary(false);
-        }}
-      />
-
-      {/* [新增] 分析按鈕 */}
-      <div className="mt-4 flex justify-center">
-        <button
-          onClick={() => setShowCalendarAnalysis(v => !v)}
-          className="px-4 py-2 rounded-lg primary-bg text-white shadow hover:opacity-90"
-        >
-          {showCalendarAnalysis ? '收起分析' : '分析'}
-        </button>
-      </div>
-
-      {/* [新增] 分析內容（沿用既有 Charts 元件：就是你框起來的兩張圖） */}
-      {showCalendarAnalysis && (
-        <div className="mt-6">
-          <Charts diaries={diaries} darkMode={darkMode} />
-        </div>
-      )}
-    </div>
-  );
-
+            return (
+              <div className="max-w-7xl mx-auto p-4">
+                <h2 className="text-3xl font-bold mb-4">🗓️ 日曆檢視</h2>
+                <CalendarView 
+                  diaries={diaries} 
+                  onPickDate={(date) => {
+                    setDateFilter(date);
+                    setActiveView('list'); // 點擊日期後切回列表檢視並篩選
+                    setCurrentDiary(null); // 清除右側的單篇日記顯示
+                    setShowNewDiary(false); // 清除新增/編輯表單
+                  }} 
+                />
+              </div>
+            );
           
           // 處理其他側邊欄項目 (例如：設定會打開 Modal，然後回到 'list')
           case 'settings':
