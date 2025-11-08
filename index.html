@@ -86,11 +86,12 @@
         share: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"
       };
       return React.createElement('svg', {
-        className,
-        fill: fill ? 'currentColor' : 'none',
-        stroke: fill ? 'none' : 'currentColor',
-        strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
-      }, React.createElement('path',{ d: P[name] }));
+  className,
+  fill: fill ? 'currentColor' : 'none',
+  stroke: fill ? 'none' : 'currentColor',
+  strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
+}, React.createElement('path',{ d: P[name] }));
+
     };
 
     const moods = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
@@ -276,7 +277,7 @@
                   <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="密碼"
                          className="w-full border rounded-lg p-2"/>
                   <button onClick={submit} className="w-full primary-bg text-white rounded-lg py-2">{isSignup?'註冊':'登入'}</button>
-                  <button onClick={google} className="w-full bg-red-500 hover:bg-red-600 text白 rounded-lg py-2">使用 Google</button>
+                  <button onClick={google} className="w-full bg-red-500 hover:bg-red-600 text-white rounded-lg py-2">使用 Google</button>
                 </div>
               </div>
             </div>
@@ -342,9 +343,9 @@
         </div>
       );
     };
-
-    // ▼▼ 修改：CalendarView 加入 showAnalysis / onToggleAnalysis 並在卡片右下角放按鈕
-    const CalendarView = ({ diaries, onPickDate, showAnalysis, onToggleAnalysis }) => {
+    
+    // [✅ 已修改] CalendarView：移除 sidebarMode，固定為完整模式
+    const CalendarView = ({ diaries, onPickDate }) => {
       const [cur, setCur] = useState(new Date());
       const y = cur.getFullYear(), m = cur.getMonth();
       const first = new Date(y,m,1);
@@ -376,7 +377,7 @@
               if(!d) return <div key={i} className="h-20"></div>;
               const key = localDateKey(d);
               const count = hasMap[key]||0;
-
+              
               const btnClasses = 'h-20 rounded-xl text-sm';
 
               return (
@@ -396,16 +397,8 @@
               );
             })}
           </div>
-          <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-            <div>
-              點擊日期：<span className="font-semibold">篩選當日日記</span>
-            </div>
-            <button
-              onClick={onToggleAnalysis}
-              className="px-3 py-1 rounded-lg border hover:bg-gray-50"
-            >
-              {showAnalysis ? '隱藏分析' : '顯示分析'}
-            </button>
+          <div className="mt-4 text-center text-sm text-gray-600">
+            點擊日期：<span className="font-semibold">篩選當日日記</span>
           </div>
         </div>
       );
@@ -602,8 +595,8 @@
       const off = Math.max(0, basePrice - due);
 
       return (
-        <div className="fixed inset-0 bg黑/40 flex items-end sm:items-center justify-center z-50">
-          <div className="bg白 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg">
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="p-4 border-b flex items-center justify-between">
               <div className="font-bold text-lg">Get Premium</div>
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
@@ -723,7 +716,7 @@
         alert('已清除私密日記密碼'); setPrivPwdInput('');
       };
       return (
-        <div className="固定 inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b flex items-center justify-between">
               <div className="font-bold text-lg">設定面板</div>
@@ -850,7 +843,7 @@
                   <button onClick={()=>{
                     if(!when){alert('請選擇時間');return;}
                     onAddReminder({title, when, freq}); setTitle(''); setWhen(''); setFreq('ONCE');
-                  }} className="sm:col-span-2 w-full primary-bg text白 rounded-lg py-2">新增提醒</button>
+                  }} className="sm:col-span-2 w-full primary-bg text-white rounded-lg py-2">新增提醒</button>
                 </div>
                 <div className="mt-3">
                   <div className="text-sm text-gray-500 mb-1">目前提醒</div>
@@ -893,13 +886,14 @@
     const SidebarContent = ({ darkMode, user, activeView, setActiveView, setSidebarOpen }) => {
       const dark = darkMode;
 
+      // 側邊欄項目
       const NavItem = ({ icon, text, viewName, badge = null }) => {
         const active = activeView === viewName;
         return (
-          <button
+          <button 
             onClick={() => {
               setActiveView(viewName);
-              setSidebarOpen(false);
+              setSidebarOpen(false); // 手機版點擊後關閉側邊欄
             }}
             className={`
               flex items-center gap-4 w-full text-left px-5 py-3 rounded-lg transition
@@ -923,6 +917,7 @@
         );
       };
 
+      // 側邊欄標籤
       const LabelHeader = ({ title }) => (
          <div className={`
            px-5 py-2 mt-2
@@ -937,10 +932,13 @@
           flex flex-col h-full w-full
           ${dark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900 border-r border-gray-200'}
         `}>
+          
+          {/* 使用者標頭 (User Header) */}
           <div className={`flex items-center gap-3 p-4 ${dark ? 'border-b border-gray-700' : 'border-b'}`}>
             {user ? (
+              // 已登入狀態 (根據圖片)
               <>
-                <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text白 font-bold text-lg">
+                <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
                   嘉
                 </div>
                 <span className="font-semibold text-lg">
@@ -948,6 +946,7 @@
                 </span>
               </>
             ) : (
+              // 未登入狀態
               <>
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${dark ? 'bg-gray-700' : 'bg-gray-200'}`}>
                   <Icon name="user" className={`w-6 h-6 ${dark ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -959,18 +958,24 @@
             )}
           </div>
 
+          {/* 導覽列表 (Nav List) */}
           <div className="flex-1 overflow-y-auto p-3 space-y-1">
             <NavItem icon="archive" text="所有記錄" viewName="list" />
+            
+            {/* [✅ 新增] 日曆導覽項目 */}
             <NavItem icon="calendar" text="日曆" viewName="calendar" />
 
+            {/* 時間 (改用 LabelHeader) */}
             <LabelHeader title="時間" />
             <NavItem icon="sun" text="早上" viewName="morning" />
             <NavItem icon="sun" text="下午" viewName="afternoon" />
             <NavItem icon="moon" text="晚上" viewName="night" badge="● 現在" />
 
+            {/* 區域 (改用 LabelHeader) */}
             <LabelHeader title="區域" />
             <NavItem icon="plus" text="新區域" viewName="newArea" />
 
+            {/* 參考 (改用 LabelHeader) */}
             <LabelHeader title="參考" />
             <NavItem icon="refresh-ccw" text="習慣" viewName="habits" />
             <NavItem icon="scissors" text="休假模式" viewName="vacation" />
@@ -980,6 +985,7 @@
         </div>
       );
     };
+
 
     /* 主 App */
     const DiaryApp = () => {
@@ -1009,16 +1015,15 @@
         isPrivate:false, isFavorite:false, images:[], remindAt:''
       });
       const [sidebarOpen, setSidebarOpen] = useState(false);
-
-      // ▼▼ 新增：控制日曆是否顯示分析
-      const [showCalendarAnalysis, setShowCalendarAnalysis] = useState(false);
-
-      const [activeView, setActiveView] = useState('list');
+      
+      // [✅ 新增] 控制主內容區顯示哪個畫面的狀態
+      const [activeView, setActiveView] = useState('list'); // 'list' | 'calendar' | 'charts' | ...
 
       useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
       useEffect(()=>{ document.documentElement.style.setProperty('--primary', themeColor); localStorage.setItem('themeColor', themeColor); },[themeColor]);
       useEffect(()=>{ localStorage.setItem('darkMode', darkMode ? '1' : '0'); }, [darkMode]);
-
+      
+      // Auth + Firestore (原封不動)
       useEffect(()=>{
         const unsub = auth.onAuthStateChanged(async (u)=>{
           setUser(u||null);
@@ -1050,6 +1055,7 @@
         return ()=>unsub();
       },[]);
 
+      // 過濾排序 (原封不動)
       useEffect(()=>{
         let filtered = [...diaries];
         if (searchTerm) {
@@ -1082,6 +1088,7 @@
         setFilteredDiaries(filtered);
       },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter, favoritesOnly]);
 
+      // 上傳圖片 (原封不動)
       const onUploadImages = async (files)=>{
         if(!files || files.length===0) return;
         setUploading(true);
@@ -1103,6 +1110,7 @@
         finally{ setUploading(false); }
       };
 
+      // 儲存/刪除/編輯日記 (原封不動)
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){ alert('請填寫標題和內容'); return; }
         const docData = {
@@ -1144,7 +1152,7 @@
         setCurrentDiary(diary);
         setFormData({ ...diary, remindAt:'' });
         setShowNewDiary(true);
-        setActiveView('list');
+        setActiveView('list'); // 確保在列表檢視下開啟編輯
       };
       const toggleFavorite = async (id)=>{
         if(user){
@@ -1167,6 +1175,7 @@
         }));
       };
 
+      // 匯入匯出 (原封不動)
       const exportDiaries = ()=>{
         const dataStr = JSON.stringify(diaries, null, 2);
         const blob = new Blob([dataStr],{ type:'application/json' });
@@ -1203,6 +1212,7 @@
         }catch(e){ alert('匯入失敗：'+e.message); }
       };
 
+      // 提醒 (原封不動)
       const reminders = useMemo(()=>ReminderService.load(), [settingsOpen]);
       const onAddReminder = ({title, when, freq})=>{
         const id = `rem_${Date.now()}`;
@@ -1213,6 +1223,7 @@
       };
       const onRemoveReminder = (id)=>{ ReminderService.remove(id); alert('已刪除提醒'); };
 
+      // 會員/優惠券/付款 (原封不動)
       const onSetMembershipTier = async (tier)=>{
         if(!user){ alert('請先登入'); return; }
         const expiresAt = membership?.expiresAt ? toDate(membership.expiresAt) : new Date();
@@ -1240,29 +1251,29 @@
         alert('已建立/更新優惠券：'+code);
       };
       const onApplyCoupon = async (code)=>{
-        if(!user){
-          alert('請先登入才能套用優惠券');
-          return;
+        if(!user){ 
+          alert('請先登入才能套用優惠券'); 
+          return; 
         }
-        if(!code){
-          alert('請輸入優惠券代碼');
-          return;
+        if(!code){ 
+          alert('請輸入優惠券代碼'); 
+          return; 
         }
         try{
           const snap = await db.collection('coupons').doc(code).get();
-          if(!snap.exists){
-            alert('優惠券不存在');
-            return;
+          if(!snap.exists){ 
+            alert('優惠券不存在'); 
+            return; 
           }
           const c = snap.data();
-          if(c.active === false){
-            alert('此優惠券未啟用');
-            return;
+          if(c.active === false){ 
+            alert('此優惠券未啟用'); 
+            return; 
           }
           const discountAmount = Math.max(0, Number(c.discountAmount||0));
-          if(discountAmount <= 0){
-            alert('此優惠券未設定折抵金額');
-            return;
+          if(discountAmount <= 0){ 
+            alert('此優惠券未設定折抵金額'); 
+            return; 
           }
           setAppliedCoupon({ code, discountAmount, active:true });
           alert(`已套用優惠券：${code}（可折抵 NT$ ${discountAmount}）`);
@@ -1294,6 +1305,7 @@
         setShowPremium(false);
       };
 
+      // 備份/還原 (原封不動)
       const onBackupToStorage = async ()=>{
         if(!user){ alert('請先登入'); return; }
         const payload = JSON.stringify(diaries, null, 2);
@@ -1319,20 +1331,24 @@
         alert('已從 Storage 還原最新備份');
       };
 
-      const todayShortcut = ()=>{
-        const today = localDateKey(new Date());
-        setDateFilter(today);
-        setCurrentDiary(null);
-        setShowNewDiary(false);
-        setActiveView('list');
+      // 快捷鍵 (原封不動)
+      const todayShortcut = ()=>{ 
+        const today = localDateKey(new Date()); 
+        setDateFilter(today); 
+        setCurrentDiary(null); 
+        setShowNewDiary(false); 
+        setActiveView('list'); // 確保切換回列表
       };
       const toggleFavoritesOnly = ()=> setFavoritesOnly(v=>!v);
 
+      // 根據 activeView 渲染主內容
       const renderMainContent = () => {
         switch (activeView) {
           case 'list':
             return (
               <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* 左欄：篩選 + 新增 + 清單 */}
                 <div className={`lg:col-span-1 ${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
                   <div className="space-y-4">
                     <div className="relative">
@@ -1353,6 +1369,7 @@
                       <button onClick={todayShortcut} className="px-2 py-1 rounded-full text-sm border">今天</button>
                       <button onClick={toggleFavoritesOnly} className={`px-2 py-1 rounded-full text-sm border ${favoritesOnly?'bg-yellow-50':''}`}>只看最愛</button>
                     </div>
+                    {/* [✅ 日期篩選狀態顯示] */}
                     {dateFilter && (
                       <div className="text-sm">
                         日期篩選：<span className="font-semibold">{dateFilter}</span>
@@ -1399,7 +1416,7 @@
                             )}
                             {(d.tags||[]).length>0 && (
                               <div className="flex gap-1 mt-2 flex-wrap">
-                                {d.tags.map(t=><span key={t} className="text-xs bg紫-200 text紫-700 px-2 py-1 rounded">#{t}</span>)}
+                                {d.tags.map(t=><span key={t} className="text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">#{t}</span>)}
                               </div>
                             )}
                             {d.images?.length>0 && (
@@ -1416,6 +1433,7 @@
                   </div>
                 </div>
 
+                {/* 右欄：編輯/檢視 + 圖表 */}
                 <div className="lg:col-span-2 grid grid-cols-1 gap-6">
                   <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
                     {showNewDiary ? (
@@ -1426,7 +1444,7 @@
                         </div>
                         <input type="text" placeholder="標題" value={formData.title}
                           onChange={e=>setFormData({...formData, title:e.target.value})}
-                          className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text白':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
+                          className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
                         <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
@@ -1457,7 +1475,7 @@
                           <div className="flex gap-2 flex-wrap">
                             {allTags.map(tag=>(
                               <button key={tag} onClick={()=>handleTagToggle(tag)}
-                                className={`px-3 py-1 rounded-full text-sm transition ${formData.tags.includes(tag)?'primary-bg text白':'bg-gray-200 hover:bg-gray-300'}`}>
+                                className={`px-3 py-1 rounded-full text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
                                 #{tag}
                               </button>
                             ))}
@@ -1465,7 +1483,7 @@
                         </div>
                         <textarea placeholder="今天發生了什麼事呢..." value={formData.content}
                           onChange={e=>setFormData({...formData, content:e.target.value})}
-                          className={`w-full h-64 p-4 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text白':'border-gray-300'} focus:ring-2 focus:outline-none resize-none`}/>
+                          className={`w-full h-64 p-4 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none resize-none`}/>
                         <div className="text-sm text-gray-500">內容字數：{(formData.content||'').length}</div>
                         <div className="space-y-2">
                           <label className="block text-sm font-medium">圖片上傳</label>
@@ -1483,7 +1501,7 @@
                                 <div key={i} className="relative">
                                   <img src={url} className="w-24 h-24 object-cover rounded-lg border"/>
                                   <button onClick={()=>setFormData(prev=>({...prev, images: prev.images.filter((_,idx)=>idx!==i)}))}
-                                    className="absolute -top-2 -right-2 bg黑/60 text白 rounded-full w-6 h-6 flex items-center justify-center">×</button>
+                                    className="absolute -top-2 -right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center">×</button>
                                 </div>
                               ))}
                             </div>
@@ -1511,7 +1529,7 @@
                           </div>
                         </div>
                         <button onClick={handleSaveDiary}
-                          className="w-full primary-bg text白 py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
+                          className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
                           <Icon name="save"/> 儲存日記
                         </button>
                       </div>
@@ -1534,42 +1552,41 @@
                 </div>
               </div>
             );
-
+          
           case 'calendar':
             return (
               <div className="max-w-7xl mx-auto p-4">
                 <h2 className="text-3xl font-bold mb-4">🗓️ 日曆檢視</h2>
-                <CalendarView
-                  diaries={diaries}
+                <CalendarView 
+                  diaries={diaries} 
                   onPickDate={(date) => {
                     setDateFilter(date);
-                    setActiveView('list');
-                    setCurrentDiary(null);
-                    setShowNewDiary(false);
-                  }}
-                  showAnalysis={showCalendarAnalysis}
-                  onToggleAnalysis={() => setShowCalendarAnalysis(v => !v)}
+                    setActiveView('list'); // 點擊日期後切回列表檢視並篩選
+                    setCurrentDiary(null); // 清除右側的單篇日記顯示
+                    setShowNewDiary(false); // 清除新增/編輯表單
+                  }} 
                 />
-
-                {showCalendarAnalysis && (
-                  <div className="mt-6">
-                    <Charts diaries={diaries} darkMode={darkMode} />
-                  </div>
-                )}
               </div>
             );
-
+          
+          // 處理其他側邊欄項目 (例如：設定會打開 Modal，然後回到 'list')
           case 'settings':
+            // 由於設定會打開一個 Modal，在這裡我們只需要打開 Modal
+            // 但為避免無限循環，我們在 SettingsPanel 彈出後，讓 activeView 狀態回到 'list'
+            // 實際的 setSettingsOpen(true) 可以在 renderMainContent 外面處理，或在這裡使用一個不返回元素的邏輯。
+            // 由於我們的設計，NaviItem 點擊後會呼叫 setActiveView('settings')
+            // 最好的做法是讓 NaviItem 點擊時直接處理設定。
+            // 這裡我們只是一個 placeholder:
             if (!settingsOpen) { setSettingsOpen(true); }
-            setActiveView('list');
-            return null;
-
+            setActiveView('list'); // 切回 list，因為 settings 是 Modal
+            return null; // 不在主區渲染內容
+          
           default:
             return (
               <div className="max-w-7xl mx-auto p-4">
                 <div className="text-center py-20 text-gray-500">
                   <p className="text-xl">🛠️ 正在開發中：{activeView} 檢視</p>
-                  <button onClick={() => setActiveView('list')} className="mt-4 primary-bg text白 px-4 py-2 rounded-lg">
+                  <button onClick={() => setActiveView('list')} className="mt-4 primary-bg text-white px-4 py-2 rounded-lg">
                     回「所有記錄」
                   </button>
                 </div>
@@ -1578,55 +1595,70 @@
         }
       };
 
+      // === DiaryApp 的主要渲染邏輯 ===
       return (
         <div className={`
           flex h-screen overflow-hidden
-          ${darkMode ? 'bg-gray-900 text白' : 'bg-transparent'}
+          ${darkMode ? 'bg-gray-900 text-white' : 'bg-transparent'}
         `}>
+          
+          {/* === 1. 桌面版側邊欄 (Desktop Sidebar) === */}
           <div className="hidden md:block w-64 flex-shrink-0 h-full">
-            <SidebarContent
-              darkMode={darkMode}
-              user={user}
-              activeView={activeView}
+            <SidebarContent 
+              darkMode={darkMode} 
+              user={user} 
+              activeView={activeView} 
               setActiveView={setActiveView}
               setSidebarOpen={setSidebarOpen}
             />
           </div>
 
+          {/* === 2. 手機版側邊欄 (Mobile Sidebar) === */}
           {sidebarOpen && (
             <div className="fixed inset-0 flex z-50 md:hidden">
+              {/* 側邊欄本體 */}
               <div className="w-64 h-full">
-                <SidebarContent
-                  darkMode={darkMode}
-                  user={user}
-                  activeView={activeView}
+                <SidebarContent 
+                  darkMode={darkMode} 
+                  user={user} 
+                  activeView={activeView} 
                   setActiveView={setActiveView}
                   setSidebarOpen={setSidebarOpen}
                 />
               </div>
+              {/* 遮罩 (Overlay) */}
               <div
                 onClick={() => setSidebarOpen(false)}
-                className="flex-1 bg黑/40"
+                className="flex-1 bg-black/40"
               ></div>
             </div>
           )}
 
+          {/* === 3. 主要內容區域 (Main Content) === */}
           <main className="flex-1 w-full h-screen overflow-y-auto">
+
+            {/* Top Bar (原封不動) */}
             <div className={`${darkMode?'bg-gray-800':'bg-white'} shadow-lg sticky top-0 z-40`}>
               <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
+                
+                {/* (左側：漢堡按鈕 + 標題) */}
                 <div className="flex items-center gap-3">
-                  <button
+                  {/* 漢堡按鈕 (僅在手機/平板上顯示) */}
+                  <button 
                     onClick={() => setSidebarOpen(true)}
-                    className={`p-2 rounded-lg md:hidden ${darkMode ? 'text白' : 'text-gray-700'}`}
+                    className={`p-2 rounded-lg md:hidden ${darkMode ? 'text-white' : 'text-gray-700'}`}
                     title="開啟選單"
                   >
                     <Icon name="menu" className="w-6 h-6" />
                   </button>
+
+                  {/* 標題 (原封不動) */}
                   <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
                 </div>
 
+                {/* (右側：您原本的按鈕) (原封不動) */}
                 <div className="flex items-center gap-3 flex-wrap">
-                  <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text白">
+                  <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                     Get Premium
                   </button>
                   <button
@@ -1634,7 +1666,7 @@
                     title="設定"
                     className={`group w-10 h-10 rounded-full flex items-center justify-center
                       ring-1 transition hover:scale-105
-                      ${darkMode ? 'ring白/20 hover:ring白/30 bg-transparent' : 'ring黑/10 hover:ring黑/20 bg-transparent'}`}
+                      ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent' : 'ring-black/10 hover:ring-black/20 bg-transparent'}`}
                   >
                     <img
                       src="assets/img/settings-icon.png"
@@ -1647,10 +1679,12 @@
               </div>
             </div>
 
+            {/* Streak (原封不動) */}
             <div className="max-w-7xl mx-auto px-4 pt-4">
               <StreakBadge diaries={diaries}/>
             </div>
 
+            {/* Premium Modal (原封不動) */}
             <PremiumModal
               open={showPremium}
               onClose={()=>setShowPremium(false)}
@@ -1664,6 +1698,7 @@
               setSelectedPlan={setSelectedPlan}
             />
 
+            {/* 設定面板 (原封不動) */}
             <SettingsPanel
               open={settingsOpen}
               onClose={()=>setSettingsOpen(false)}
@@ -1690,8 +1725,9 @@
               user={user}
             />
 
+            {/* [✅ 根據 activeView 渲染主內容] */}
             {renderMainContent()}
-
+            
           </main>
         </div>
       );
@@ -1714,7 +1750,7 @@
             <p className="text-gray-600 mb-4">這是一篇私密日記，請輸入密碼以查看內容</p>
             <div className="flex justify-center gap-2">
               <input type="password" value={inputPwd} onChange={e=>setInputPwd(e.target.value)} className="border rounded-lg p-2"/>
-              <button onClick={checkPassword} className="primary-bg text白 rounded-lg px-3">解鎖</button>
+              <button onClick={checkPassword} className="primary-bg text-white rounded-lg px-3">解鎖</button>
             </div>
           </div>
         );
@@ -1746,7 +1782,7 @@
         </div>
         {(currentDiary.tags||[]).length>0 && (
           <div className="flex gap-2 flex-wrap">
-            {currentDiary.tags.map(t=><span key={t} className="bg紫-200 text紫-700 px-3 py-1 rounded-full">#{t}</span>)}
+            {currentDiary.tags.map(t=><span key={t} className="bg-purple-200 text-purple-700 px-3 py-1 rounded-full">#{t}</span>)}
           </div>
         )}
         {currentDiary.images?.length>0 && (
