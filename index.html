@@ -1010,6 +1010,8 @@
       const isAdmin = profile?.role === 'admin';
       const membership = profile?.membership || { tier:'free', expiresAt:null };
       const [favoritesOnly, setFavoritesOnly] = useState(false);
+      // 控制日曆頁是否顯示分析
+      const [showCalendarAnalysis, setShowCalendarAnalysis] = useState(false);
       const [formData, setFormData] = useState({
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
         isPrivate:false, isFavorite:false, images:[], remindAt:''
@@ -1554,20 +1556,32 @@
             );
           
           case 'calendar':
-            return (
-              <div className="max-w-7xl mx-auto p-4">
-                <h2 className="text-3xl font-bold mb-4">🗓️ 日曆檢視</h2>
-                <CalendarView 
-                  diaries={diaries} 
-                  onPickDate={(date) => {
-                    setDateFilter(date);
-                    setActiveView('list'); // 點擊日期後切回列表檢視並篩選
-                    setCurrentDiary(null); // 清除右側的單篇日記顯示
-                    setShowNewDiary(false); // 清除新增/編輯表單
-                  }} 
-                />
-              </div>
-            );
+  return (
+    <div className="max-w-7xl mx-auto p-4">
+      <h2 className="text-3xl font-bold mb-4">🗓️ 日曆檢視</h2>
+
+      <CalendarView
+        diaries={diaries}
+        onPickDate={(date) => {
+          setDateFilter(date);
+          setActiveView('list'); // 點日期後切回列表檢視並篩選
+          setCurrentDiary(null);
+          setShowNewDiary(false);
+        }}
+        // ▼▼ 新增：把按鈕的顯示/切換權交給 DiaryApp
+        showAnalysis={showCalendarAnalysis}
+        onToggleAnalysis={() => setShowCalendarAnalysis(v => !v)}
+      />
+
+      {/* ▼▼ 新增：日曆下方顯示分析（紅框兩張圖） */}
+      {showCalendarAnalysis && (
+        <div className="mt-6">
+          <Charts diaries={diaries} darkMode={darkMode} />
+        </div>
+      )}
+    </div>
+  );
+
           
           // 處理其他側邊欄項目 (例如：設定會打開 Modal，然後回到 'list')
           case 'settings':
