@@ -120,6 +120,21 @@
       return `${y}-${m}-${day}`;
     };
 
+    // [✅ 新增] 日期格式化工具：將 ISO String 轉為 datetime-local input 需要的格式
+    const toDateTimeLocal = (isoString) => {
+      if (!isoString) return '';
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '';
+        // 為了處理時區問題，我們需要手動調整
+        const tzoffset = (new Date()).getTimezoneOffset() * 60000; // 本地時區與 UTC 的毫秒差
+        const localISOTime = (new Date(date.getTime() - tzoffset)).toISOString().slice(0, 16);
+        return localISOTime;
+      } catch (e) {
+        return '';
+      }
+    };
+
     /* SHA-256 (原封不動) */
     async function sha256Hex(text){
       try{
@@ -1052,13 +1067,16 @@
       const isAdmin = profile?.role === 'admin';
       const membership = profile?.membership || { tier:'free', expiresAt:null };
       const [favoritesOnly, setFavoritesOnly] = useState(false);
+      
+      // [✅ 修改] formData 狀態，新增 createdAt
       const [formData, setFormData] = useState({
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
-        isPrivate:false, isFavorite:false, images:[], remindAt:''
+        isPrivate:false, isFavorite:false, images:[], remindAt:'',
+        createdAt: new Date().toISOString() // 預設為當前時間
       });
       const [sidebarOpen, setSidebarOpen] = useState(false);
       
-      // [✅ 新增] 控制主內容區顯示哪個畫面的狀態
+      // [✅ 修改] activeView 狀態，新增 'analysis'
       const [activeView, setActiveView] = useState('list'); // 'list' | 'calendar' | 'analysis' | ...
 
       useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
@@ -1152,14 +1170,15 @@
         finally{ setUploading(false); }
       };
 
-      // 儲存/刪除/編輯日記 (原封不動)
+      // [✅ 修改] 儲存/刪除/編輯日記
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){ alert('請填寫標題和內容'); return; }
         const docData = {
           title: formData.title, content: formData.content, tags: formData.tags||[],
           mood: formData.mood||'😊', weather: formData.weather||'☀️',
           isPrivate: !!formData.isPrivate, isFavorite: !!formData.isFavorite,
-          images: formData.images||[], createdAt: currentDiary?.createdAt || new Date().toISOString(),
+          images: formData.images||[], 
+          createdAt: formData.createdAt || new Date().toISOString(), // [✅ 修改] 使用 formData 的日期
           updatedAt: new Date().toISOString(),
         };
         if(formData.remindAt){
@@ -1192,7 +1211,12 @@
       };
       const handleEditDiary = (diary)=>{
         setCurrentDiary(diary);
-        setFormData({ ...diary, remindAt:'' });
+        // [✅ 修改] 載入日記的 createdAt
+        setFormData({ 
+          ...diary, 
+          remindAt:'',
+          createdAt: diary.createdAt || new Date().toISOString() 
+        });
         setShowNewDiary(true);
         setActiveView('list'); // 確保在列表檢視下開啟編輯
       };
@@ -1205,8 +1229,13 @@
           setDiaries(diaries.map(d=>d.id===id?{...d,isFavorite:!d.isFavorite}:d));
         }
       };
+      // [✅ 修改] resetForm，加入 createdAt
       const resetForm = ()=>{
-        setFormData({ title:'',content:'',tags:[],mood:'😊',weather:'☀️',isPrivate:false,isFavorite:false,images:[], remindAt:'' });
+        setFormData({ 
+          title:'',content:'',tags:[],mood:'😊',weather:'☀️',
+          isPrivate:false,isFavorite:false,images:[], remindAt:'',
+          createdAt: new Date().toISOString() // 預設為當前時間
+        });
         setCurrentDiary(null);
         setShowNewDiary(false);
       };
@@ -1488,6 +1517,18 @@
                           onChange={e=>setFormData({...formData, title:e.target.value})}
                           className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
                         <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
+                        
+                        {/* [✅ 新增] 日期選擇器 */}
+                        <div>
+                          <label className="block text-sm font-medium mb-1 text-gray-700">日記日期</label>
+                          <input
+                            type="datetime-local"
+                            value={toDateTimeLocal(formData.createdAt)}
+                            onChange={e => setFormData({...formData, createdAt: new Date(e.target.value).toISOString()})}
+                            className={`w-full border rounded-lg p-2 ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}
+                          />
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium mb-2">心情</label>
@@ -1701,8 +1742,18 @@
                     <Icon name="menu" className="w-6 h-6" />
                   </button>
 
-                  {/* 標題 (原封不動) */}
-                  <h1 className="text-2xl font-bold primary-text">📔 我的日記本</h1>
+                  {/* [✅ 修改] 標題可點擊 */}
+                  <button 
+                    onClick={() => {
+                      setActiveView('list');
+                      setDateFilter('');
+                      setCurrentDiary(null);
+                      setShowNewDiary(false);
+                    }}
+                    className="text-2xl font-bold primary-text"
+                  >
+                    📔 我的日記本
+                  </button>
                 </div>
 
                 {/* (右側：您原本的按鈕) (原封不動) */}
@@ -1710,18 +1761,15 @@
                   <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                     Get Premium
                   </button>
+                  {/* [✅ 修改] 設定按鈕圖示 */}
                   <button
                     onClick={()=>setSettingsOpen(true)}
                     title="設定"
                     className={`group w-10 h-10 rounded-full flex items-center justify-center
                       ring-1 transition hover:scale-105
-                      ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent' : 'ring-black/10 hover:ring-black/20 bg-transparent'}`}
+                      ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent text-white' : 'ring-black/10 hover:ring-black/20 bg-transparent text-gray-600'}`}
                   >
-                    <img
-                      src="assets/img/settings-icon.png"
-                      alt="設定"
-                      className="w-7 h-7 pointer-events-none select-none"
-                    />
+                    <Icon name="gear" className="w-6 h-6"/>
                   </button>
                   <AuthBar user={user}/>
                 </div>
