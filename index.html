@@ -244,23 +244,52 @@
       );
     };
 
-    /* 登入元件 (原封不動) */
+    /* [✅ 修改] 登入元件 (AuthBar) */
     const AuthBar = ({ user }) => {
       const [show, setShow] = useState(false);
       const [isSignup, setIsSignup] = useState(false);
       const [email, setEmail] = useState('');
       const [password, setPassword] = useState('');
+      const [displayName, setDisplayName] = useState(''); // [✅ 新增] 註冊時的名字
       const provider = useMemo(()=>new firebase.auth.GoogleAuthProvider(),[]);
+      
+      // [✅ 新增] 關閉 Modal 並重設欄位
+      const closeModal = () => {
+        setShow(false);
+        setEmail('');
+        setPassword('');
+        setDisplayName('');
+      };
 
+      // [✅ 修改] submit 函式
       const submit = async () => {
         try{
-          if(isSignup) await auth.createUserWithEmailAndPassword(email,password);
-          else await auth.signInWithEmailAndPassword(email,password);
-          setShow(false);
+          if(isSignup){
+            // 註冊
+            if (!displayName.trim()) {
+              alert('請輸入你的名字');
+              return;
+            }
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            // 更新 profile
+            if (userCredential.user) {
+              await userCredential.user.updateProfile({
+                displayName: displayName.trim()
+              });
+            }
+          } else {
+            // 登入
+            await auth.signInWithEmailAndPassword(email, password);
+          }
+          closeModal(); // [✅ 修改] 成功後關閉並重設
         }catch(e){ alert('Auth Error: '+e.message); }
       };
+      
       const google = async () => {
-        try{ await auth.signInWithPopup(provider); setShow(false); }
+        try{ 
+          await auth.signInWithPopup(provider); 
+          closeModal(); // [✅ 修改] 成功後關閉
+        }
         catch(e){ alert('Google 登入失敗：'+e.message); }
       };
 
@@ -270,7 +299,8 @@
             <>
               <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/70">
                 <Icon name="user" />
-                <span className="text-sm">{user.email}</span>
+                {/* [✅ 修改] 優先顯示 displayName */}
+                <span className="text-sm">{user.displayName || user.email}</span>
               </div>
               <button onClick={()=>auth.signOut()} className="px-3 py-1 rounded-lg bg-gray-200 hover:bg-gray-300">登出</button>
             </>
@@ -286,9 +316,15 @@
               <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-md">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold">{isSignup?'建立帳號':'登入'}</h3>
-                  <button onClick={()=>setShow(false)} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
+                  {/* [✅ 修改] 點擊 X 關閉並重設 */}
+                  <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
                 </div>
                 <div className="space-y-3">
+                  {/* [✅ 新增] 註冊時顯示名字欄位 */}
+                  {isSignup && (
+                    <input value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="你的名字"
+                           className="w-full border rounded-lg p-2"/>
+                  )}
                   <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email"
                          className="w-full border rounded-lg p-2"/>
                   <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="密碼"
@@ -337,22 +373,22 @@
       }
     };
 
-    /* Tag Cloud / Calendar / Charts */
+    /* [✅ 修改] Tag Cloud */
     const TagCloud = ({ diaries, activeTag, onToggle }) => {
       const map = {}; diaries.forEach(d => (d.tags||[]).forEach(t => map[t]=(map[t]||0)+1));
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
       if(entries.length===0) return <p className="text-gray-400">還沒有標籤</p>;
-      const max = Math.max(...entries.map(e=>e[1]));
+      // [✅ 移除] max 的計算 (不再需要)
       return (
         <div className="flex flex-wrap gap-2">
           {entries.map(([tag,count])=>{
-            const size = 12 + Math.round(8*(count/max));
+            // [✅ 移除] size 的計算 (不再需要)
             const active = activeTag===tag;
             return (
               <button key={tag}
                 onClick={()=>onToggle(tag)}
-                className={`px-2 py-1 rounded-lg ${active?'primary-bg text-white':'bg-gray-100 hover:bg-gray-200'}`}
-                style={{ fontSize: size }}
+                // [✅ 修改] 移除 style={{ fontSize: size }}，並加入 text-sm 讓大小一致
+                className={`px-2 py-1 rounded-lg text-sm ${active?'primary-bg text-white':'bg-gray-100 hover:bg-gray-200'}`}
                 title={`#${tag} ×${count}`}
               >#{tag}</button>
             );
@@ -936,7 +972,7 @@
       );
     };
 
-    {/* === 側邊欄元件 (SidebarContent) === */}
+    {/* === [✅ 修改] 側邊欄元件 (SidebarContent) === */}
     const SidebarContent = ({ darkMode, user, activeView, setActiveView, setSidebarOpen }) => {
       const dark = darkMode;
 
@@ -990,13 +1026,15 @@
           {/* 使用者標頭 (User Header) */}
           <div className={`flex items-center gap-3 p-4 ${dark ? 'border-b border-gray-700' : 'border-b'}`}>
             {user ? (
-              // 已登入狀態 (根據圖片)
+              // [✅ 修改] 已登入狀態：動態顯示使用者名稱
               <>
                 <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
-                  嘉
+                  {/* 顯示使用者名稱的第一個字，若無則顯示 Email 第一個字，再無則顯示 '?' */}
+                  {user.displayName ? user.displayName.charAt(0) : (user.email ? user.email.charAt(0).toUpperCase() : '?')}
                 </div>
-                <span className="font-semibold text-lg">
-                  洪嘉成
+                <span className="font-semibold text-lg truncate">
+                  {/* 顯示使用者名稱，若無則顯示 Email */}
+                  {user.displayName || user.email || '使用者'}
                 </span>
               </>
             ) : (
@@ -1449,6 +1487,7 @@
                     )}
                     <div>
                       <div className="text-sm mb-2 text-gray-500">標籤雲（點擊篩選）</div>
+                      {/* [✅ TagCloud] 這裡會渲染修改後的版本 */}
                       <TagCloud diaries={diaries} activeTag={selectedTag} onToggle={(t)=> setSelectedTag(selectedTag===t?'':t) } />
                     </div>
                     <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
@@ -1685,7 +1724,7 @@
         }
       };
 
-      // === DiaryApp 的主要渲染邏輯 ===
+      // === DiaryApp 的主要渲染 logique ===
       return (
         <div className={`
           flex h-screen overflow-hidden
@@ -1694,6 +1733,7 @@
           
           {/* === 1. 桌面版側邊欄 (Desktop Sidebar) === */}
           <div className="hidden md:block w-64 flex-shrink-0 h-full">
+            {/* [✅ SidebarContent] 這裡會渲染修改後的版本 */}
             <SidebarContent 
               darkMode={darkMode} 
               user={user} 
@@ -1708,6 +1748,7 @@
             <div className="fixed inset-0 flex z-50 md:hidden">
               {/* 側邊欄本體 */}
               <div className="w-64 h-full">
+                {/* [✅ SidebarContent] 這裡會渲染修改後的版本 */}
                 <SidebarContent 
                   darkMode={darkMode} 
                   user={user} 
@@ -1771,6 +1812,7 @@
                   >
                     <Icon name="gear" className="w-6 h-6"/>
                   </button>
+                  {/* [✅ AuthBar] 這裡會渲染修改後的版本 */}
                   <AuthBar user={user}/>
                 </div>
               </div>
