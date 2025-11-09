@@ -1,633 +1,416 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🎟️ Coupons 管理系統</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>我的日記本｜管理後台</title>
 
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- Firebase compat 10.12.5（與主站一致） -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh}
-    .card{background:#fff;border-radius:20px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,0.1);backdrop-filter:blur(10px)}
-    .gradient-bg{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)}
-    .glass-card{background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.3)}
-    .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:9999px;font-size:12px;font-weight:600}
-    .badge-success{background:#d1fae5;color:#065f46}
-    .badge-danger{background:#fee2e2;color:#991b1b}
-    .badge-warning{background:#fef3c7;color:#92400e}
-    .badge-info{background:#dbeafe;color:#1e40af}
-    .hover-lift{transition:all 0.2s ease}
-    .hover-lift:hover{transform:translateY(-2px);box-shadow:0 12px 48px rgba(0,0,0,0.15)}
-    .btn{padding:8px 16px;border-radius:12px;font-weight:600;transition:all 0.2s;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:8px}
-    .btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white}
-    .btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
-    .btn-danger{background:#ef4444;color:white}
-    .btn-danger:hover{background:#dc2626}
-    .btn-secondary{background:#f3f4f6;color:#374151}
-    .btn-secondary:hover{background:#e5e7eb}
-    input,select,textarea{border:2px solid #e5e7eb;border-radius:12px;padding:10px 14px;transition:all 0.2s;width:100%}
-    input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1)}
-    table{width:100%;border-collapse:separate;border-spacing:0 8px}
-    thead th{text-align:left;padding:12px;font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px}
-    tbody tr{background:white;transition:all 0.2s}
-    tbody tr:hover{transform:scale(1.01);box-shadow:0 4px 12px rgba(0,0,0,0.08)}
-    tbody td{padding:16px 12px;border-top:1px solid #f3f4f6;border-bottom:1px solid #f3f4f6}
-    tbody td:first-child{border-left:1px solid #f3f4f6;border-radius:12px 0 0 12px}
-    tbody td:last-child{border-right:1px solid #f3f4f6;border-radius:0 12px 12px 0}
-    .stat-card{padding:20px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,0.9),rgba(255,255,255,0.7));border:1px solid rgba(255,255,255,0.5);box-shadow:0 8px 32px rgba(0,0,0,0.1)}
-    .pulse{animation:pulse 2s cubic-bezier(0.4,0,0.6,1) infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+    :root{ --primary:#7c3aed; }
+    .primary{ color:var(--primary); }
+    .btn{ padding:.5rem .75rem;border:1px solid #e5e7eb;border-radius:.5rem }
+    .btn:hover{ background:#f9fafb }
+    .btn-primary{ padding:.5rem .75rem;border-radius:.5rem;color:#fff;background:var(--primary) }
+    .chip{ padding:.125rem .5rem;border-radius:.375rem;background:#f3e8ff;color:#6b21a8;font-size:.75rem }
   </style>
 </head>
-<body>
-  <div id="root" class="max-w-7xl mx-auto p-4 md:p-8"></div>
-
-  <script type="text/babel">
-    const { useEffect, useMemo, useState } = React;
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCiho09ggVwKk96ItVof-iB38NrZkr_k5w",
-      authDomain: "journal-49230.firebaseapp.com",
-      projectId: "journal-49230",
-      storageBucket: "journal-49230.appspot.com",
-      messagingSenderId: "894572383995",
-      appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
-    };
-    if(!firebase.apps.length){ firebase.initializeApp(firebaseConfig); }
-    const auth = firebase.auth();
-    const db   = firebase.firestore();
-
-    const Icon = ({name, className="w-5 h-5"}) => {
-      const paths = {
-        logout:"M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1",
-        plus:"M12 4v16m8-8H4",
-        trash:"M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m-1 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V6h10z",
-        toggle:"M4 12a4 4 0 008 0 4 4 0 108 0",
-        search:"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
-        refresh:"M4 4v6h6M20 20v-6h-6M20 8a8 8 0 10-8 12",
-        lock:"M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2zm2-4a5 5 0 0110 0v4H7V7z",
-        open:"M14 3h7v7m-1.5-5.5l-9 9M5 5v14h14",
-        user:"M12 12a5 5 0 100-10 5 5 0 000 10zm7 10H5a7 7 0 0114 0z",
-        chart:"M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
-        gift:"M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12h14l1 10H4l1-10z",
-        check:"M5 13l4 4L19 7",
-        x:"M6 18L18 6M6 6l12 12",
-        fire:"M12 2s-3 1.5-3 5.5c0 1.5 1.5 4.5 3 5.5 1.5-1 3-4 3-5.5C15 3.5 12 2 12 2zm0 13c-2 0-4 1.5-4 3.5S10 22 12 22s4-1.5 4-3.5S14 15 12 15z"
-      };
-      return (
-        <svg className={className} fill="none" stroke="currentColor" strokeWidth="2"
-             strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-          <path d={paths[name]||paths.search}/>
-        </svg>
-      );
-    };
-
-    const AuthBar = ({ user }) => {
-      const [show, setShow] = useState(false);
-      const [email, setEmail] = useState("");
-      const [password, setPassword] = useState("");
-      const provider = useMemo(()=>new firebase.auth.GoogleAuthProvider(),[]);
-
-      const sign = async (mode) => {
-        try{
-          if(mode==='in') await auth.signInWithEmailAndPassword(email, password);
-          else await auth.createUserWithEmailAndPassword(email, password);
-          setShow(false);
-        }catch(e){ alert(e.message); }
-      };
-      const google = async ()=>{
-        try{ await auth.signInWithPopup(provider); setShow(false); }
-        catch(e){ alert(e.message); }
-      };
-
-      return (
-        <div className="flex items-center gap-3">
-         {user ? (
-  <>
-    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/30 backdrop-blur-lg">
-      <Icon name="user" className="w-4 h-4 text-black"/>
-      <span className="text-sm font-medium text-black">{user.email}</span>
+<body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen">
+  <!-- Top bar -->
+  <header class="bg-white/90 backdrop-blur sticky top-0 z-10 border-b">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <h1 class="text-xl md:text-2xl font-bold"><span class="primary">📔 我的日記本</span>｜管理後台</h1>
+      <div class="flex items-center gap-2">
+        <span id="whoami" class="text-sm text-gray-600"></span>
+        <button id="btn-signin" class="btn">使用 Google 登入</button>
+        <button id="btn-signout" class="btn hidden">登出</button>
+      </div>
     </div>
-    <button onClick={()=>auth.signOut()} className="btn btn-secondary">
-      <Icon name="logout" className="w-4 h-4"/><span>登出</span>
-    </button>
-  </>
-) : (
+  </header>
 
-            <button onClick={()=>setShow(true)} className="btn btn-primary">
-              <Icon name="lock" className="w-4 h-4"/><span>登入 / 註冊</span>
-            </button>
-          )}
+  <!-- 非 admin 提示（附一鍵建立 admin 文件） -->
+  <section id="gate" class="max-w-3xl mx-auto px-4 mt-8 hidden">
+    <div class="bg-white rounded-2xl shadow p-6 border space-y-3">
+      <h2 class="text-xl font-bold">需要管理員權限</h2>
+      <p class="text-gray-600">你已登入，但不是管理員（需要 <code>users/{uid}.role === "admin"</code>）。</p>
+      <div class="text-sm text-gray-500">若你就是站主，可先建立自己的使用者文件並設為 admin。</div>
+      <div class="flex gap-2">
+        <button id="make-me-admin" class="btn-primary">把我設為 admin</button>
+        <button id="rule-help" class="btn">顯示規則範例</button>
+      </div>
+      <pre id="rules-snippet" class="mt-2 hidden text-xs bg-gray-50 p-3 rounded border overflow-x-auto">// Firestore 安全規則（參考）：
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(db)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+    match /users/{uid} {
+      allow create: if request.auth != null;             // 首次建立
+      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAdmin();                   // 管理員可讀寫所有 users/*
+      match /diaries/{doc} {
+        allow read, write: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      }
+    }
+  }
+}
+</pre>
+    </div>
+  </section>
 
-          {show && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="card glass-card w-full max-w-md hover-lift">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold gradient-bg bg-clip-text text-transparent">歡迎登入</h3>
-                  <button onClick={()=>setShow(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                    <Icon name="x"/>
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  <input placeholder="📧 Email" value={email} onChange={e=>setEmail(e.target.value)} />
-                  <input placeholder="🔒 密碼" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
-                  <div className="grid grid-cols-2 gap-3">
-                    <button onClick={()=>sign('in')} className="btn btn-primary justify-center">登入</button>
-                    <button onClick={()=>sign('up')} className="btn btn-secondary justify-center">註冊</button>
-                  </div>
-                  <button onClick={google} className="w-full btn bg-red-500 hover:bg-red-600 text-white justify-center">
-                    <span>🔐 使用 Google</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+  <!-- 主畫面 -->
+  <main id="app" class="max-w-7xl mx-auto px-4 py-6 hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- 左：使用者清單 -->
+      <section class="lg:col-span-1 bg-white rounded-2xl shadow p-4 border">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-lg">使用者清單</h3>
+          <button id="refresh-users" class="btn">重新整理</button>
         </div>
-      );
-    };
+        <input id="user-search" placeholder="搜尋名稱或 Email…" class="w-full border rounded-lg p-2 mb-3"/>
+        <div id="users-list" class="space-y-2 max-h-[70vh] overflow-y-auto pr-1">載入中…</div>
+      </section>
 
-    const CouponForm = ({ onSubmit })=>{
-      const [code, setCode] = useState("");
-      const [active, setActive] = useState(true);
-      const [months, setMonths] = useState(0);
-      const [tier, setTier] = useState("pro");
-      const [maxUses, setMaxUses] = useState(100);
-      const [expires, setExpires] = useState("");
-      const [discountAmount, setDiscountAmount] = useState(0);
-      const [appliesTo, setAppliesTo] = useState("any");
-
-      const submit = async ()=>{
-        const norm = (code||"").trim().toUpperCase();
-        if(!/^[A-Z0-9_-]{3,20}$/.test(norm)){
-          alert("代碼格式不符（3~20 的英數/底線/連字號）");
-          return;
-        }
-        const payload = {
-          code: norm, active,
-          discountMonths: Math.max(0, parseInt(months||"0")),
-          discountAmount: Math.max(0, parseInt(discountAmount||"0")),
-          appliesTo, tier,
-          maxUses: Math.max(1, parseInt(maxUses||"1")),
-          expiresAt: expires ? new Date(expires).toISOString() : null
-        };
-        await onSubmit(payload);
-        setCode(""); setActive(true); setMonths(0); setTier("pro");
-        setMaxUses(100); setExpires(""); setDiscountAmount(0); setAppliesTo("any");
-      };
-
-      return (
-        <div className="card hover-lift">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-full gradient-bg flex items-center justify-center">
-              <Icon name="gift" className="w-6 h-6 text-white"/>
-            </div>
+      <!-- 右：使用者資料 + 篩選 + 日記列表 -->
+      <section class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-bold">建立優惠券</h2>
-              <p className="text-sm text-gray-500">設定優惠碼與折扣條件</p>
+              <h3 class="font-bold text-lg flex items-center gap-2">
+                使用者資料
+                <span id="user-role" class="chip hidden"></span>
+                <span id="membership-chip" class="chip hidden"></span>
+              </h3>
+              <div id="user-meta" class="text-sm text-gray-600"></div>
             </div>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">🎟️ 優惠碼</label>
-              <input placeholder="例: SAVE20OFF" value={code} onChange={e=>setCode(e.target.value)} className="uppercase"/>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">狀態</label>
-              <select value={active? "true":"false"} onChange={e=>setActive(e.target.value==="true")}>
-                <option value="true">✅ 啟用</option>
-                <option value="false">⛔ 停用</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">💰 折抵金額</label>
-              <input type="number" min="0" value={discountAmount} onChange={e=>setDiscountAmount(e.target.value)} placeholder="TWD"/>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">📅 延長月數</label>
-              <input type="number" min="0" value={months} onChange={e=>setMonths(e.target.value)} placeholder="0"/>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">🎯 會員等級</label>
-              <select value={tier} onChange={e=>setTier(e.target.value)}>
-                <option value="pro">⭐ Pro</option>
-                <option value="vip">👑 VIP</option>
-                <option value="free">🆓 Free</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">適用方案</label>
-              <select value={appliesTo} onChange={e=>setAppliesTo(e.target.value)}>
-                <option value="any">🌟 不限</option>
-                <option value="monthly">📆 僅月費</option>
-                <option value="yearly">📅 僅年費</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">使用上限</label>
-              <input type="number" min="1" value={maxUses} onChange={e=>setMaxUses(e.target.value)} placeholder="100"/>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">⏰ 到期時間</label>
-              <input type="datetime-local" value={expires} onChange={e=>setExpires(e.target.value)} />
-            </div>
-
-            <div className="md:col-span-4">
-              <button onClick={submit} className="w-full btn btn-primary text-lg py-3 justify-center">
-                <Icon name="plus"/><span>建立 / 更新優惠券</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
-            💡 <strong>提示：</strong>優惠券代碼將寫入 Firestore 的 <code className="bg-blue-100 px-1 rounded">/coupons/{'{code}'}</code> 集合
-          </div>
-        </div>
-      );
-    };
-
-    const CouponsList = ({ rows, onToggle, onDelete, onOpenRedemptions, stats })=>{
-      const [q, setQ] = useState("");
-      const [sort, setSort] = useState("createdAt_desc");
-
-      const filtered = useMemo(()=>{
-        let arr = rows.filter(r=>{
-          const hit = (s)=> (s||"").toString().toLowerCase().includes(q.toLowerCase());
-          return hit(r.code) || hit(r.tier);
-        });
-        arr.sort((a,b)=>{
-          switch (sort){
-            case "createdAt_desc": return (b.createdAtTS||0) - (a.createdAtTS||0);
-            case "createdAt_asc":  return (a.createdAtTS||0) - (b.createdAtTS||0);
-            case "code_asc":       return a.code.localeCompare(b.code);
-            case "code_desc":      return b.code.localeCompare(a.code);
-            default: return 0;
-          }
-        });
-        return arr;
-      },[rows,q,sort]);
-
-      return (
-        <div className="space-y-4">
-          {/* 統計卡片 */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="stat-card hover-lift">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-3xl font-bold gradient-bg bg-clip-text text-transparent">{stats.total}</span>
-                <Icon name="gift" className="w-8 h-8 text-purple-500"/>
-              </div>
-              <p className="text-sm font-semibold text-gray-600">總優惠券數</p>
-            </div>
-
-            <div className="stat-card hover-lift">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-3xl font-bold text-green-600">{stats.active}</span>
-                <Icon name="check" className="w-8 h-8 text-green-500"/>
-              </div>
-              <p className="text-sm font-semibold text-gray-600">啟用中</p>
-            </div>
-
-            <div className="stat-card hover-lift">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-3xl font-bold text-orange-600">{stats.totalUses}</span>
-                <Icon name="fire" className="w-8 h-8 text-orange-500"/>
-              </div>
-              <p className="text-sm font-semibold text-gray-600">總使用次數</p>
-            </div>
-
-            <div className="stat-card hover-lift">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-3xl font-bold text-blue-600">{stats.avgUses}</span>
-                <Icon name="chart" className="w-8 h-8 text-blue-500"/>
-              </div>
-              <p className="text-sm font-semibold text-gray-600">平均使用次數</p>
-            </div>
-          </div>
-
-          <div className="card hover-lift">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">優惠券列表</h2>
-                <p className="text-sm text-gray-500">共 {filtered.length} 個優惠券</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2">
-                  <Icon name="search" className="w-4 h-4 text-gray-400"/>
-                  <input className="outline-none bg-transparent border-none w-48" placeholder="搜尋代碼..." value={q} onChange={e=>setQ(e.target.value)} />
-                </div>
-                <select className="border-none bg-gray-50 rounded-xl px-4 py-2 font-semibold" value={sort} onChange={e=>setSort(e.target.value)}>
-                  <option value="createdAt_desc">⏰ 最新</option>
-                  <option value="createdAt_asc">⏰ 最舊</option>
-                  <option value="code_asc">🔤 A→Z</option>
-                  <option value="code_desc">🔤 Z→A</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table>
-                <thead>
-                  <tr>
-                    <th>優惠碼</th>
-                    <th>狀態</th>
-                    <th>折抵</th>
-                    <th>適用</th>
-                    <th>月數</th>
-                    <th>等級</th>
-                    <th>使用量</th>
-                    <th>到期</th>
-                    <th>建立時間</th>
-                    <th className="text-right">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(c=>(
-                    <tr key={c.id}>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <div className="w-10 h-10 rounded-lg gradient-bg flex items-center justify-center">
-                            <Icon name="gift" className="w-5 h-5 text-white"/>
-                          </div>
-                          <span className="font-mono font-bold">{c.code}</span>
-                        </div>
-                      </td>
-                      <td>{c.active ? <span className="badge badge-success">✅ 啟用</span> : <span className="badge badge-danger">⛔ 停用</span>}</td>
-                      <td><span className="font-bold text-green-600">{typeof c.discountAmount === 'number' && c.discountAmount > 0 ? `NT$ ${c.discountAmount}` : '—'}</span></td>
-                      <td><span className="badge badge-info">{c.appliesTo === 'any' ? '🌟 不限' : c.appliesTo === 'monthly' ? '📆 月費' : '📅 年費'}</span></td>
-                      <td><span className="font-semibold">{c.discountMonths ?? 0} 月</span></td>
-                      <td><span className="badge badge-warning">{c.tier === 'pro' ? '⭐ Pro' : c.tier === 'vip' ? '👑 VIP' : '🆓 Free'}</span></td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
-                            <div className="h-2 rounded-full gradient-bg" style={{width: `${Math.min(100, ((c.uses||0) / (c.maxUses||1)) * 100)}%`}}></div>
-                          </div>
-                          <span className="text-sm font-semibold">{c.uses||0}/{c.maxUses||'∞'}</span>
-                        </div>
-                      </td>
-                      <td className="text-sm">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('zh-TW') : <span className="text-gray-400">無期限</span>}</td>
-                      <td className="text-xs text-gray-500">{c.createdAt ? c.createdAt.toDate?.().toLocaleString('zh-TW') : '—'}</td>
-                      <td>
-                        <div className="flex items-center gap-2 justify-end">
-                          <button onClick={()=>onOpenRedemptions(c.code)} className="btn btn-secondary p-2" title="查看兌換紀錄">
-                            <Icon name="open" className="w-4 h-4"/>
-                          </button>
-                          <button onClick={()=>onToggle(c)} className="btn bg-amber-100 hover:bg-amber-200 p-2" title="切換啟用狀態">
-                            <Icon name="toggle" className="w-4 h-4"/>
-                          </button>
-                          <button onClick={()=>onDelete(c)} className="btn btn-danger p-2" title="刪除">
-                            <Icon name="trash" className="w-4 h-4"/>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {filtered.length===0 && (
-                    <tr><td colSpan="10" className="py-12 text-center text-gray-400">
-                      <div className="flex flex-col items-center gap-3">
-                        <Icon name="search" className="w-16 h-16 opacity-20"/>
-                        <p className="text-lg">找不到優惠券</p>
-                      </div>
-                    </td></tr>
-                  )}
-                </tbody>
-              </table>
+            <div class="flex flex-wrap gap-2">
+              <button id="toggle-role" class="btn hidden">切換角色（user ⇄ admin）</button>
+              <button id="download-json" class="btn hidden">下載此使用者日記 JSON</button>
             </div>
           </div>
         </div>
-      );
-    };
 
-    const RedemptionsModal = ({ open, code, items, onClose })=>{
-      if(!open) return null;
-      return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card glass-card w-full max-w-3xl max-h-[85vh] overflow-y-auto hover-lift">
-            <div className="flex items-center justify-between mb-6 sticky top-0 bg-white pb-4 border-b">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full gradient-bg flex items-center justify-center">
-                  <Icon name="chart" className="w-6 h-6 text-white"/>
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold">兌換紀錄</h3>
-                  <p className="text-sm text-gray-500">優惠碼：<span className="font-mono font-bold">{code}</span></p>
-                </div>
-              </div>
-              <button onClick={onClose} className="btn btn-secondary">
-                <Icon name="x"/><span>關閉</span>
-              </button>
+        <div class="bg-white rounded-2xl shadow p-4 border">
+          <div class="grid md:grid-cols-3 gap-3">
+            <input id="diary-q" class="border rounded-lg p-2" placeholder="關鍵字（標題/內容）"/>
+            <select id="diary-mood" class="border rounded-lg p-2">
+              <option value="">心情：全部</option>
+              <option>😊</option><option>😢</option><option>😡</option><option>😰</option>
+              <option>😍</option><option>🤔</option><option>😴</option><option>🎉</option>
+            </select>
+            <div class="flex gap-2">
+              <button id="apply-filter" class="btn w-full">套用篩選</button>
+              <button id="clear-filter" class="btn w-full">清除</button>
             </div>
-
-            {items.length===0 ? (
-              <div className="py-12 text-center text-gray-400">
-                <Icon name="gift" className="w-20 h-20 mx-auto mb-4 opacity-20"/>
-                <p className="text-lg font-semibold">尚無兌換紀錄</p>
-                <p className="text-sm">此優惠券還未被任何用戶使用</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {items.map((r,i)=>(
-                  <div key={r.id} className="card glass-card hover-lift">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white font-bold text-sm">#{i+1}</span>
-                          <div>
-                            <div className="font-mono text-sm font-semibold text-gray-700">UID: {r.uid.slice(0,8)}...</div>
-                            <div className="text-xs text-gray-500">
-                              ⏰ {r.redeemedAt ? r.redeemedAt.toDate?.().toLocaleString('zh-TW') : '—'}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {r.plan && <span className="badge badge-info">方案：{r.plan}</span>}
-                          {typeof r.appliedAmount==='number' && r.appliedAmount > 0 && (
-                            <span className="badge badge-success">折抵：NT$ {r.appliedAmount}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-400">ID: {r.id.slice(0,6)}...</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
-      );
-    };
 
-    const App = ()=>{
-      const [user, setUser] = useState(null);
-      const [isAdmin, setIsAdmin] = useState(false);
-      const [coupons, setCoupons] = useState([]);
-      const [redemptionsOpen, setRedemptionsOpen] = useState(false);
-      const [redeemCode, setRedeemCode] = useState("");
-      const [redeemItems, setRedeemItems] = useState([]);
-
-      useEffect(()=>{
-        const unsub = auth.onAuthStateChanged(async (u)=>{
-          setUser(u||null);
-          if(u){
-            const prof = await db.collection('users').doc(u.uid).get();
-            const role = prof.exists ? (prof.data().role||'user') : 'user';
-            setIsAdmin(role === 'admin');
-          }else{
-            setIsAdmin(false);
-          }
-        });
-        return ()=>unsub();
-      },[]);
-
-      useEffect(()=>{
-        const unsub = db.collection('coupons').orderBy('createdAt','desc').onSnapshot(s=>{
-          const arr=[];
-          s.forEach(d=>{
-            const data=d.data();
-            arr.push({
-              id:d.id,
-              ...data,
-              createdAtTS: data.createdAt?.toMillis?.() || 0
-            });
-          });
-          setCoupons(arr);
-        });
-        return ()=>unsub();
-      },[]);
-
-      const stats = useMemo(()=>{
-        const total = coupons.length;
-        const active = coupons.filter(c=>c.active).length;
-        const totalUses = coupons.reduce((sum,c)=>(sum+(c.uses||0)),0);
-        const avgUses = total ? Math.round(totalUses / total) : 0;
-        return { total, active, totalUses, avgUses };
-      },[coupons]);
-
-      const createOrUpdate = async (payload)=>{
-        if(!user || !isAdmin){ alert("需要管理員權限"); return; }
-        await db.collection('coupons').doc(payload.code).set({
-          ...payload,
-          uses: firebase.firestore.FieldValue.increment(0),
-          createdBy: user.uid,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-        alert(`✅ 已建立/更新優惠券：${payload.code}`);
-      };
-
-      const toggleActive = async (c)=>{
-        if(!user || !isAdmin){ alert("需要管理員權限"); return; }
-        await db.collection('coupons').doc(c.code).set({
-          active: !c.active
-        }, { merge: true });
-      };
-
-      const removeCoupon = async (c)=>{
-        if(!user || !isAdmin){ alert("需要管理員權限"); return; }
-        if(!confirm(`確定刪除優惠券 ${c.code} ？`)) return;
-        await db.collection('coupons').doc(c.code).delete();
-        alert('✅ 已刪除優惠券');
-      };
-
-      const openRedemptions = async (code)=>{
-        setRedeemCode(code);
-        const qs = await db.collection('coupon_redemptions').where('code','==', code).orderBy('redeemedAt','desc').get();
-        const arr = qs.docs.map(d=>({ id:d.id, ...d.data() }));
-        setRedeemItems(arr);
-        setRedemptionsOpen(true);
-      };
-
-      return (
-        <div className="space-y-6 pb-8">
-          {/* Header */}
-          <div className="card glass-card hover-lift">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center shadow-lg">
-                  <Icon name="gift" className="w-8 h-8 text-white"/>
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold gradient-bg bg-clip-text text-transparent">優惠券管理系統</h1>
-                  <p className="text-sm text-gray-600">管理所有優惠碼與折扣方案</p>
-                </div>
-              </div>
-              <AuthBar user={user}/>
-            </div>
+        <div class="bg-white rounded-2xl shadow p-2 md:p-4 border">
+          <div class="flex items-center justify-between px-2 md:px-0 mb-2">
+            <h3 class="font-bold">日記列表</h3>
+            <div class="text-sm text-gray-500">每頁 30 筆</div>
           </div>
-
-          {!user ? (
-            <div className="card text-center py-12">
-              <Icon name="lock" className="w-20 h-20 mx-auto mb-4 text-gray-300"/>
-              <h3 className="text-2xl font-bold mb-2">請先登入</h3>
-              <p className="text-gray-500">需要登入才能管理優惠券</p>
-            </div>
-          ) : !isAdmin ? (
-            <div className="card hover-lift">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
-                  <Icon name="lock" className="w-6 h-6 text-yellow-600"/>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-2">需要管理員權限</h3>
-                  <p className="text-gray-600 mb-3">你已登入為：<span className="font-mono font-semibold">{user.email}</span></p>
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-sm text-blue-800 mb-2">
-                      <strong>📝 如何成為管理員：</strong>
-                    </p>
-                    <ol className="text-sm text-blue-700 space-y-1 ml-4 list-decimal">
-                      <li>前往 Firebase Console</li>
-                      <li>開啟 Firestore Database</li>
-                      <li>找到 <code className="bg-blue-100 px-1 rounded">/users/{user.uid}</code></li>
-                      <li>新增欄位：<code className="bg-blue-100 px-1 rounded">role: "admin"</code></li>
-                      <li>重新整理此頁面</li>
-                    </ol>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <>
-              <CouponForm onSubmit={createOrUpdate}/>
-              <CouponsList
-                rows={coupons}
-                stats={stats}
-                onToggle={toggleActive}
-                onDelete={removeCoupon}
-                onOpenRedemptions={openRedemptions}
-              />
-            </>
-          )}
-
-          <RedemptionsModal
-            open={redemptionsOpen}
-            code={redeemCode}
-            items={redeemItems}
-            onClose={()=>setRedemptionsOpen(false)}
-          />
-
-          {/* Footer */}
-          <div className="text-center text-white/80 text-sm">
-            <p>🎟️ Coupon Management System • Made with ❤️ by Admin</p>
+          <div id="diaries-list" class="divide-y"></div>
+          <div class="flex justify-between items-center mt-3">
+            <button id="prev-page" class="btn">上一頁</button>
+            <button id="next-page" class="btn">下一頁</button>
           </div>
         </div>
-      );
-    };
+      </section>
+    </div>
+  </main>
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  <script>
+  // === Firebase 初始化（沿用你的設定） ===
+  const firebaseConfig = {
+    apiKey: "AIzaSyCiho09ggVwKk96ItVof-iB38NrZkr_k5w",
+    authDomain: "journal-49230.firebaseapp.com",
+    projectId: "journal-49230",
+    storageBucket: "journal-49230.appspot.com",
+    messagingSenderId: "894572383995",
+    appId: "1:894572383995:web:a41e4e58a5d3218fee6a5e"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+
+  // ===== 工具 =====
+  const $ = (s, r=document)=>r.querySelector(s);
+  const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+  const fmtTime = (iso)=>{
+    try{ const d=new Date(typeof iso?.toDate==="function"?iso.toDate():iso); return isNaN(d)?'—':d.toLocaleString('zh-TW'); }catch{ return '—'; }
+  };
+  const toast = (msg)=>{ alert(msg); };
+
+  // ===== UI refs =====
+  const gate = $('#gate'), app = $('#app'), who = $('#whoami');
+  const btnSignIn  = $('#btn-signin'), btnSignOut = $('#btn-signout');
+  const makeMeAdmin = $('#make-me-admin'), ruleHelp = $('#rule-help'), rulesSnippet = $('#rules-snippet');
+
+  const usersList = $('#users-list'), userSearch = $('#user-search'), refreshUsers = $('#refresh-users');
+  const userMeta = $('#user-meta'), userRoleChip = $('#user-role'), membershipChip = $('#membership-chip');
+  const toggleRoleBtn = $('#toggle-role'), downloadBtn = $('#download-json');
+
+  const diaryList = $('#diaries-list'), diaryQ = $('#diary-q'), diaryMood = $('#diary-mood');
+  const applyFilter = $('#apply-filter'), clearFilter = $('#clear-filter');
+  const prevPageBtn = $('#prev-page'), nextPageBtn = $('#next-page');
+
+  // ===== 狀態 =====
+  let me = null, meProfile = null, selectedUserId = null, selectedUserDoc = null;
+  const PAGE = 30; let pagestack = []; let lastDoc = null;
+  let allUsersCache = [];
+
+  // ===== Auth =====
+  btnSignIn.onclick = async()=>{ const p=new firebase.auth.GoogleAuthProvider(); await auth.signInWithPopup(p); };
+  btnSignOut.onclick = ()=>auth.signOut();
+  ruleHelp.onclick = ()=>rulesSnippet.classList.toggle('hidden');
+
+  auth.onAuthStateChanged(async(u)=>{
+    me = u||null;
+    who.textContent = me ? (me.displayName || me.email || me.uid) : '未登入';
+    btnSignIn.classList.toggle('hidden', !!me);
+    btnSignOut.classList.toggle('hidden', !me);
+
+    if(!me){ gate.classList.add('hidden'); app.classList.add('hidden'); return; }
+
+    // 讀自己的 role（抓不到就視為 user）
+    try{
+      const meSnap = await db.collection('users').doc(me.uid).get();
+      meProfile = meSnap.exists ? meSnap.data() : { role:'user' };
+    }catch(err){
+      console.error('讀取自己 users/{uid} 失敗：', err);
+      meProfile = { role:'user' };
+    }
+
+    if(meProfile.role !== 'admin'){
+      gate.classList.remove('hidden'); app.classList.add('hidden');
+    }else{
+      gate.classList.add('hidden'); app.classList.remove('hidden');
+      await loadUsers();
+    }
+  });
+
+  // 一鍵把自己設為 admin（只有不是 admin 才看得到 gate 區塊）
+  makeMeAdmin.onclick = async()=>{
+    if(!me){ toast('請先登入'); return; }
+    try{
+      await db.collection('users').doc(me.uid).set({
+        role:'admin',
+        email: me.email || null,
+        displayName: me.displayName || null,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge:true });
+      toast('已把你設為 admin，重新載入頁面即可進入後台');
+      location.reload();
+    }catch(err){ console.error(err); toast('寫入失敗：'+err.message); }
+  };
+
+  // ===== 使用者清單（加上 try/catch，錯誤時不會卡在「載入中」） =====
+  async function loadUsers(){
+    usersList.textContent = '載入中…';
+    try{
+      const snap = await db.collection('users').get();
+      allUsersCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+      renderUserList();
+    }catch(err){
+      console.error('讀取 users 失敗：', err);
+      usersList.innerHTML = `<div class="text-red-600 text-sm">讀取使用者失敗：${err.message}<br/>請確認 Firestore 規則已允許 admin 列出 users。</div>`;
+    }
+  }
+  function renderUserList(){
+    const q = userSearch.value.trim().toLowerCase();
+    const rows = allUsersCache
+      .filter(u=>{
+        const name = (u.displayName||'').toLowerCase();
+        const email= (u.email||'').toLowerCase();
+        return !q || name.includes(q) || email.includes(q) || u.id.includes(q);
+      })
+      .sort((a,b)=> (b.membership?.tier||'').localeCompare(a.membership?.tier||''));
+    usersList.innerHTML = '';
+    if(rows.length===0){
+      usersList.innerHTML = '<div class="text-gray-400 text-sm px-2">尚無使用者文件（請先讓 App 寫入 users/{uid}）</div>';
+      return;
+    }
+    rows.forEach(u=>{
+      const el = document.createElement('button');
+      el.className = `w-full text-left p-3 rounded-lg border hover:bg-gray-50 ${selectedUserId===u.id?'border-2 border-purple-400 bg-purple-50':''}`;
+      const role = u.role||'user';
+      const tier = u.membership?.tier||'free';
+      el.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-semibold">${u.displayName||'(未設定名稱)'}</div>
+            <div class="text-xs text-gray-500">${u.email||''}</div>
+            <div class="text-xs text-gray-500">UID：${u.id}</div>
+          </div>
+          <div class="text-right space-y-1">
+            <div><span class="chip">${role}</span></div>
+            <div><span class="chip">tier: ${tier}</span></div>
+          </div>
+        </div>`;
+      el.onclick = ()=> selectUser(u.id, u);
+      usersList.appendChild(el);
+    });
+  }
+  userSearch.oninput = renderUserList;
+  refreshUsers.onclick = loadUsers;
+
+  // ===== 選擇使用者 → 載資料 =====
+  async function selectUser(uid, doc){
+    selectedUserId = uid;
+    selectedUserDoc = doc || allUsersCache.find(x=>x.id===uid);
+    const role = selectedUserDoc?.role || 'user';
+    const tier = selectedUserDoc?.membership?.tier || 'free';
+    const exp  = selectedUserDoc?.membership?.expiresAt ? fmtTime(selectedUserDoc.membership.expiresAt) : null;
+
+    $('#user-role').textContent = role;
+    $('#user-role').classList.remove('hidden');
+    $('#membership-chip').textContent = `tier: ${tier}${exp?`｜到期：${exp}`:''}`;
+    $('#membership-chip').classList.remove('hidden');
+    userMeta.innerHTML = `
+      <div class="text-gray-600">
+        <div>名稱：<span class="font-medium">${selectedUserDoc.displayName||'(未設定)'}</span></div>
+        <div>Email：<span class="font-medium">${selectedUserDoc.email||'—'}</span></div>
+      </div>`;
+    toggleRoleBtn.classList.remove('hidden');
+    downloadBtn.classList.remove('hidden');
+
+    pagestack = []; lastDoc = null;
+    await loadDiariesPage({ reset:true });
+    renderUserList();
+  }
+
+  // ===== 日記（分頁 + 篩選） =====
+  async function loadDiariesPage({ reset=false, direction='next' }={}){
+    if(!selectedUserId){ diaryList.innerHTML='<div class="p-3 text-gray-500 text-sm">尚未選取使用者</div>'; return; }
+    diaryList.innerHTML = '<div class="p-3 text-gray-500 text-sm">載入中…</div>';
+
+    const qText = diaryQ.value.trim().toLowerCase();
+    const mood  = diaryMood.value;
+
+    try{
+      let q = db.collection('users').doc(selectedUserId).collection('diaries')
+        .orderBy('createdAt','desc').limit(PAGE);
+
+      if(direction==='next' && lastDoc){ q = q.startAfter(lastDoc); }
+      if(direction==='prev' && pagestack.length>1){
+        pagestack.pop();
+        const startAtDoc = pagestack[pagestack.length-1];
+        q = db.collection('users').doc(selectedUserId).collection('diaries')
+              .orderBy('createdAt','desc').startAt(startAtDoc).limit(PAGE);
+      }
+      const snap = await q.get();
+
+      if(snap.docs.length>0){
+        const firstOnPage = snap.docs[0];
+        if(direction==='next' || reset) pagestack.push(firstOnPage);
+        lastDoc = snap.docs[snap.docs.length-1];
+      }else{
+        if(direction==='next') lastDoc = null;
+      }
+
+      const raw = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+      const rows = raw.filter(d=>{
+        const hitQ = !qText ||
+          (String(d.title||'').toLowerCase().includes(qText)) ||
+          (String(d.content||'').toLowerCase().includes(qText));
+        const hitM = !mood || d.mood===mood;
+        return hitQ && hitM;
+      });
+      renderDiaries(rows);
+    }catch(err){
+      console.error('讀取 diaries 失敗：', err);
+      diaryList.innerHTML = `<div class="p-3 text-red-600 text-sm">讀取失敗：${err.message}</div>`;
+    }
+  }
+  function renderDiaries(rows){
+    diaryList.innerHTML = '';
+    if(rows.length===0){ diaryList.innerHTML = '<div class="p-3 text-gray-400 text-sm">沒有資料或已到最末頁</div>'; return; }
+    rows.forEach(d=>{
+      const tags = (d.tags||[]).map(t=>`<span class="chip mr-1 mb-1">#${t}</span>`).join('');
+      const privateBadge = d.isPrivate ? `<span class="chip">私密</span>`:'';
+      const imgs = Array.isArray(d.images) ? d.images.slice(0,3) : [];
+      const row = document.createElement('div');
+      row.className = 'p-3';
+      row.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-2xl">${d.mood||''}</span>
+              <span class="text-xl">${d.weather||''}</span>
+              ${privateBadge}
+              ${tags}
+            </div>
+            <div class="font-semibold truncate">${d.title||'(無標題)'}</div>
+            <div class="text-xs text-gray-500">${fmtTime(d.createdAt)} ｜ ID: ${d.id}</div>
+            <p class="text-sm text-gray-700 mt-1 whitespace-pre-wrap">${(d.isPrivate?'（私密內容）':(d.content||''))}</p>
+            ${imgs.length?`<div class="flex gap-2 mt-2">${imgs.map(u=>`<img src="${u}" class="w-16 h-16 object-cover rounded border"/>`).join('')}</div>`:''}
+          </div>
+          <div class="flex flex-col gap-2 items-end">
+            <button data-del="${d.id}" class="btn text-red-600">刪除</button>
+          </div>
+        </div>`;
+      diaryList.appendChild(row);
+    });
+    $$('button[data-del]').forEach(btn=>{
+      btn.onclick = async()=>{
+        const id = btn.getAttribute('data-del');
+        if(!confirm('確定刪除此日記？')) return;
+        await db.collection('users').doc(selectedUserId).collection('diaries').doc(id).delete();
+        await loadDiariesPage({ direction:'stay' });
+      };
+    });
+  }
+  nextPageBtn.onclick = ()=>loadDiariesPage({ direction:'next' });
+  prevPageBtn.onclick = ()=>loadDiariesPage({ direction:'prev' });
+  applyFilter.onclick = ()=>loadDiariesPage({ reset:true });
+  clearFilter.onclick = ()=>{ diaryQ.value=''; diaryMood.value=''; loadDiariesPage({ reset:true }); };
+
+  // 下載全部 JSON
+  downloadBtn.onclick = async()=>{
+    if(!selectedUserId) return;
+    if(!confirm('下載此使用者「全部」日記為 JSON？（可能較久）')) return;
+    try{
+      let q = db.collection('users').doc(selectedUserId).collection('diaries').orderBy('createdAt','desc');
+      const all = []; let last=null;
+      while(true){
+        let cur = q; if(last) cur = cur.startAfter(last);
+        const snap = await cur.limit(500).get();
+        if(snap.empty) break;
+        snap.forEach(d=>all.push({ id:d.id, ...d.data() }));
+        last = snap.docs[snap.docs.length-1];
+        if(snap.size<500) break;
+      }
+      const blob = new Blob([JSON.stringify(all,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=`${selectedUserId}_diaries.json`; a.click();
+      URL.revokeObjectURL(url);
+    }catch(err){
+      console.error(err); toast('下載失敗：'+err.message);
+    }
+  };
+
+  // 切換被選使用者角色
+  toggleRoleBtn.onclick = async()=>{
+    if(!selectedUserId || !selectedUserDoc) return;
+    const next = selectedUserDoc.role==='admin' ? 'user' : 'admin';
+    if(!confirm(`將此使用者角色改為 ${next} ？`)) return;
+    try{
+      await db.collection('users').doc(selectedUserId).set({ role: next }, { merge:true });
+      selectedUserDoc.role = next;
+      const idx = allUsersCache.findIndex(u=>u.id===selectedUserId);
+      if(idx>=0) allUsersCache[idx].role = next;
+      await selectUser(selectedUserId, selectedUserDoc);
+    }catch(err){ console.error(err); toast('更新角色失敗：'+err.message); }
+  };
   </script>
 </body>
 </html>
