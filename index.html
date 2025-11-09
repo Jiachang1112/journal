@@ -76,7 +76,8 @@
         import:"M12 5v10m0 0l-4-4m4 4l4-4M5 19h14",
         bell:"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-9.33-4.93M13 21a2 2 0 01-4 0",
         image:"M3 19a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 01-2 2v14zm3-3l4-4 3 3 4-4 2 2v4H6z",
-        gear:"M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm9 3.5a7.95 7.95 0 01-.22 1.8l2.06 1.6-2 3.46-2.46-1a8.1 8.1 0 01-3.1 1.8l-.36 2.6h-4l-.36-2.6a8.1 8.1 0 01-3.1-1.8l-2.46 1-2-3.46 2.06-1.6c.15.57.22 1.17.22 1.8z",
+        // [✅ 已修改] 替換為新圖示的 SVG 路徑
+        gear:"M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM19.07 14.32l-1.57-.46a8 8 0 0 1-.36 1.13l1.09 1.34-1.41 1.41-1.34-1.09a8 8 0 0 1-1.13.36l.46 1.57h-2.12l-.46-1.57a8 8 0 0 1-1.13-.36l-1.34 1.09-1.41-1.41 1.09-1.34a8 8 0 0 1-.36-1.13l-1.57.46v-2.12l1.57-.46a8 8 0 0 1 .36-1.13l-1.09-1.34 1.41-1.41 1.34 1.09a8 8 0 0 1 1.13-.36l-.46-1.57h2.12l.46 1.57a8 8 0 0 1 1.13.36l1.34-1.09 1.41 1.41-1.09 1.34a8 8 0 0 1 .36 1.13l1.57.46v2.12z",
         star:"M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
         trophy:"M17 3h4v2a5 5 0 01-5 5h-1a6 6 0 11-12 0V3h4",
         menu: "M3 12h18M3 6h18M3 18h18",
@@ -84,14 +85,14 @@
         'refresh-ccw': "M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 0 0 3.51 9M3.51 15a9 9 0 0 0 16.98 0",
         scissors: "M6 6a2 2 0 0 1 4 0v4L6 14V6zm12 0a2 2 0 0 0-4 0v4l4 4V6zM8 8H4M16 8h4M8 12l-4 4 4 4M16 12l4 4-4 4",
         share: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13",
-        // [✅ 新增圖示]
         chart:"M12 20V10M18 20V4M6 20v-4"
       };
       return React.createElement('svg', {
   className,
-  fill: fill ? 'currentColor' : 'none',
-  stroke: fill ? 'none' : 'currentColor',
-  strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
+  fill: 'currentColor', // [✅ 已修改] 確保 SVG 填滿顏色
+  stroke: 'none', // [✅ 已修改] 確保 SVG 沒有邊框
+  strokeWidth: name === 'gear' ? '0' : '2', // [✅ 已修改] 齒輪圖示不需要 stroke-width
+  strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
 }, React.createElement('path',{ d: P[name] }));
 
     };
@@ -244,24 +245,51 @@
       );
     };
 
-    /* 登入元件 (原封不動) */
+    /* [✅ 已修改] 登入元件 */
     const AuthBar = ({ user }) => {
       const [show, setShow] = useState(false);
       const [isSignup, setIsSignup] = useState(false);
       const [email, setEmail] = useState('');
       const [password, setPassword] = useState('');
+      // [✅ 新增] 註冊時的姓名狀態
+      const [name, setName] = useState('');
       const provider = useMemo(()=>new firebase.auth.GoogleAuthProvider(),[]);
 
       const submit = async () => {
         try{
-          if(isSignup) await auth.createUserWithEmailAndPassword(email,password);
-          else await auth.signInWithEmailAndPassword(email,password);
+          if(isSignup) {
+            // [✅ 新增] 註冊時檢查姓名
+            if (!name.trim()) {
+              alert('請輸入您的姓名');
+              return;
+            }
+            const userCredential = await auth.createUserWithEmailAndPassword(email,password);
+            // [✅ 新增] 註冊成功後，更新使用者的 displayName
+            if (userCredential.user) {
+              await userCredential.user.updateProfile({
+                displayName: name
+              });
+            }
+          } else {
+            await auth.signInWithEmailAndPassword(email,password);
+          }
           setShow(false);
+          setName(''); // 清空姓名欄位
         }catch(e){ alert('Auth Error: '+e.message); }
       };
+      
       const google = async () => {
         try{ await auth.signInWithPopup(provider); setShow(false); }
         catch(e){ alert('Google 登入失敗：'+e.message); }
+      };
+
+      // [✅ 修改] 清空姓名欄位的時機
+      const openModal = (signup) => {
+        setIsSignup(signup);
+        setShow(true);
+        setName('');
+        setEmail('');
+        setPassword('');
       };
 
       return (
@@ -270,14 +298,15 @@
             <>
               <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/70">
                 <Icon name="user" />
-                <span className="text-sm">{user.email}</span>
+                {/* [✅ 修改] 顯示 displayName 或 email */}
+                <span className="text-sm">{user.displayName || user.email}</span>
               </div>
               <button onClick={()=>auth.signOut()} className="px-3 py-1 rounded-lg bg-gray-200 hover:bg-gray-300">登出</button>
             </>
           ):(
             <>
-              <button onClick={()=>{setIsSignup(false);setShow(true);}} className="px-3 py-1 rounded-lg primary-bg text-white">登入</button>
-              <button onClick={()=>{setIsSignup(true);setShow(true);}} className="px-3 py-1 rounded-lg bg-gray-800 text-white">註冊</button>
+              <button onClick={()=>openModal(false)} className="px-3 py-1 rounded-lg primary-bg text-white">登入</button>
+              <button onClick={()=>openModal(true)} className="px-3 py-1 rounded-lg bg-gray-800 text-white">註冊</button>
             </>
           )}
 
@@ -286,9 +315,14 @@
               <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-md">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold">{isSignup?'建立帳號':'登入'}</h3>
-                  <button onClick={()=>setShow(false)} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
+                  <button onClick={()=>{setShow(false); setName('');}} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
                 </div>
                 <div className="space-y-3">
+                  {/* [✅ 新增] 姓名輸入欄位 (僅在註冊時顯示) */}
+                  {isSignup && (
+                    <input value={name} onChange={e=>setName(e.target.value)} placeholder="您的姓名"
+                           className="w-full border rounded-lg p-2"/>
+                  )}
                   <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email"
                          className="w-full border rounded-lg p-2"/>
                   <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="密碼"
@@ -342,17 +376,16 @@
       const map = {}; diaries.forEach(d => (d.tags||[]).forEach(t => map[t]=(map[t]||0)+1));
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
       if(entries.length===0) return <p className="text-gray-400">還沒有標籤</p>;
-      const max = Math.max(...entries.map(e=>e[1]));
+      
+      // [✅ 已修改] 移除 size 計算，改用固定 class
       return (
         <div className="flex flex-wrap gap-2">
           {entries.map(([tag,count])=>{
-            const size = 12 + Math.round(8*(count/max));
             const active = activeTag===tag;
             return (
               <button key={tag}
                 onClick={()=>onToggle(tag)}
-                className={`px-2 py-1 rounded-lg ${active?'primary-bg text-white':'bg-gray-100 hover:bg-gray-200'}`}
-                style={{ fontSize: size }}
+                className={`px-3 py-1 rounded-lg text-sm transition ${active?'primary-bg text-white':'bg-gray-100 hover:bg-gray-200'}`}
                 title={`#${tag} ×${count}`}
               >#{tag}</button>
             );
@@ -361,7 +394,7 @@
       );
     };
     
-    // [✅ 已修改] CalendarView：移除 sidebarMode，固定為完整模式
+    // CalendarView (原封不動)
     const CalendarView = ({ diaries, onPickDate }) => {
       const [cur, setCur] = useState(new Date());
       const y = cur.getFullYear(), m = cur.getMonth();
@@ -936,9 +969,13 @@
       );
     };
 
-    {/* === 側邊欄元件 (SidebarContent) === */}
+    {/* [✅ 已修改] 側邊欄元件 (SidebarContent) */}
     const SidebarContent = ({ darkMode, user, activeView, setActiveView, setSidebarOpen }) => {
       const dark = darkMode;
+      
+      // [✅ 新增] 決定顯示的名稱和頭像
+      const userName = user?.displayName || user?.email || '未登入';
+      const userInitial = (user?.displayName || user?.email || 'G').charAt(0).toUpperCase();
 
       // 側邊欄項目
       const NavItem = ({ icon, text, viewName, badge = null }) => {
@@ -946,7 +983,13 @@
         return (
           <button 
             onClick={() => {
-              setActiveView(viewName);
+              if (viewName === 'settings') {
+                setSettingsOpen(true); // 特殊處理：設定是彈窗
+              } else if (viewName === 'premium') {
+                setShowPremium(true); // 特殊處理：付款是彈窗
+              } else {
+                setActiveView(viewName);
+              }
               setSidebarOpen(false); // 手機版點擊後關閉側邊欄
             }}
             className={`
@@ -987,16 +1030,16 @@
           ${dark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900 border-r border-gray-200'}
         `}>
           
-          {/* 使用者標頭 (User Header) */}
+          {/* [✅ 修改] 使用者標頭 (User Header) */}
           <div className={`flex items-center gap-3 p-4 ${dark ? 'border-b border-gray-700' : 'border-b'}`}>
             {user ? (
-              // 已登入狀態 (根據圖片)
+              // 已登入狀態
               <>
                 <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
-                  嘉
+                  {userInitial}
                 </div>
-                <span className="font-semibold text-lg">
-                  洪嘉成
+                <span className="font-semibold text-lg truncate" title={userName}>
+                  {userName}
                 </span>
               </>
             ) : (
@@ -1556,9 +1599,10 @@
                         <div>
                           <label className="block text-sm font-medium mb-2">標籤</label>
                           <div className="flex gap-2 flex-wrap">
+                            {/* [✅ 已修改] 統一標籤按鈕大小 */}
                             {allTags.map(tag=>(
-                              <button key={tag} onClick={()=>handleTagToggle(tag)}
-                                className={`px-3 py-1 rounded-full text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
+                              <button key={tag} type="button" onClick={()=>handleTagToggle(tag)}
+                                className={`px-3 py-1 rounded-lg text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
                                 #{tag}
                               </button>
                             ))}
@@ -1700,6 +1744,8 @@
               activeView={activeView} 
               setActiveView={setActiveView}
               setSidebarOpen={setSidebarOpen}
+              setSettingsOpen={setSettingsOpen}
+              setShowPremium={setShowPremium}
             />
           </div>
 
@@ -1714,6 +1760,8 @@
                   activeView={activeView} 
                   setActiveView={setActiveView}
                   setSidebarOpen={setSidebarOpen}
+                  setSettingsOpen={setSettingsOpen}
+                  setShowPremium={setShowPremium}
                 />
               </div>
               {/* 遮罩 (Overlay) */}
