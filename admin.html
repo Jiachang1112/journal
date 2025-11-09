@@ -34,19 +34,37 @@
     </div>
   </header>
 
- <!-- 非 admin 提示（已移除按鈕） -->
-<section id="gate" class="max-w-3xl mx-auto px-4 mt-8 hidden">
-  <div class="bg-white rounded-2xl shadow p-6 border space-y-3 text-center">
-    <h2 class="text-xl font-bold mb-2">需要管理員權限</h2>
-    <p class="text-gray-600">
-      你已登入，但不是管理員（需要 <code>users/{uid}.role === "admin"</code>）。
-    </p>
-    <p class="text-sm text-gray-500">
-      若你是站主，請由 Firebase Console 手動將自己的使用者文件設為
-      <span class="font-semibold text-purple-600">role: "admin"</span>。
-    </p>
-  </div>
-</section>
+  <!-- 非 admin 提示（附一鍵建立 admin 文件） -->
+  <section id="gate" class="max-w-3xl mx-auto px-4 mt-8 hidden">
+    <div class="bg-white rounded-2xl shadow p-6 border space-y-3">
+      <h2 class="text-xl font-bold">需要管理員權限</h2>
+      <p class="text-gray-600">你已登入，但不是管理員（需要 <code>users/{uid}.role === "admin"</code>）。</p>
+      <div class="text-sm text-gray-500">若你就是站主，可先建立自己的使用者文件並設為 admin。</div>
+      <div class="flex gap-2">
+        <button id="make-me-admin" class="btn-primary">把我設為 admin</button>
+        <button id="rule-help" class="btn">顯示規則範例</button>
+      </div>
+      <pre id="rules-snippet" class="mt-2 hidden text-xs bg-gray-50 p-3 rounded border overflow-x-auto">// Firestore 安全規則（參考）：
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(db)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+    match /users/{uid} {
+      allow create: if request.auth != null;             // 首次建立
+      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAdmin();                   // 管理員可讀寫所有 users/*
+      match /diaries/{doc} {
+        allow read, write: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      }
+    }
+  }
+}
+</pre>
+    </div>
+  </section>
 
   <!-- 主畫面 -->
   <main id="app" class="max-w-7xl mx-auto px-4 py-6 hidden">
