@@ -33,7 +33,7 @@
     </div>
   </header>
 
-  <!-- 非 admin 提示（已移除按鈕） -->
+  <!-- 非 admin 提示 -->
   <section id="gate" class="max-w-3xl mx-auto px-4 mt-8 hidden">
     <div class="bg-white rounded-2xl shadow p-6 border space-y-3 text-center">
       <h2 class="text-xl font-bold mb-2">需要管理員權限</h2>
@@ -41,7 +41,7 @@
         你已登入，但不是管理員（需要 <code>users/{uid}.role === "admin"</code>）。
       </p>
       <p class="text-sm text-gray-500">
-        若你是站主，請於 Firebase Console 手動將自己的使用者文件設為
+        若你是站主，請於 Firebase Console 將自己的使用者文件設為
         <span class="font-semibold text-purple-600">role: "admin"</span>。
       </p>
     </div>
@@ -54,7 +54,10 @@
       <section class="lg:col-span-1 bg-white rounded-2xl shadow p-4 border">
         <div class="flex items-center justify-between mb-3">
           <h3 class="font-bold text-lg">使用者清單 <span id="user-count" class="text-sm text-gray-500"></span></h3>
-          <button id="refresh-users" class="btn">重新整理</button>
+          <div class="flex gap-2">
+            <button id="clear-users" class="btn">清除搜尋</button>
+            <button id="refresh-users" class="btn">重新整理</button>
+          </div>
         </div>
         <input id="user-search" placeholder="搜尋名稱／Email／UID（即時篩選）" class="w-full border rounded-lg p-2 mb-3"/>
         <div id="users-list" class="space-y-2 max-h-[70vh] overflow-y-auto pr-1">載入中…</div>
@@ -80,23 +83,31 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow p-4 border">
-          <div class="grid md:grid-cols-3 gap-3">
-            <input id="diary-q" class="border rounded-lg p-2" placeholder="關鍵字（標題/內容）"/>
-            <select id="diary-mood" class="border rounded-lg p-2">
-              <option value="">心情：全部</option>
-              <option>😊</option><option>😢</option><option>😡</option><option>😰</option>
-              <option>😍</option><option>🤔</option><option>😴</option><option>🎉</option>
-            </select>
-            <div class="flex gap-2">
-              <button id="apply-filter" class="btn w-full">套用篩選</button>
-              <button id="clear-filter" class="btn w-full">清除</button>
+          <div class="grid md:grid-cols-3 gap-3 items-center">
+            <div class="col-span-2 flex items-center gap-2">
+              <input id="diary-q" class="border rounded-lg p-2 w-full" placeholder="關鍵字（標題/內容，輸入即篩）"/>
+            </div>
+            <div class="flex items-center gap-2">
+              <select id="diary-mood" class="border rounded-lg p-2 w-full">
+                <option value="">心情：全部（改選即篩）</option>
+                <option>😊</option><option>😢</option><option>😡</option><option>😰</option>
+                <option>😍</option><option>🤔</option><option>😴</option><option>🎉</option>
+              </select>
+            </div>
+
+            <!-- 原本的套用/清除，改為隱藏；保留結構避免影響排版 -->
+            <div class="col-span-3 hidden">
+              <div class="flex gap-2">
+                <button id="apply-filter" class="btn w-full">套用篩選</button>
+                <button id="clear-filter" class="btn w-full">清除</button>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow p-2 md:p-4 border">
           <div class="flex items-center justify-between px-2 md:px-0 mb-2">
-            <h3 class="font-bold">日記列表</h3>
+            <h3 class="font-bold">日記列表 <span id="diary-count" class="text-sm text-gray-500"></span></h3>
             <div class="text-sm text-gray-500">每頁 30 筆</div>
           </div>
           <div id="diaries-list" class="divide-y"></div>
@@ -123,118 +134,196 @@
   const auth = firebase.auth();
   const db   = firebase.firestore();
 
+  // ===== 工具 =====
   const $ = (s, r=document)=>r.querySelector(s);
-  const toast = (m)=>alert(m);
+  const fmtTime = (iso)=>{
+    try{ const d=new Date(typeof iso?.toDate==="function"?iso.toDate():iso); return isNaN(d)?'—':d.toLocaleString('zh-TW'); }catch{ return '—'; }
+  };
+  const debounce = (fn, ms=120)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
+
+  // ===== UI refs =====
   const gate = $('#gate'), app = $('#app');
   const who = $('#whoami'), btnSignIn = $('#btn-signin'), btnSignOut = $('#btn-signout');
 
-  // ==== 狀態（使用者清單快取，供即時篩選）====
-  let usersCache = []; // [{id, displayName, email, ...}]
   const usersListEl = $('#users-list');
   const userSearchEl = $('#user-search');
+  const clearUsersBtn = $('#clear-users');
+  const refreshUsersBtn = $('#refresh-users');
   const userCountEl = $('#user-count');
 
-  // 小工具：防抖（避免過度重繪）
-  const debounce = (fn, ms=120)=>{
-    let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
-  };
+  const userMeta = $('#user-meta'), userRoleChip = $('#user-role'), membershipChip = $('#membership-chip');
+  const toggleRoleBtn = $('#toggle-role'), downloadBtn = $('#download-json');
 
-  auth.onAuthStateChanged(async u=>{
+  const diaryList = $('#diaries-list'), diaryCount = $('#diary-count');
+  const diaryQ = $('#diary-q'), diaryMood = $('#diary-mood');
+
+  // ===== 狀態 =====
+  let usersCache = [];              // 使用者清單快取
+  let selectedUserId = null;
+  const diariesCache = new Map();   // Map<uid, array>
+  const DIARY_PRELOAD_LIMIT = 200;  // 預先抓取的日記筆數（可調整）
+
+  // ===== Auth =====
+  btnSignIn.onclick = async()=>{ const p=new firebase.auth.GoogleAuthProvider(); await auth.signInWithPopup(p); };
+  btnSignOut.onclick = ()=>auth.signOut();
+
+  auth.onAuthStateChanged(async(u)=>{
     who.textContent = u ? (u.displayName || u.email || u.uid) : '未登入';
-    btnSignIn.classList.toggle('hidden',!!u);
-    btnSignOut.classList.toggle('hidden',!u);
+    btnSignIn.classList.toggle('hidden', !!u);
+    btnSignOut.classList.toggle('hidden', !u);
 
     if(!u){ gate.classList.add('hidden'); app.classList.add('hidden'); return; }
 
     const meSnap = await db.collection('users').doc(u.uid).get();
     const me = meSnap.exists ? meSnap.data() : {};
-    if(me.role!=='admin'){
-      gate.classList.remove('hidden');
-      app.classList.add('hidden');
-      return;
-    }
-    gate.classList.add('hidden');
-    app.classList.remove('hidden');
-    await loadUsers();                // 先載一次
-    renderUsers();                    // 初次渲染
-  });
+    if(me.role!=='admin'){ gate.classList.remove('hidden'); app.classList.add('hidden'); return; }
 
-  btnSignIn.onclick=async()=>{
-    const p=new firebase.auth.GoogleAuthProvider();
-    await auth.signInWithPopup(p);
-  };
-  btnSignOut.onclick=()=>auth.signOut();
-
-  // —— 載入使用者（快取在 usersCache） ——
-  async function loadUsers(){
-    usersListEl.textContent='載入中…';
-    try{
-      const snap = await db.collection('users').get();
-      usersCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
-      userCountEl.textContent = `（共 ${usersCache.length} 位）`;
-      usersListEl.innerHTML='';
-    }catch(e){
-      usersListEl.innerHTML = `<div class="text-red-600 text-sm">讀取使用者失敗：${e.message}</div>`;
-    }
-  }
-
-  // —— 依關鍵字即時篩選 + 渲染 ——
-  function renderUsers(){
-    const q = (userSearchEl.value || '').trim().toLowerCase();
-    const filtered = usersCache.filter(u=>{
-      const name  = String(u.displayName||'').toLowerCase();
-      const email = String(u.email||'').toLowerCase();
-      const id    = String(u.id||'').toLowerCase();
-      if(!q) return true;
-      return name.includes(q) || email.includes(q) || id.includes(q);
-    });
-
-    usersListEl.innerHTML = '';
-    if(filtered.length === 0){
-      usersListEl.innerHTML = '<div class="text-gray-400 text-sm px-2">找不到符合的使用者</div>';
-      return;
-    }
-
-    filtered.forEach(u=>{
-      const el = document.createElement('div');
-      el.className = 'p-3 border rounded mb-2 hover:bg-gray-50 cursor-pointer';
-      el.innerHTML = `
-        <div class="font-semibold">${u.displayName || '(未設定)'}</div>
-        <div class="text-xs text-gray-500">${u.email || ''}</div>
-        <div class="text-xs text-gray-400">${u.id}</div>`;
-      el.onclick = ()=>loadUserDiaries(u.id);
-      usersListEl.appendChild(el);
-    });
-  }
-
-  // 綁定「即時篩選」
-  userSearchEl.addEventListener('input', debounce(renderUsers, 80));
-  $('#refresh-users').addEventListener('click', async()=>{
+    gate.classList.add('hidden'); app.classList.remove('hidden');
     await loadUsers();
     renderUsers();
   });
 
-  // —— 載入使用者日記（右側） ——
-  async function loadUserDiaries(uid){
-    const diaryList=$('#diaries-list');
-    diaryList.innerHTML='載入中…';
+  // ===== 使用者清單 =====
+  async function loadUsers(){
+    usersListEl.textContent='載入中…';
     try{
-      const snap=await db.collection('users').doc(uid).collection('diaries').orderBy('createdAt','desc').limit(30).get();
-      diaryList.innerHTML='';
-      snap.forEach(d=>{
-        const v=d.data();
-        const el=document.createElement('div');
-        el.className='p-3';
-        el.innerHTML=`<div class="font-semibold">${v.title||'(無標題)'}</div>
-                      <div class="text-sm text-gray-600">${v.content||''}</div>
-                      <div class="text-xs text-gray-400">${new Date(v.createdAt?.toDate?.()||v.createdAt||Date.now()).toLocaleString()}</div>`;
-        diaryList.appendChild(el);
-      });
-      if(snap.empty) diaryList.innerHTML='<div class="text-gray-400 p-3 text-sm">尚無日記</div>';
+      const snap=await db.collection('users').get();
+      usersCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+      userCountEl.textContent = `（共 ${usersCache.length} 位）`;
+      usersListEl.innerHTML='';
     }catch(e){
-      diaryList.innerHTML=`<div class="text-red-600 text-sm">讀取日記失敗：${e.message}</div>`;
+      usersListEl.innerHTML=`<div class="text-red-600 text-sm">讀取使用者失敗：${e.message}</div>`;
     }
   }
+
+  function renderUsers(){
+    const q = (userSearchEl.value||'').trim().toLowerCase();
+    const filtered = usersCache.filter(u=>{
+      const name=(u.displayName||'').toLowerCase();
+      const email=(u.email||'').toLowerCase();
+      const id=(u.id||'').toLowerCase();
+      return !q || name.includes(q) || email.includes(q) || id.includes(q);
+    });
+
+    usersListEl.innerHTML='';
+    if(filtered.length===0){
+      usersListEl.innerHTML='<div class="text-gray-400 text-sm px-2">找不到符合的使用者</div>';
+      return;
+    }
+    filtered.forEach(u=>{
+      const el=document.createElement('button');
+      el.className='w-full text-left p-3 border rounded mb-2 hover:bg-gray-50';
+      el.innerHTML=`<div class="font-semibold">${u.displayName||'(未設定)'}</div>
+                    <div class="text-xs text-gray-500">${u.email||''}</div>
+                    <div class="text-xs text-gray-400">${u.id}</div>`;
+      el.onclick=()=>selectUser(u.id, u);
+      usersListEl.appendChild(el);
+    });
+  }
+
+  userSearchEl.addEventListener('input', debounce(renderUsers, 80));
+  clearUsersBtn.addEventListener('click', ()=>{ userSearchEl.value=''; renderUsers(); });
+  refreshUsersBtn.addEventListener('click', async()=>{ await loadUsers(); renderUsers(); });
+
+  // ===== 選擇使用者 & 日記快取 =====
+  async function selectUser(uid, userDoc){
+    selectedUserId = uid;
+
+    // 頭像／角色資訊
+    const role = userDoc?.role || 'user';
+    const tier = userDoc?.membership?.tier || 'free';
+    const exp  = userDoc?.membership?.expiresAt ? fmtTime(userDoc.membership.expiresAt) : null;
+
+    userRoleChip.textContent = role; userRoleChip.classList.remove('hidden');
+    membershipChip.textContent = `tier: ${tier}${exp?`｜到期：${exp}`:''}`; membershipChip.classList.remove('hidden');
+    userMeta.innerHTML = `
+      <div class="text-gray-600">
+        <div>名稱：<span class="font-medium">${userDoc.displayName||'(未設定)'}</span></div>
+        <div>Email：<span class="font-medium">${userDoc.email||'—'}</span></div>
+      </div>`;
+
+    // 預抓日記快取
+    if(!diariesCache.has(uid)) await preloadDiaries(uid);
+
+    // 首次顯示 / 或依當前條件即時篩選
+    renderDiaries();
+  }
+
+  async function preloadDiaries(uid){
+    const arr=[]; let last=null;
+    try{
+      while(arr.length < DIARY_PRELOAD_LIMIT){
+        let q = db.collection('users').doc(uid).collection('diaries').orderBy('createdAt','desc').limit(100);
+        if(last) q = q.startAfter(last);
+        const snap=await q.get();
+        if(snap.empty) break;
+        snap.forEach(d=>arr.push({ id:d.id, ...d.data() }));
+        last = snap.docs[snap.docs.length-1];
+        if(snap.size<100) break;
+      }
+      diariesCache.set(uid, arr);
+    }catch(e){
+      diariesCache.set(uid, arr); // 盡可能顯示已拿到的
+      console.error('預抓日記失敗：', e);
+    }
+  }
+
+  // ===== 日記「即時篩選」 =====
+  function renderDiaries(){
+    if(!selectedUserId){ diaryList.innerHTML='<div class="p-3 text-gray-500 text-sm">尚未選取使用者</div>'; return; }
+    const rows = (diariesCache.get(selectedUserId)||[]);
+
+    const q = (diaryQ.value||'').trim().toLowerCase();
+    const mood = diaryMood.value;
+
+    const filtered = rows.filter(d=>{
+      const hitQ = !q || String(d.title||'').toLowerCase().includes(q) || String(d.content||'').toLowerCase().includes(q);
+      const hitM = !mood || d.mood===mood;
+      return hitQ && hitM;
+    }).slice(0, 30); // 仍維持每頁 30 筆（此處顯示第一頁）
+
+    diaryCount.textContent = `（共 ${rows.length}，篩選後 ${filtered.length} / 顯示 30）`;
+    diaryList.innerHTML='';
+    if(filtered.length===0){ diaryList.innerHTML='<div class="p-3 text-gray-400 text-sm">沒有符合條件的日記</div>'; return; }
+
+    filtered.forEach(d=>{
+      const privateBadge = d.isPrivate ? `<span class="chip">私密</span>` : '';
+      const tags = (d.tags||[]).map(t=>`<span class="chip mr-1 mb-1">#${t}</span>`).join('');
+      const imgs = Array.isArray(d.images) ? d.images.slice(0,3) : [];
+      const row=document.createElement('div');
+      row.className='p-3';
+      row.innerHTML=`
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-2xl">${d.mood||''}</span>
+              <span class="text-xl">${d.weather||''}</span>
+              ${privateBadge}
+              ${tags}
+            </div>
+            <div class="font-semibold truncate">${d.title||'(無標題)'}</div>
+            <div class="text-xs text-gray-500">${fmtTime(d.createdAt)} ｜ ID: ${d.id}</div>
+            <p class="text-sm text-gray-700 mt-1 whitespace-pre-wrap">${(d.isPrivate?'（私密內容）':(d.content||''))}</p>
+            ${imgs.length?`<div class="flex gap-2 mt-2">${imgs.map(u=>`<img src="${u}" class="w-16 h-16 object-cover rounded border"/>`).join('')}</div>`:''}
+          </div>
+        </div>`;
+      diaryList.appendChild(row);
+    });
+  }
+
+  // 綁定右側「即時」事件
+  diaryQ.addEventListener('input', debounce(renderDiaries, 120));
+  diaryMood.addEventListener('change', renderDiaries);
+
+  // （保留 API）下載全部 JSON
+  downloadBtn.onclick = async()=>{
+    if(!selectedUserId) return;
+    const all = diariesCache.get(selectedUserId)||[];
+    const blob = new Blob([JSON.stringify(all,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`${selectedUserId}_diaries.json`; a.click();
+    URL.revokeObjectURL(url);
+  };
   </script>
 </body>
 </html>
