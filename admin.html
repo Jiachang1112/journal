@@ -53,10 +53,10 @@
       <!-- 左：使用者清單 -->
       <section class="lg:col-span-1 bg-white rounded-2xl shadow p-4 border">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="font-bold text-lg">使用者清單</h3>
+          <h3 class="font-bold text-lg">使用者清單 <span id="user-count" class="text-sm text-gray-500"></span></h3>
           <button id="refresh-users" class="btn">重新整理</button>
         </div>
-        <input id="user-search" placeholder="搜尋名稱或 Email…" class="w-full border rounded-lg p-2 mb-3"/>
+        <input id="user-search" placeholder="搜尋名稱／Email／UID（即時篩選）" class="w-full border rounded-lg p-2 mb-3"/>
         <div id="users-list" class="space-y-2 max-h-[70vh] overflow-y-auto pr-1">載入中…</div>
       </section>
 
@@ -128,6 +128,17 @@
   const gate = $('#gate'), app = $('#app');
   const who = $('#whoami'), btnSignIn = $('#btn-signin'), btnSignOut = $('#btn-signout');
 
+  // ==== 狀態（使用者清單快取，供即時篩選）====
+  let usersCache = []; // [{id, displayName, email, ...}]
+  const usersListEl = $('#users-list');
+  const userSearchEl = $('#user-search');
+  const userCountEl = $('#user-count');
+
+  // 小工具：防抖（避免過度重繪）
+  const debounce = (fn, ms=120)=>{
+    let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+  };
+
   auth.onAuthStateChanged(async u=>{
     who.textContent = u ? (u.displayName || u.email || u.uid) : '未登入';
     btnSignIn.classList.toggle('hidden',!!u);
@@ -144,7 +155,8 @@
     }
     gate.classList.add('hidden');
     app.classList.remove('hidden');
-    loadUsers();
+    await loadUsers();                // 先載一次
+    renderUsers();                    // 初次渲染
   });
 
   btnSignIn.onclick=async()=>{
@@ -153,29 +165,56 @@
   };
   btnSignOut.onclick=()=>auth.signOut();
 
-  // 載入使用者清單
+  // —— 載入使用者（快取在 usersCache） ——
   async function loadUsers(){
-    const usersList=$('#users-list');
-    usersList.textContent='載入中…';
+    usersListEl.textContent='載入中…';
     try{
-      const snap=await db.collection('users').get();
-      usersList.innerHTML='';
-      snap.forEach(d=>{
-        const u=d.data();
-        const el=document.createElement('div');
-        el.className='p-3 border rounded mb-2 hover:bg-gray-50 cursor-pointer';
-        el.innerHTML=`<div class="font-semibold">${u.displayName||'(未設定)'}</div>
-                      <div class="text-xs text-gray-500">${u.email||''}</div>
-                      <div class="text-xs text-gray-400">${d.id}</div>`;
-        el.onclick=()=>loadUserDiaries(d.id);
-        usersList.appendChild(el);
-      });
+      const snap = await db.collection('users').get();
+      usersCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+      userCountEl.textContent = `（共 ${usersCache.length} 位）`;
+      usersListEl.innerHTML='';
     }catch(e){
-      usersList.innerHTML=`<div class="text-red-600 text-sm">讀取使用者失敗：${e.message}</div>`;
+      usersListEl.innerHTML = `<div class="text-red-600 text-sm">讀取使用者失敗：${e.message}</div>`;
     }
   }
 
-  // 載入使用者日記
+  // —— 依關鍵字即時篩選 + 渲染 ——
+  function renderUsers(){
+    const q = (userSearchEl.value || '').trim().toLowerCase();
+    const filtered = usersCache.filter(u=>{
+      const name  = String(u.displayName||'').toLowerCase();
+      const email = String(u.email||'').toLowerCase();
+      const id    = String(u.id||'').toLowerCase();
+      if(!q) return true;
+      return name.includes(q) || email.includes(q) || id.includes(q);
+    });
+
+    usersListEl.innerHTML = '';
+    if(filtered.length === 0){
+      usersListEl.innerHTML = '<div class="text-gray-400 text-sm px-2">找不到符合的使用者</div>';
+      return;
+    }
+
+    filtered.forEach(u=>{
+      const el = document.createElement('div');
+      el.className = 'p-3 border rounded mb-2 hover:bg-gray-50 cursor-pointer';
+      el.innerHTML = `
+        <div class="font-semibold">${u.displayName || '(未設定)'}</div>
+        <div class="text-xs text-gray-500">${u.email || ''}</div>
+        <div class="text-xs text-gray-400">${u.id}</div>`;
+      el.onclick = ()=>loadUserDiaries(u.id);
+      usersListEl.appendChild(el);
+    });
+  }
+
+  // 綁定「即時篩選」
+  userSearchEl.addEventListener('input', debounce(renderUsers, 80));
+  $('#refresh-users').addEventListener('click', async()=>{
+    await loadUsers();
+    renderUsers();
+  });
+
+  // —— 載入使用者日記（右側） ——
   async function loadUserDiaries(uid){
     const diaryList=$('#diaries-list');
     diaryList.innerHTML='載入中…';
