@@ -2031,17 +2031,20 @@
                     <Icon name="menu" className="w-6 h-6" />
                   </button>
 
-                  <button 
-                    onClick={() => {
-                      setActiveView('list');
-                      setDateFilter('');
-                      setCurrentDiary(null);
-                      setShowNewDiary(false);
-                    }}
-                    className="text-2xl font-bold primary-text"
-                  >
-                    📔 我的日記本
-                  </button>
+                  <button
+  onClick={() => {
+    setActiveView('list');
+    setDateFilter('');
+    setCurrentDiary(null);
+    setShowNewDiary(false);
+  }}
+  className="flex items-center gap-2 text-2xl font-bold primary-text"
+  title="回到首頁"
+>
+  <img src="./assets/img/journal-favicon.png" alt="logo" className="w-7 h-7 rounded" />
+  <span>我的日記本</span>
+</button>
+
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
