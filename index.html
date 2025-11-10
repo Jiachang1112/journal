@@ -1723,36 +1723,30 @@
                         <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
                         
                         {/* 日期選擇器 */}
-                        <div>
-                          <label className="block text-sm font-medium mb-1 text-gray-700">日記日期</label>
-                          <input
-                            type="datetime-local"
-                            value={toDateTimeLocal(formData.createdAt)}
-                            onChange={e => setFormData({...formData, createdAt: new Date(e.target.value).toISOString()})}
-                            className={`w-full border rounded-lg p-2 ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}
-                          />
-                        </div>
-                        
-                        {/* [✅ 修改] 地點：改成縣市 + Google 自動完成 */}
-                        <div>
-                          <label className="block text-sm font-medium mb-1 text-gray-700">地點</label>
-                          <LocationPicker
-                            darkMode={darkMode}
-                            county={formData.locationCounty || ''}
-                            value={formData.locationPlace || (formData.location || '').replace(/^(.+?) · /,'')}
-                            onChange={(loc)=>{
-                              setFormData(prev => ({
-                                ...prev,
-                                locationCounty: loc.county || '',
-                                locationPlace:  loc.placeText || '',
-                                location:       loc.location || '',
-                                locationPlaceId: loc.placeId || '',
-                                locationLat:     loc.lat ?? null,
-                                locationLng:     loc.lng ?? null,
-                              }));
-                            }}
-                          />
-                        </div>
+                       {/* [✅ 已改] 地點：改為一般文字輸入（讓使用者自己輸入） */}
+<div>
+  <label className="block text-sm font-medium mb-1 text-gray-700">地點</label>
+  <input
+    type="text"
+    placeholder="例如：家裡、學校圖書館、台北101、台南市東區…"
+    value={formData.location || ''}
+    onChange={(e)=>{
+      const text = e.target.value;
+      setFormData(prev => ({
+        ...prev,
+        location: text,
+        // 既有欄位保留，但改為清空（避免舊的自動完成殘留）
+        locationCounty: '',
+        locationPlace: '',
+        locationPlaceId: '',
+        locationLat: null,
+        locationLng: null,
+      }));
+    }}
+    className={`w-full border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
+  />
+</div>
+
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
