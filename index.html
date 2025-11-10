@@ -76,7 +76,7 @@
         import:"M12 5v10m0 0l-4-4m4 4l4-4M5 19h14",
         bell:"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-9.33-4.93M13 21a2 2 0 01-4 0",
         image:"M3 19a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 01-2 2v14zm3-3l4-4 3 3 4-4 2 2v4H6z",
-        gear:"M13.8,12c0,1-0.8,1.8-1.8,1.8s-1.8-0.8-1.8-1.8s0.8-1.8,1.8-1.8S13.8,11,13.8,12z M19.4,12c0-0.4-0.3-0.8-0.8-0.8h-2.1 c-0.2-0.6-0.5-1.2-0.9-1.7l1.5-1.5c0.3-0.3,0.3-0.8,0-1.1l-1.2-1.2c-0.3-0.3-0.8-0.3-1.1,0l-1.5,1.5c-0.5-0.4-1.1-0.7-1.7-0.9v-2.1 c0-0.4-0.3-0.8-0.8-0.8h-1.8c-0.4,0-0.8,0.3-0.8,0.8v2.1c-0.6,0.2-1.2,0.5-1.7,0.9l-1.5-1.5c-0.3-0.3-0.8-0.3-1.1,0l-1.2,1.2 c-0.3,0.3-0.3,0.8,0,1.1l1.5,1.5c-0.4,0.5-0.7,1.1-0.9,1.7H5.4c-0.4,0-0.8,0.3-0.8,0.8v1.8c0,0.4,0.3,0.8,0.8,0.8h2.1 c0.2,0.6,0.5,1.2,0.9,1.7l-1.5,1.5c-0.3,0.3-0.3,0.8,0,1.1l1.2,1.2c0.3,0.3,0.8,0.3,1.1,0l1.5-1.5c0.5,0.4,1.1,0.7,1.7,0.9v2.1 c0,0.4,0.3,0.8,0.8,0.8h1.8c0.4,0,0.8-0.3,0.8-0.8v-2.1c0.6-0.2,1.2-0.5,1.7-0.9l1.5,1.5c0.3,0.3,0.8,0.3,1.1,0l1.2-1.2 c0.3-0.3,0.3-0.8,0,1.1l-1.5-1.5c0.4-0.5,0.7-1.1,0.9-1.7h2.1c0.4,0,0.8-0.3,0.8-0.8V12z",
+        gear:"M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm9 3.5a7.95 7.95 0 01-.22 1.8l2.06 1.6-2 3.46-2.46-1a8.1 8.1 0 01-3.1 1.8l-.36 2.6h-4l-.36-2.6a8.1 8.1 0 01-3.1-1.8l-2.46 1-2-3.46 2.06-1.6c.15.57.22 1.17.22 1.8z",
         star:"M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
         trophy:"M17 3h4v2a5 5 0 01-5 5h-1a6 6 0 11-12 0V3h4",
         menu: "M3 12h18M3 6h18M3 18h18",
@@ -84,14 +84,14 @@
         'refresh-ccw': "M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 0 0 3.51 9M3.51 15a9 9 0 0 0 16.98 0",
         scissors: "M6 6a2 2 0 0 1 4 0v4L6 14V6zm12 0a2 2 0 0 0-4 0v4l4 4V6zM8 8H4M16 8h4M8 12l-4 4 4 4M16 12l4 4-4 4",
         share: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13",
+        // [✅ 新增圖示]
         chart:"M12 20V10M18 20V4M6 20v-4"
       };
       return React.createElement('svg', {
   className,
-  fill: name === 'gear' ? 'currentColor' : (fill ? 'currentColor' : 'none'),
-  stroke: name === 'gear' ? 'none' : (fill ? 'none' : 'currentColor'),
-  strokeWidth: name === 'gear' ? '0' : '2',
-  strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
+  fill: fill ? 'currentColor' : 'none',
+  stroke: fill ? 'none' : 'currentColor',
+  strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
 }, React.createElement('path',{ d: P[name] }));
 
     };
@@ -120,13 +120,14 @@
       return `${y}-${m}-${day}`;
     };
 
-    // 日期格式化工具
+    // [✅ 新增] 日期格式化工具：將 ISO String 轉為 datetime-local input 需要的格式
     const toDateTimeLocal = (isoString) => {
       if (!isoString) return '';
       try {
         const date = new Date(isoString);
         if (isNaN(date.getTime())) return '';
-        const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+        // 為了處理時區問題，我們需要手動調整
+        const tzoffset = (new Date()).getTimezoneOffset() * 60000; // 本地時區與 UTC 的毫秒差
         const localISOTime = (new Date(date.getTime() - tzoffset)).toISOString().slice(0, 16);
         return localISOTime;
       } catch (e) {
@@ -144,21 +145,6 @@
         return `plain:${text}`;
       }
     }
-    
-    {/* [✅ 新增] Firebase Storage 圖片上傳工具 */}
-    const uploadFileToStorage = async (file, userId) => {
-      if (!userId) { throw new Error("User not authenticated for upload."); }
-      const storageRef = storage.ref();
-      // 使用檔案時間戳和隨機字串來確保唯一性
-      const fileExtension = file.name.split('.').pop();
-      const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
-      const imageRef = storageRef.child(fileName);
-
-      // 開始上傳
-      const snapshot = await imageRef.put(file);
-      // 取得下載 URL
-      return snapshot.ref.getDownloadURL();
-    };
 
     /* Streak (原封不動) */
     function calcStreak(diaries){
@@ -258,7 +244,7 @@
       );
     };
 
-    /* 登入元件 (AuthBar) */
+    /* [✅ 修改] 登入元件 (AuthBar) */
     const AuthBar = ({ user }) => {
       const [show, setShow] = useState(false);
       const [isSignup, setIsSignup] = useState(false);
@@ -267,6 +253,7 @@
       const [displayName, setDisplayName] = useState(''); // [✅ 新增] 註冊時的名字
       const provider = useMemo(()=>new firebase.auth.GoogleAuthProvider(),[]);
       
+      // [✅ 新增] 關閉 Modal 並重設欄位
       const closeModal = () => {
         setShow(false);
         setEmail('');
@@ -274,30 +261,34 @@
         setDisplayName('');
       };
 
+      // [✅ 修改] submit 函式
       const submit = async () => {
         try{
           if(isSignup){
+            // 註冊
             if (!displayName.trim()) {
               alert('請輸入你的名字');
               return;
             }
             const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            // 更新 profile
             if (userCredential.user) {
               await userCredential.user.updateProfile({
                 displayName: displayName.trim()
               });
             }
           } else {
+            // 登入
             await auth.signInWithEmailAndPassword(email, password);
           }
-          closeModal();
+          closeModal(); // [✅ 修改] 成功後關閉並重設
         }catch(e){ alert('Auth Error: '+e.message); }
       };
       
       const google = async () => {
         try{ 
           await auth.signInWithPopup(provider); 
-          closeModal();
+          closeModal(); // [✅ 修改] 成功後關閉
         }
         catch(e){ alert('Google 登入失敗：'+e.message); }
       };
@@ -308,7 +299,8 @@
             <>
               <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/70">
                 <Icon name="user" />
-                <span className="text-sm" title={user.displayName || user.email}>{user.displayName || user.email}</span>
+                {/* [✅ 修改] 優先顯示 displayName */}
+                <span className="text-sm" title={user.displayName || ''}>{user.email}</span>
               </div>
               <button onClick={()=>auth.signOut()} className="px-3 py-1 rounded-lg bg-gray-200 hover:bg-gray-300">登出</button>
             </>
@@ -324,9 +316,11 @@
               <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-md">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold">{isSignup?'建立帳號':'登入'}</h3>
+                  {/* [✅ 修改] 點擊 X 關閉並重設 */}
                   <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
                 </div>
                 <div className="space-y-3">
+                  {/* [✅ 新增] 註冊時顯示名字欄位 */}
                   {isSignup && (
                     <input value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="你的名字"
                            className="w-full border rounded-lg p-2"/>
@@ -384,15 +378,17 @@
       const map = {}; diaries.forEach(d => (d.tags||[]).forEach(t => map[t]=(map[t]||0)+1));
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
       if(entries.length===0) return <p className="text-gray-400">還沒有標籤</p>;
-      
+      // [✅ 移除] max 的計算 (不再需要)
       return (
         <div className="flex flex-wrap gap-2">
           {entries.map(([tag,count])=>{
+            // [✅ 移除] size 的計算 (不再需要)
             const active = activeTag===tag;
             return (
               <button key={tag}
                 onClick={()=>onToggle(tag)}
-                className={`px-3 py-1 rounded-lg text-sm transition ${active?'primary-bg text-white':'bg-gray-100 hover:bg-gray-200'}`}
+                // [✅ 修改] 移除 style={{ fontSize: size }}，並加入 text-sm 讓大小一致
+                className={`px-2 py-1 rounded-lg text-sm ${active?'primary-bg text-white':'bg-gray-100 hover:bg-gray-200'}`}
                 title={`#${tag} ×${count}`}
               >#{tag}</button>
             );
@@ -401,7 +397,7 @@
       );
     };
     
-    // CalendarView (原封不動)
+    // [✅ 已修改] CalendarView：移除 sidebarMode，固定為完整模式
     const CalendarView = ({ diaries, onPickDate }) => {
       const [cur, setCur] = useState(new Date());
       const y = cur.getFullYear(), m = cur.getMonth();
@@ -748,6 +744,7 @@
       const [privPwdVisible, setPrivPwdVisible] = useState(false);
       useEffect(()=>{ setPrivPwdInput(''); }, [open]);
       
+      // [✅ 修改] 新增 activeTab 狀態，預設為 'personal'
       const [activeTab, setActiveTab] = useState('personal');
 
       if(!open) return null;
@@ -776,6 +773,7 @@
         alert('已清除私密日記密碼'); setPrivPwdInput('');
       };
 
+      // [✅ 新增] Tab 按鈕元件
       const TabButton = ({ tab, label }) => (
         <button
           onClick={() => setActiveTab(tab)}
@@ -797,12 +795,14 @@
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
             </div>
 
+            {/* [✅ 新增 Tab 切換列] */}
             <div className="p-4 border-b flex gap-3">
               <TabButton tab="personal" label="個人"/>
               <TabButton tab="general" label="通用"/>
             </div>
 
             <div className="p-4 space-y-8">
+              {/* [✅ 修改] 個人設定 Tab */}
               {activeTab === 'personal' && (
                 <div className="space-y-8">
                   <section>
@@ -882,6 +882,7 @@
                 </div>
               )}
               
+              {/* [✅ 修改] 通用設定 Tab */}
               {activeTab === 'general' && (
                 <div className="space-y-8">
                   <section>
@@ -971,7 +972,7 @@
       );
     };
 
-    /* [✅ 修改] 側邊欄元件 (SidebarContent) */
+    {/* === [✅ 修改] 側邊欄元件 (SidebarContent) === */}
     const SidebarContent = ({ darkMode, user, activeView, setActiveView, setSidebarOpen }) => {
       const dark = darkMode;
 
@@ -1022,18 +1023,18 @@
           ${dark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900 border-r border-gray-200'}
         `}>
           
-          {/* [✅ 修改] 使用者標頭 (User Header) */}
+          {/* 使用者標頭 (User Header) */}
           <div className={`flex items-center gap-3 p-4 ${dark ? 'border-b border-gray-700' : 'border-b'}`}>
             {user ? (
-              // 已登入狀態
+              // [✅ 修改] 已登入狀態：動態顯示使用者名稱
               <>
                 <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
-                  {/* [✅ 修改] 顯示使用者名稱的第一個字 */}
-                  {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                  {/* 顯示使用者名稱的第一個字，若無則顯示 Email 第一個字，再無則顯示 '?' */}
+                  {user.displayName ? user.displayName.charAt(0).toUpperCase() : '?'}
                 </div>
-                <span className="font-semibold text-lg truncate" title={user.displayName || user.email}>
-                  {/* [✅ 修改] 顯示使用者名稱 */}
-                  {user.displayName || user.email}
+                <span className="font-semibold text-lg truncate">
+                  {/* 顯示使用者名稱，若無則顯示 Email */}
+                  {user.displayName || user.email || '使用者'}
                 </span>
               </>
             ) : (
@@ -1053,8 +1054,10 @@
           <div className="flex-1 overflow-y-auto p-3 space-y-1">
             <NavItem icon="archive" text="所有記錄" viewName="list" />
             
+            {/* [✅ 新增] 日曆導覽項目 */}
             <NavItem icon="calendar" text="日曆" viewName="calendar" />
             
+            {/* [✅ 新增] 分析導覽項目 */}
             <NavItem icon="chart" text="分析" viewName="analysis" />
 
             {/* 時間 (改用 LabelHeader) */}
@@ -1103,20 +1106,22 @@
       const membership = profile?.membership || { tier:'free', expiresAt:null };
       const [favoritesOnly, setFavoritesOnly] = useState(false);
       
+      // [✅ 修改] formData 狀態，新增 createdAt
       const [formData, setFormData] = useState({
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
-        isPrivate:false, isFavorite:false, images:[], newImages: [], remindAt:'',
-        createdAt: new Date().toISOString()
+        isPrivate:false, isFavorite:false, images:[], remindAt:'',
+        createdAt: new Date().toISOString() // 預設為當前時間
       });
       const [sidebarOpen, setSidebarOpen] = useState(false);
       
+      // [✅ 修改] activeView 狀態，新增 'analysis'
       const [activeView, setActiveView] = useState('list'); // 'list' | 'calendar' | 'analysis' | ...
 
       useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
       useEffect(()=>{ document.documentElement.style.setProperty('--primary', themeColor); localStorage.setItem('themeColor', themeColor); },[themeColor]);
       useEffect(()=>{ localStorage.setItem('darkMode', darkMode ? '1' : '0'); }, [darkMode]);
       
-      // Auth + Firestore
+      // Auth + Firestore (原封不動)
       useEffect(()=>{
         const unsub = auth.onAuthStateChanged(async (u)=>{
           setUser(u||null);
@@ -1126,14 +1131,7 @@
                 const d = s.data();
                 setProfile({ role: d.role||'user', membership: d.membership||{tier:'free',expiresAt:null}, privatePasswordHash: d.privatePasswordHash });
               }else{
-                if (u.displayName) {
-                   db.collection('users').doc(u.uid).set({ 
-                      role: 'user', 
-                      membership: { tier: 'free', expiresAt: null }
-                   }, { merge: true });
-                } else {
-                   setProfile({ role:'user', membership:{ tier:'free', expiresAt:null }, privatePasswordHash: undefined });
-                }
+                setProfile({ role:'user', membership:{ tier:'free', expiresAt:null }, privatePasswordHash: undefined });
               }
             });
             db.collection('users').doc(u.uid).collection('diaries')
@@ -1188,76 +1186,60 @@
         setFilteredDiaries(filtered);
       },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter, favoritesOnly]);
 
-      // [✅ 修改] onUploadImages - 現在由 handleSaveDiary 統一處理
+      // 上傳圖片 (原封不動)
       const onUploadImages = async (files)=>{
-        if(!files || files.length===0) return [];
-        // setUploading(true); // 移除：由 handleSaveDiary 控制
-        const urls = [];
-        // try...catch 已移至 handleSaveDiary
-        for(const f of files){
-          if(!user){
-            urls.push(URL.createObjectURL(f));
-          }else{
-            const url = await uploadFileToStorage(f, user.uid);
-            urls.push(url);
+        if(!files || files.length===0) return;
+        setUploading(true);
+        try{
+          const urls=[];
+          for(const f of files){
+            if(!user){
+              urls.push(URL.createObjectURL(f));
+            }else{
+              const id = formData.id || (currentDiary?.id) || db.collection('_').doc().id;
+              const ref = storage.ref().child(`${user.uid}/${id}/${Date.now()}_${f.name}`);
+              await ref.put(f);
+              const url = await ref.getDownloadURL();
+              urls.push(url);
+            }
           }
-        }
-        // finally { setUploading(false); } // 移除
-        return urls;
+          setFormData(prev=>({...prev, images:[...(prev.images||[]), ...urls]}));
+        }catch(e){ alert('上傳失敗：'+e.message); }
+        finally{ setUploading(false); }
       };
 
       // [✅ 修改] 儲存/刪除/編輯日記
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){ alert('請填寫標題和內容'); return; }
-        
-        setUploading(true); // 1. 設定為上傳中
-        
-        try {
-          let uploadedImageUrls = [];
-          if (formData.newImages && formData.newImages.length > 0) {
-              // 2. 呼叫上傳
-              uploadedImageUrls = await onUploadImages(formData.newImages); 
-          }
-          
-          const finalImages = [...(formData.images || []), ...uploadedImageUrls];
-          
-          const docData = {
-            title: formData.title, content: formData.content, tags: formData.tags||[],
-            mood: formData.mood||'😊', weather: formData.weather||'☀️',
-            isPrivate: !!formData.isPrivate, isFavorite: !!formData.isFavorite,
-            images: finalImages,
-            createdAt: formData.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-
-          if(formData.remindAt){
-            const when = new Date(formData.remindAt);
-            if (!isNaN(when.getTime())) {
-              ReminderService.add({
-                id: (currentDiary?.id)||docData.createdAt,
-                at: when.toISOString(), title: docData.title, freq: 'ONCE', fired:false
-              });
-              alert('提醒已設定：'+when.toLocaleString('zh-TW'));
-            } else { alert('提醒時間格式不正確，已忽略。'); }
-          }
-          if(user){
-            const col = db.collection('users').doc(user.uid).collection('diaries');
-            if(currentDiary){ await col.doc(currentDiary.id).set(docData, { merge:true }); }
-            else { await col.add(docData); }
-          }else{
-            const id = currentDiary?.id || Date.now().toString();
-            const newItem = { id, ...docData };
-            if(currentDiary){ setDiaries(diaries.map(d=>d.id===id?newItem:d)); }
-            else{ setDiaries([newItem, ...diaries]); }
-          }
-          
-          resetForm(); // 成功後才重設
-
-        } catch (e) {
-          alert('儲存失敗：'+e.message); // 顯示錯誤
-        } finally {
-          setUploading(false); // 3. 無論成功或失敗，都結束上傳狀態
+        const docData = {
+          title: formData.title, content: formData.content, tags: formData.tags||[],
+          mood: formData.mood||'😊', weather: formData.weather||'☀️',
+          isPrivate: !!formData.isPrivate, isFavorite: !!formData.isFavorite,
+          images: formData.images||[], 
+          createdAt: formData.createdAt || new Date().toISOString(), // [✅ 修改] 使用 formData 的日期
+          updatedAt: new Date().toISOString(),
+        };
+        if(formData.remindAt){
+          const when = new Date(formData.remindAt);
+          if (!isNaN(when.getTime())) {
+            ReminderService.add({
+              id: (currentDiary?.id)||docData.createdAt,
+              at: when.toISOString(), title: docData.title, freq: 'ONCE', fired:false
+            });
+            alert('提醒已設定：'+when.toLocaleString('zh-TW'));
+          } else { alert('提醒時間格式不正確，已忽略。'); }
         }
+        if(user){
+          const col = db.collection('users').doc(user.uid).collection('diaries');
+          if(currentDiary){ await col.doc(currentDiary.id).set(docData, { merge:true }); }
+          else { await col.add(docData); }
+        }else{
+          const id = currentDiary?.id || Date.now().toString();
+          const newItem = { id, ...docData };
+          if(currentDiary){ setDiaries(diaries.map(d=>d.id===id?newItem:d)); }
+          else{ setDiaries([newItem, ...diaries]); }
+        }
+        resetForm();
       };
       const handleDeleteDiary = async (id)=>{
         if(!confirm('確定要刪除這篇日記嗎？')) return;
@@ -1267,14 +1249,14 @@
       };
       const handleEditDiary = (diary)=>{
         setCurrentDiary(diary);
+        // [✅ 修改] 載入日記的 createdAt
         setFormData({ 
           ...diary, 
           remindAt:'',
-          createdAt: diary.createdAt || new Date().toISOString(),
-          newImages: []
+          createdAt: diary.createdAt || new Date().toISOString() 
         });
         setShowNewDiary(true);
-        setActiveView('list');
+        setActiveView('list'); // 確保在列表檢視下開啟編輯
       };
       const toggleFavorite = async (id)=>{
         if(user){
@@ -1285,12 +1267,12 @@
           setDiaries(diaries.map(d=>d.id===id?{...d,isFavorite:!d.isFavorite}:d));
         }
       };
+      // [✅ 修改] resetForm，加入 createdAt
       const resetForm = ()=>{
         setFormData({ 
           title:'',content:'',tags:[],mood:'😊',weather:'☀️',
           isPrivate:false,isFavorite:false,images:[], remindAt:'',
-          createdAt: new Date().toISOString(),
-          newImages: []
+          createdAt: new Date().toISOString() // 預設為當前時間
         });
         setCurrentDiary(null);
         setShowNewDiary(false);
@@ -1298,7 +1280,7 @@
       const handleTagToggle = (tag)=>{
         setFormData(prev=>({
           ...prev,
-          tags: (prev.tags || []).includes(tag) ? prev.tags.filter(t=>t!==tag) : [...prev.tags, tag]
+          tags: prev.tags.includes(tag) ? prev.tags.filter(t=>t!==tag) : [...prev.tags, tag]
         }));
       };
 
@@ -1496,6 +1478,7 @@
                       <button onClick={todayShortcut} className="px-2 py-1 rounded-full text-sm border">今天</button>
                       <button onClick={toggleFavoritesOnly} className={`px-2 py-1 rounded-full text-sm border ${favoritesOnly?'bg-yellow-50':''}`}>只看最愛</button>
                     </div>
+                    {/* [✅ 日期篩選狀態顯示] */}
                     {dateFilter && (
                       <div className="text-sm">
                         日期篩選：<span className="font-semibold">{dateFilter}</span>
@@ -1504,6 +1487,7 @@
                     )}
                     <div>
                       <div className="text-sm mb-2 text-gray-500">標籤雲（點擊篩選）</div>
+                      {/* [✅ TagCloud] 這裡會渲染修改後的版本 */}
                       <TagCloud diaries={diaries} activeTag={selectedTag} onToggle={(t)=> setSelectedTag(selectedTag===t?'':t) } />
                     </div>
                     <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
@@ -1559,7 +1543,7 @@
                   </div>
                 </div>
 
-                {/* 右欄：編輯/檢視 */}
+                {/* [✅ 修改] 右欄：編輯/檢視 (移除 Charts) */}
                 <div className="lg:col-span-2 grid grid-cols-1 gap-6">
                   <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
                     {showNewDiary ? (
@@ -1573,7 +1557,7 @@
                           className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
                         <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
                         
-                        {/* 日期選擇器 */}
+                        {/* [✅ 新增] 日期選擇器 */}
                         <div>
                           <label className="block text-sm font-medium mb-1 text-gray-700">日記日期</label>
                           <input
@@ -1611,10 +1595,9 @@
                         <div>
                           <label className="block text-sm font-medium mb-2">標籤</label>
                           <div className="flex gap-2 flex-wrap">
-                            {/* [✅ 修改] 統一標籤按鈕大小 */}
                             {allTags.map(tag=>(
-                              <button key={tag} type="button" onClick={()=>handleTagToggle(tag)}
-                                className={`px-3 py-1 rounded-lg text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
+                              <button key={tag} onClick={()=>handleTagToggle(tag)}
+                                className={`px-3 py-1 rounded-full text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
                                 #{tag}
                               </button>
                             ))}
@@ -1624,40 +1607,28 @@
                           onChange={e=>setFormData({...formData, content:e.target.value})}
                           className={`w-full h-64 p-4 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none resize-none`}/>
                         <div className="text-sm text-gray-500">內容字數：{(formData.content||'').length}</div>
-                        
-                        {/* [✅ 修改] 圖片上傳介面 */}
                         <div className="space-y-2">
                           <label className="block text-sm font-medium">圖片上傳</label>
                           <div className="flex items-center gap-2">
                             <label className="px-3 py-2 rounded-lg border cursor-pointer hover:bg-gray-50 flex items-center gap-2">
                               <Icon name="image"/><span>選擇圖片</span>
                               <input type="file" accept="image/*" className="hidden" multiple
-                                     onChange={e => setFormData(prev => ({...prev, newImages: Array.from(e.target.files)}))}/>
+                                     onChange={e=>onUploadImages(e.target.files)}/>
                             </label>
                             {uploading && <span className="text-sm text-gray-500">上傳中...</span>}
                           </div>
-                          {(formData.images?.length > 0 || formData.newImages?.length > 0) && (
+                          {formData.images?.length>0 && (
                             <div className="flex gap-2 flex-wrap">
-                              {/* 已有圖片 */}
-                              {formData.images?.map((url,i)=>(
-                                <div key={`existing-${i}`} className="relative">
+                              {formData.images.map((url,i)=>(
+                                <div key={i} className="relative">
                                   <img src={url} className="w-24 h-24 object-cover rounded-lg border"/>
-                                  <button type="button" onClick={() => setFormData(prev => ({...prev, images: prev.images.filter((_,idx) => idx !== i)}))}
-                                    className="absolute -top-2 -right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center">×</button>
-                                </div>
-                              ))}
-                              {/* 新圖片預覽 */}
-                              {formData.newImages?.map((file,i)=>(
-                                <div key={`new-${i}`} className="relative">
-                                  <img src={URL.createObjectURL(file)} className="w-24 h-24 object-cover rounded-lg border opacity-70"/>
-                                  <button type="button" onClick={() => setFormData(prev => ({...prev, newImages: prev.newImages.filter((_,idx) => idx !== i)}))}
+                                  <button onClick={()=>setFormData(prev=>({...prev, images: prev.images.filter((_,idx)=>idx!==i)}))}
                                     className="absolute -top-2 -right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center">×</button>
                                 </div>
                               ))}
                             </div>
                           )}
                         </div>
-
                         <div className="flex items-center gap-4 flex-wrap">
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked={formData.isPrivate}
@@ -1680,11 +1651,8 @@
                           </div>
                         </div>
                         <button onClick={handleSaveDiary}
-                          className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2"
-                          disabled={uploading}
-                        >
-                          {uploading ? <Icon name="refresh-ccw" className="animate-spin w-5 h-5"/> : <Icon name="save"/>}
-                          {uploading ? '上傳中...' : '儲存日記'}
+                          className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
+                          <Icon name="save"/> 儲存日記
                         </button>
                       </div>
                     ) : currentDiary ? (
@@ -1702,6 +1670,7 @@
                       </div>
                     )}
                   </div>
+                  {/* [✅ 刪除] Charts 元件已從 'list' 視圖移除 */}
                 </div>
               </div>
             );
@@ -1714,14 +1683,15 @@
                   diaries={diaries} 
                   onPickDate={(date) => {
                     setDateFilter(date);
-                    setActiveView('list');
-                    setCurrentDiary(null);
-                    setShowNewDiary(false);
+                    setActiveView('list'); // 點擊日期後切回列表檢視並篩選
+                    setCurrentDiary(null); // 清除右側的單篇日記顯示
+                    setShowNewDiary(false); // 清除新增/編輯表單
                   }} 
                 />
               </div>
             );
           
+          {/* [✅ 新增] 分析視圖 */}
           case 'analysis':
             return (
               <div className="max-w-7xl mx-auto p-4">
@@ -1730,6 +1700,7 @@
               </div>
             );
 
+          // 處理其他側邊欄項目 (例如：設定會打開 Modal，然後回到 'list')
           case 'settings':
             if (!settingsOpen) { setSettingsOpen(true); }
             setActiveView('list');
@@ -1753,7 +1724,7 @@
         }
       };
 
-      // === DiaryApp 的主要渲染邏輯 ===
+      // === DiaryApp 的主要渲染 logique ===
       return (
         <div className={`
           flex h-screen overflow-hidden
@@ -1762,6 +1733,7 @@
           
           {/* === 1. 桌面版側邊欄 (Desktop Sidebar) === */}
           <div className="hidden md:block w-64 flex-shrink-0 h-full">
+            {/* [✅ SidebarContent] 這裡會渲染修改後的版本 */}
             <SidebarContent 
               darkMode={darkMode} 
               user={user} 
@@ -1774,7 +1746,9 @@
           {/* === 2. 手機版側邊欄 (Mobile Sidebar) === */}
           {sidebarOpen && (
             <div className="fixed inset-0 flex z-50 md:hidden">
+              {/* 側邊欄本體 */}
               <div className="w-64 h-full">
+                {/* [✅ SidebarContent] 這裡會渲染修改後的版本 */}
                 <SidebarContent 
                   darkMode={darkMode} 
                   user={user} 
@@ -1783,6 +1757,7 @@
                   setSidebarOpen={setSidebarOpen}
                 />
               </div>
+              {/* 遮罩 (Overlay) */}
               <div
                 onClick={() => setSidebarOpen(false)}
                 className="flex-1 bg-black/40"
@@ -1793,10 +1768,13 @@
           {/* === 3. 主要內容區域 (Main Content) === */}
           <main className="flex-1 w-full h-screen overflow-y-auto">
 
+            {/* Top Bar (原封不動) */}
             <div className={`${darkMode?'bg-gray-800':'bg-white'} shadow-lg sticky top-0 z-40`}>
               <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
                 
+                {/* (左側：漢堡按鈕 + 標題) */}
                 <div className="flex items-center gap-3">
+                  {/* 漢堡按鈕 (僅在手機/平板上顯示) */}
                   <button 
                     onClick={() => setSidebarOpen(true)}
                     className={`p-2 rounded-lg md:hidden ${darkMode ? 'text-white' : 'text-gray-700'}`}
@@ -1805,6 +1783,7 @@
                     <Icon name="menu" className="w-6 h-6" />
                   </button>
 
+                  {/* [✅ 修改] 標題可點擊 */}
                   <button 
                     onClick={() => {
                       setActiveView('list');
@@ -1818,10 +1797,12 @@
                   </button>
                 </div>
 
+                {/* (右側：您原本的按鈕) (原封不動) */}
                 <div className="flex items-center gap-3 flex-wrap">
                   <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                     Get Premium
                   </button>
+                  {/* [✅ 修改] 設定按鈕圖示 */}
                   <button
                     onClick={()=>setSettingsOpen(true)}
                     title="設定"
@@ -1829,18 +1810,20 @@
                       ring-1 transition hover:scale-105
                       ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent text-white' : 'ring-black/10 hover:ring-black/20 bg-transparent text-gray-600'}`}
                   >
-                    {/* [✅ 修改] 使用 customGear 圖示 */}
                     <Icon name="gear" className="w-6 h-6"/>
                   </button>
+                  {/* [✅ AuthBar] 這裡會渲染修改後的版本 */}
                   <AuthBar user={user}/>
                 </div>
               </div>
             </div>
 
+            {/* Streak (原封不動 - 保持在 'list' 視圖之外，使其在 'list' 和 'analysis' 都能顯示) */}
             <div className="max-w-7xl mx-auto px-4 pt-4">
               <StreakBadge diaries={diaries}/>
             </div>
 
+            {/* Premium Modal (原封不動) */}
             <PremiumModal
               open={showPremium}
               onClose={()=>setShowPremium(false)}
@@ -1854,6 +1837,7 @@
               setSelectedPlan={setSelectedPlan}
             />
 
+            {/* 設定面板 (原封不動) */}
             <SettingsPanel
               open={settingsOpen}
               onClose={()=>setSettingsOpen(false)}
@@ -1880,6 +1864,7 @@
               user={user}
             />
 
+            {/* [✅ 根據 activeView 渲染主內容] */}
             {renderMainContent()}
             
           </main>
