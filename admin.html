@@ -16,6 +16,7 @@
   <!-- 同優惠券系統的樣式集合（玻璃質感 + 按鈕 + 卡片 + 輸入框） -->
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
     body{
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
       background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
@@ -38,12 +39,54 @@
     input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.12)}
     .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:9999px;font-size:12px;font-weight:700;background:#f3e8ff;color:#6b21a8}
     .pill{display:flex;align-items:center;gap:8px;background:#f9fafb;border:1px solid #eef2f7;padding:6px 10px;border-radius:12px}
+
+    /* ===== 初始載入遮罩（玻璃質感） ===== */
+    #app-loader{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg,rgba(102,126,234,.35),rgba(118,75,162,.35));
+      backdrop-filter:blur(14px);
+      z-index:50;
+      transition:opacity .35s ease, visibility .35s ease;
+    }
+    #app-loader.hidden{opacity:0; visibility:hidden}
+
+    .loader-card{
+      background:rgba(255,255,255,.9);
+      border:1px solid rgba(255,255,255,.5);
+      border-radius:22px;
+      padding:22px 24px;
+      box-shadow:0 20px 60px rgba(0,0,0,.15);
+      min-width:280px;
+    }
+    .spin{
+      width:42px; height:42px; border-radius:50%;
+      border:4px solid #e8eaf6; border-top-color:#667eea; border-right-color:#764ba2;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* 主體淡入 */
+    .fade-ready{opacity:0; transform:translateY(4px); transition:opacity .35s ease, transform .35s ease;}
+    .fade-in{opacity:1; transform:none;}
   </style>
 </head>
 
 <body class="min-h-screen">
+  <!-- 初始 Loading（立即可見，待準備好再隱藏） -->
+  <div id="app-loader" role="status" aria-live="polite">
+    <div class="loader-card">
+      <div class="flex items-center gap-4">
+        <div class="spin"></div>
+        <div>
+          <div class="text-sm font-bold text-gray-800">正在載入管理後台</div>
+          <div class="text-xs text-gray-500">初始化 Firebase 與驗證中…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Header -->
-  <header class="max-w-7xl mx-auto p-4 md:p-6">
+  <header class="max-w-7xl mx-auto p-4 md:p-6 fade-ready" id="hdr">
     <div class="glass-card hover-lift">
       <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-4">
@@ -63,8 +106,8 @@
     </div>
   </header>
 
-  <!-- 非 admin 提示（無自動設 admin 按鈕，與你要求一致） -->
-  <section id="gate" class="max-w-3xl mx-auto px-4 md:px-6 hidden">
+  <!-- 非 admin 提示 -->
+  <section id="gate" class="max-w-3xl mx-auto px-4 md:px-6 hidden fade-ready">
     <div class="glass-card hover-lift text-center">
       <h2 class="text-xl font-bold mb-2">需要管理員權限</h2>
       <p class="text-gray-600">
@@ -77,7 +120,7 @@
   </section>
 
   <!-- 主畫面 -->
-  <main id="app" class="max-w-7xl mx-auto px-4 md:px-6 pb-10 hidden">
+  <main id="app" class="max-w-7xl mx-auto px-4 md:px-6 pb-10 hidden fade-ready">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
       <!-- 左：使用者清單 -->
@@ -179,6 +222,8 @@
   };
 
   // ===== UI refs =====
+  const loader = $('#app-loader');
+  const hdr = $('#hdr');
   const who = $('#whoami'), btnSignIn=$('#btn-signin'), btnSignOut=$('#btn-signout');
   const gate = $('#gate'), app = $('#app');
 
@@ -197,12 +242,29 @@
   let selectedUserId = null, selectedUserDoc = null;
   const PAGE = 30; let pagestack = []; let lastDoc = null;
 
+  // ===== 顯示控制（載入 → 淡入） =====
+  function reveal(targetEl){
+    // 讓目標進入可視
+    targetEl.classList.remove('hidden');
+    // 啟動淡入
+    requestAnimationFrame(()=> targetEl.classList.add('fade-in'));
+  }
+  function hideLoader(){
+    loader.classList.add('hidden');
+    // 頁首淡入（一次）
+    hdr.classList.add('fade-in');
+  }
+
   // ===== Auth =====
   btnSignIn.onclick = async()=>{ const p=new firebase.auth.GoogleAuthProvider(); await auth.signInWithPopup(p); };
   btnSignOut.onclick = ()=>auth.signOut();
 
+  // 一開始先讓 Header 也準備好動畫
+  hdr.classList.add('fade-ready');
+
   auth.onAuthStateChanged(async(u)=>{
     me = u||null;
+
     if(me){
       who.classList.remove('hidden');
       who.textContent = me.displayName ? `👤 ${me.displayName}` : `📧 ${me.email||me.uid}`;
@@ -212,7 +274,12 @@
     btnSignIn.classList.toggle('hidden', !!me);
     btnSignOut.classList.toggle('hidden', !me);
 
-    if(!me){ gate.classList.add('hidden'); app.classList.add('hidden'); return; }
+    if(!me){
+      // 未登入：顯示 "請登入" 的 gate？此處維持隱藏主體，只顯示 Header，並保留 Loader 淡出
+      hideLoader();
+      reveal(gate);
+      return;
+    }
 
     // 取自己的 role
     try{
@@ -221,10 +288,13 @@
     }catch(err){ meProfile = { role:'user' }; }
 
     if(meProfile.role !== 'admin'){
-      gate.classList.remove('hidden'); app.classList.add('hidden');
+      hideLoader();
+      reveal(gate);
     }else{
-      gate.classList.add('hidden'); app.classList.remove('hidden');
+      // 管理員：載入使用者清單，再淡出 loader，淡入主畫面
       await loadUsers();
+      hideLoader();
+      reveal(app);
     }
   });
 
@@ -403,44 +473,6 @@
   // 即時篩選（打字就套用）
   diaryQ.addEventListener('input', ()=>loadDiariesPage({ reset:true }));
   diaryMood.addEventListener('change', ()=>loadDiariesPage({ reset:true }));
-
-  // 下載全部 JSON
-  downloadBtn.onclick = async()=>{
-    if(!selectedUserId) return;
-    if(!confirm('下載此使用者「全部」日記為 JSON？（可能較久）')) return;
-    try{
-      let q = db.collection('users').doc(selectedUserId).collection('diaries').orderBy('createdAt','desc');
-      const all=[]; let last=null;
-      while(true){
-        let cur=q; if(last) cur=cur.startAfter(last);
-        const snap=await cur.limit(500).get();
-        if(snap.empty) break;
-        snap.forEach(d=>all.push({ id:d.id, ...d.data() }));
-        last=snap.docs[snap.docs.length-1];
-        if(snap.size<500) break;
-      }
-      const blob = new Blob([JSON.stringify(all,null,2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `${selectedUserId}_diaries.json`; a.click();
-      URL.revokeObjectURL(url);
-    }catch(err){
-      alert('下載失敗：'+err.message);
-    }
-  };
-
-  // 管理員切換
-  toggleRoleBtn.onclick = async()=>{
-    if(!selectedUserId || !selectedUserDoc) return;
-    const next = selectedUserDoc.role==='admin' ? 'user' : 'admin';
-    if(!confirm(`將此使用者角色改為 ${next} ？`)) return;
-    try{
-      await db.collection('users').doc(selectedUserId).set({ role: next }, { merge:true });
-      selectedUserDoc.role = next;
-      const idx = allUsersCache.findIndex(u=>u.id===selectedUserId);
-      if(idx>=0) allUsersCache[idx].role = next;
-      await selectUser(selectedUserId, selectedUserDoc);
-    }catch(err){ alert('更新角色失敗：'+err.message); }
-  };
   </script>
 </body>
 </html>
