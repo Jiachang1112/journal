@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>我的日記本｜管理後台</title>
+  <title>📔 我的日記本｜管理後台</title>
 
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Firebase compat 10.12.5（與主站一致） -->
@@ -12,110 +13,142 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
+  <!-- 同優惠券系統的樣式集合（玻璃質感 + 按鈕 + 卡片 + 輸入框） -->
   <style>
-    :root{ --primary:#7c3aed; }
-    .primary{ color:var(--primary); }
-    .btn{ padding:.5rem .75rem;border:1px solid #e5e7eb;border-radius:.5rem }
-    .btn:hover{ background:#f9fafb }
-    .btn-primary{ padding:.5rem .75rem;border-radius:.5rem;color:#fff;background:var(--primary) }
-    .chip{ padding:.125rem .5rem;border-radius:.375rem;background:#f3e8ff;color:#6b21a8;font-size:.75rem }
-    /* Loading + 淡入 */
-    .fade-in{opacity:0;animation:fadeIn .6s ease forwards}
-    @keyframes fadeIn{to{opacity:1}}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
+      background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      min-height:100vh;
+    }
+    .card{background:#fff;border-radius:20px;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.08)}
+    .glass-card{background:rgba(255,255,255,.95);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.08)}
+    .hover-lift{transition:all .2s ease}
+    .hover-lift:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(0,0,0,.12)}
+    .gradient-bg{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%)}
+    .btn{padding:10px 14px;border-radius:12px;font-weight:700;transition:all .2s;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:8px}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff}
+    .btn-primary:hover{opacity:.92;transform:translateY(-1px)}
+    .btn-secondary{background:#f3f4f6;color:#374151}
+    .btn-secondary:hover{background:#e5e7eb}
+    .btn-danger{background:#ef4444;color:#fff}
+    .btn-danger:hover{background:#dc2626}
+    input,select,textarea{border:2px solid #e5e7eb;border-radius:12px;padding:10px 14px;transition:all .2s;width:100%;background:#fff}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.12)}
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:9999px;font-size:12px;font-weight:700;background:#f3e8ff;color:#6b21a8}
+    .pill{display:flex;align-items:center;gap:8px;background:#f9fafb;border:1px solid #eef2f7;padding:6px 10px;border-radius:12px}
   </style>
 </head>
-<body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen">
-  <!-- 玻璃質感 Loading 蓋板 -->
-  <section id="loading" class="fixed inset-0 z-[999] flex items-center justify-center">
-    <div class="absolute inset-0 bg-white/55 backdrop-blur-md"></div>
-    <div class="relative bg-white/90 border border-white/60 shadow-xl rounded-2xl px-6 py-5 flex items-center gap-3">
-      <div class="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent"></div>
-      <div class="text-sm font-semibold text-gray-700">載入中，請稍候…</div>
-    </div>
-  </section>
 
-  <!-- Top bar -->
-  <header class="bg-white/90 backdrop-blur sticky top-0 z-10 border-b">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-      <h1 class="text-xl md:text-2xl font-bold"><span class="primary">📔 我的日記本</span>｜管理後台</h1>
-      <div class="flex items-center gap-2">
-        <span id="whoami" class="text-sm text-gray-600"></span>
-        <button id="btn-signin" class="btn">使用 Google 登入</button>
-        <button id="btn-signout" class="btn hidden">登出</button>
+<body class="min-h-screen">
+  <!-- Header -->
+  <header class="max-w-7xl mx-auto p-4 md:p-6">
+    <div class="glass-card hover-lift">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl gradient-bg shadow-lg flex items-center justify-center text-white text-2xl">📔</div>
+          <div>
+            <h1 class="text-2xl md:text-3xl font-extrabold gradient-bg bg-clip-text text-transparent">我的日記本｜管理後台</h1>
+            <p class="text-sm text-gray-600">統一風格：玻璃質感 + 紫藍漸層主題</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span id="whoami" class="pill text-sm text-gray-700 hidden"></span>
+          <button id="btn-signin" class="btn btn-primary">使用 Google 登入</button>
+          <button id="btn-signout" class="btn btn-secondary hidden">登出</button>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- 非 admin 提示（無按鈕） -->
-  <section id="gate" class="max-w-3xl mx-auto px-4 mt-8 hidden">
-    <div class="bg-white rounded-2xl shadow p-6 border space-y-3 text-center fade-in">
+  <!-- 非 admin 提示（無自動設 admin 按鈕，與你要求一致） -->
+  <section id="gate" class="max-w-3xl mx-auto px-4 md:px-6 hidden">
+    <div class="glass-card hover-lift text-center">
       <h2 class="text-xl font-bold mb-2">需要管理員權限</h2>
       <p class="text-gray-600">
         你已登入，但不是管理員（需要 <code>users/{uid}.role === "admin"</code>）。
       </p>
-      <p class="text-sm text-gray-500">
-        若你是站主，請於 Firebase Console 手動將自己的使用者文件設為
-        <span class="font-semibold text-purple-600">role: "admin"</span>。
+      <p class="text-sm text-gray-500 mt-1">
+        若你是站主，請到 Firebase Console → Firestore 將自己的 <code>users/{uid}</code> 加上 <b>role: "admin"</b> 後重新整理。
       </p>
     </div>
   </section>
 
   <!-- 主畫面 -->
-  <main id="app" class="max-w-7xl mx-auto px-4 py-6 hidden">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in">
+  <main id="app" class="max-w-7xl mx-auto px-4 md:px-6 pb-10 hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
       <!-- 左：使用者清單 -->
-      <section class="lg:col-span-1 bg-white rounded-2xl shadow p-4 border">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-bold text-lg">使用者清單</h3>
-          <button id="refresh-users" class="btn">重新整理</button>
+      <section class="glass-card hover-lift lg:col-span-1">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-extrabold text-lg">使用者清單</h3>
+            <p id="users-count" class="text-xs text-gray-500"></p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="clear-users-filter" class="btn btn-secondary">清除</button>
+            <button id="refresh-users" class="btn btn-primary">重新整理</button>
+          </div>
         </div>
-        <input id="user-search" placeholder="搜尋名稱 / Email / UID（即時篩選）" class="w-full border rounded-lg p-2 mb-3"/>
+
+        <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 mb-3 border border-gray-100">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input id="user-search" class="bg-transparent border-none outline-none w-full" placeholder="搜尋名稱 / Email / UID（即時）"/>
+        </div>
+
         <div id="users-list" class="space-y-2 max-h-[70vh] overflow-y-auto pr-1">載入中…</div>
       </section>
 
       <!-- 右：使用者資料 + 篩選 + 日記列表 -->
       <section class="lg:col-span-2 space-y-6">
-        <div class="bg-white rounded-2xl shadow p-4 border">
+
+        <!-- 使用者資訊 -->
+        <div class="glass-card hover-lift">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h3 class="font-bold text-lg flex items-center gap-2">
+              <h3 class="font-extrabold text-lg flex items-center gap-2">
                 使用者資料
                 <span id="user-role" class="chip hidden"></span>
                 <span id="membership-chip" class="chip hidden"></span>
               </h3>
-              <div id="user-meta" class="text-sm text-gray-600"></div>
+              <div id="user-meta" class="text-sm text-gray-600 mt-1"></div>
             </div>
             <div class="flex flex-wrap gap-2">
-              <button id="toggle-role" class="btn hidden">切換角色（user ⇄ admin）</button>
-              <button id="download-json" class="btn hidden">下載此使用者日記 JSON</button>
+              <button id="toggle-role" class="btn btn-secondary hidden">切換角色（user ⇄ admin）</button>
+              <button id="download-json" class="btn btn-primary hidden">下載此使用者日記 JSON</button>
             </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow p-4 border">
+        <!-- 即時篩選列 -->
+        <div class="glass-card hover-lift">
           <div class="grid md:grid-cols-3 gap-3">
-            <input id="diary-q" class="border rounded-lg p-2" placeholder="關鍵字（標題/內容，輸入即篩）"/>
-            <select id="diary-mood" class="border rounded-lg p-2">
+            <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="diary-q" class="bg-transparent border-none outline-none w-full" placeholder="關鍵字（標題 / 內容）打字即篩選"/>
+            </div>
+            <select id="diary-mood" class="border rounded-xl p-2">
               <option value="">心情：全部</option>
               <option>😊</option><option>😢</option><option>😡</option><option>😰</option>
               <option>😍</option><option>🤔</option><option>😴</option><option>🎉</option>
             </select>
             <div class="flex gap-2">
-              <button id="clear-filter" class="btn w-full">清除</button>
+              <button id="clear-filter" class="btn btn-secondary w-full">清除</button>
+              <button id="prev-page" class="btn btn-secondary w-full">上一頁</button>
+              <button id="next-page" class="btn btn-primary w-full">下一頁</button>
             </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow p-2 md:p-4 border">
-          <div class="flex items-center justify-between px-2 md:px-0 mb-2">
-            <h3 class="font-bold">日記列表</h3>
+        <!-- 日記列表 -->
+        <div class="glass-card hover-lift">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-extrabold">日記列表</h3>
             <div class="text-sm text-gray-500">每頁 30 筆</div>
           </div>
           <div id="diaries-list" class="divide-y"></div>
-          <div class="flex justify-between items-center mt-3">
-            <button id="prev-page" class="btn">上一頁</button>
-            <button id="next-page" class="btn">下一頁</button>
-          </div>
         </div>
       </section>
     </div>
@@ -135,131 +168,124 @@
   const auth = firebase.auth();
   const db   = firebase.firestore();
 
-  // ===== 工具 =====
+  // ===== 小工具 =====
   const $ = (s, r=document)=>r.querySelector(s);
   const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
   const fmtTime = (iso)=>{
-    try{ const d=new Date(typeof iso?.toDate==="function"?iso.toDate():iso); return isNaN(d)?'—':d.toLocaleString('zh-TW'); }catch{ return '—'; }
+    try{
+      const d = new Date(typeof iso?.toDate==="function"?iso.toDate():iso);
+      return isNaN(d) ? '—' : d.toLocaleString('zh-TW');
+    }catch{ return '—'; }
   };
-  const toast = (msg)=>{ alert(msg); };
-
-  // Loading 控制
-  const loadingEl = $('#loading');
-  let loadingTimer = null;
-  function setLoading(on){
-    clearTimeout(loadingTimer);
-    if(on){
-      // 立即顯示，並加上保險閥避免意外不關
-      loadingEl.classList.remove('hidden');
-      loadingTimer = setTimeout(()=>loadingEl.classList.add('hidden'), 12000);
-    }else{
-      loadingEl.classList.add('hidden');
-    }
-  }
 
   // ===== UI refs =====
-  const gate = $('#gate'), app = $('#app'), who = $('#whoami');
-  const btnSignIn  = $('#btn-signin'), btnSignOut = $('#btn-signout');
+  const who = $('#whoami'), btnSignIn=$('#btn-signin'), btnSignOut=$('#btn-signout');
+  const gate = $('#gate'), app = $('#app');
 
-  const usersList = $('#users-list'), userSearch = $('#user-search'), refreshUsers = $('#refresh-users');
+  const usersList = $('#users-list'), userSearch = $('#user-search'), usersCount = $('#users-count');
+  const clearUsersBtn = $('#clear-users-filter'), refreshUsers = $('#refresh-users');
+
   const userMeta = $('#user-meta'), userRoleChip = $('#user-role'), membershipChip = $('#membership-chip');
   const toggleRoleBtn = $('#toggle-role'), downloadBtn = $('#download-json');
 
   const diaryList = $('#diaries-list'), diaryQ = $('#diary-q'), diaryMood = $('#diary-mood');
-  const clearFilter = $('#clear-filter');
-  const prevPageBtn = $('#prev-page'), nextPageBtn = $('#next-page');
+  const clearFilter = $('#clear-filter'), prevPageBtn = $('#prev-page'), nextPageBtn = $('#next-page');
 
   // ===== 狀態 =====
-  let me = null, meProfile = null, selectedUserId = null, selectedUserDoc = null;
-  const PAGE = 30; let pagestack = []; let lastDoc = null;
+  let me = null, meProfile = null;
   let allUsersCache = [];
+  let selectedUserId = null, selectedUserDoc = null;
+  const PAGE = 30; let pagestack = []; let lastDoc = null;
 
   // ===== Auth =====
-  btnSignIn.onclick = async()=>{ const p=new firebase.auth.GoogleAuthProvider(); setLoading(true); await auth.signInWithPopup(p).catch(()=>{}); setLoading(false); };
+  btnSignIn.onclick = async()=>{ const p=new firebase.auth.GoogleAuthProvider(); await auth.signInWithPopup(p); };
   btnSignOut.onclick = ()=>auth.signOut();
 
-  // 首次進站顯示 Loading
-  setLoading(true);
-
   auth.onAuthStateChanged(async(u)=>{
+    me = u||null;
+    if(me){
+      who.classList.remove('hidden');
+      who.textContent = me.displayName ? `👤 ${me.displayName}` : `📧 ${me.email||me.uid}`;
+    }else{
+      who.classList.add('hidden');
+    }
+    btnSignIn.classList.toggle('hidden', !!me);
+    btnSignOut.classList.toggle('hidden', !me);
+
+    if(!me){ gate.classList.add('hidden'); app.classList.add('hidden'); return; }
+
+    // 取自己的 role
     try{
-      me = u||null;
-      who.textContent = me ? (me.displayName || me.email || me.uid) : '未登入';
-      btnSignIn.classList.toggle('hidden', !!me);
-      btnSignOut.classList.toggle('hidden', !me);
-
-      if(!me){ setLoading(false); gate.classList.add('hidden'); app.classList.add('hidden'); return; }
-
-      // 讀自己的 role（抓不到就視為 user）
       const meSnap = await db.collection('users').doc(me.uid).get();
       meProfile = meSnap.exists ? meSnap.data() : { role:'user' };
+    }catch(err){ meProfile = { role:'user' }; }
 
-      if(meProfile.role !== 'admin'){
-        gate.classList.remove('hidden'); app.classList.add('hidden'); setLoading(false);
-      }else{
-        gate.classList.add('hidden'); app.classList.remove('hidden');
-        await loadUsers(); // 裝載使用者清單
-        setLoading(false);
-      }
-    }catch(err){
-      console.error(err); setLoading(false);
+    if(meProfile.role !== 'admin'){
+      gate.classList.remove('hidden'); app.classList.add('hidden');
+    }else{
+      gate.classList.add('hidden'); app.classList.remove('hidden');
+      await loadUsers();
     }
   });
 
-  // ===== 使用者清單 =====
+  // ===== 使用者清單（即時搜尋） =====
   async function loadUsers(){
-    setLoading(true);
     usersList.textContent = '載入中…';
     try{
       const snap = await db.collection('users').get();
       allUsersCache = snap.docs.map(d=>({ id:d.id, ...d.data() }));
       renderUserList();
     }catch(err){
-      console.error('讀取 users 失敗：', err);
-      usersList.innerHTML = `<div class="text-red-600 text-sm">讀取使用者失敗：${err.message}<br/>請確認 Firestore 規則已允許 admin 列出 users。</div>`;
-    }finally{
-      setLoading(false);
+      usersList.innerHTML = `<div class="text-red-600 text-sm">讀取使用者失敗：${err.message}</div>`;
     }
   }
+
   function renderUserList(){
     const q = userSearch.value.trim().toLowerCase();
     const rows = allUsersCache
       .filter(u=>{
-        const name = (u.displayName||'').toLowerCase();
-        const email= (u.email||'').toLowerCase();
+        const name=(u.displayName||'').toLowerCase();
+        const email=(u.email||'').toLowerCase();
         return !q || name.includes(q) || email.includes(q) || u.id.includes(q);
       })
       .sort((a,b)=> (b.membership?.tier||'').localeCompare(a.membership?.tier||''));
+
     usersList.innerHTML = '';
+    usersCount.textContent = `（共 ${rows.length} 位）`;
+
     if(rows.length===0){
-      usersList.innerHTML = '<div class="text-gray-400 text-sm px-2">尚無使用者文件（請先讓 App 寫入 users/{uid}）</div>';
+      usersList.innerHTML = '<div class="text-gray-200 bg-white/60 rounded-xl p-4 text-center">沒有符合的使用者</div>';
       return;
     }
+
     rows.forEach(u=>{
       const el = document.createElement('button');
-      el.className = `w-full text-left p-3 rounded-lg border hover:bg-gray-50 ${selectedUserId===u.id?'border-2 border-purple-400 bg-purple-50':''}`;
+      el.className = `w-full text-left p-3 rounded-xl border bg-white/90 hover:bg-white ${selectedUserId===u.id?'ring-2 ring-purple-400 bg-purple-50':''}`;
       const role = u.role||'user';
       const tier = u.membership?.tier||'free';
       el.innerHTML = `
         <div class="flex items-center justify-between">
-          <div>
-            <div class="font-semibold">${u.displayName||'(未設定名稱)'}</div>
-            <div class="text-xs text-gray-500">${u.email||''}</div>
-            <div class="text-xs text-gray-500">UID：${u.id}</div>
+          <div class="min-w-0">
+            <div class="font-semibold truncate">${u.displayName||'(未設定名稱)'}</div>
+            <div class="text-xs text-gray-500 truncate">${u.email||''}</div>
+            <div class="text-[11px] text-gray-400 truncate">UID：${u.id}</div>
           </div>
-          <div class="text-right space-y-1">
+          <div class="text-right space-y-1 shrink-0">
             <div><span class="chip">${role}</span></div>
             <div><span class="chip">tier: ${tier}</span></div>
           </div>
         </div>`;
-      el.onclick = ()=> selectUser(u.id, u);
+      el.onclick = ()=>selectUser(u.id, u);
       usersList.appendChild(el);
     });
   }
-  userSearch.oninput = renderUserList;
+
+  // 即時搜尋（無需按鈕）
+  userSearch.addEventListener('input', renderUserList);
+  clearUsersBtn.onclick = ()=>{ userSearch.value=''; renderUserList(); };
   refreshUsers.onclick = loadUsers;
 
-  // ===== 選擇使用者 → 載資料 =====
+  // ===== 選擇使用者 → 載入資料 =====
   async function selectUser(uid, doc){
     selectedUserId = uid;
     selectedUserDoc = doc || allUsersCache.find(x=>x.id===uid);
@@ -267,27 +293,24 @@
     const tier = selectedUserDoc?.membership?.tier || 'free';
     const exp  = selectedUserDoc?.membership?.expiresAt ? fmtTime(selectedUserDoc.membership.expiresAt) : null;
 
-    $('#user-role').textContent = role;
-    $('#user-role').classList.remove('hidden');
-    $('#membership-chip').textContent = `tier: ${tier}${exp?`｜到期：${exp}`:''}`;
-    $('#membership-chip').classList.remove('hidden');
+    userRoleChip.textContent = role; userRoleChip.classList.remove('hidden');
+    membershipChip.textContent = `tier: ${tier}${exp?`｜到期：${exp}`:''}`; membershipChip.classList.remove('hidden');
     userMeta.innerHTML = `
-      <div class="text-gray-600">
+      <div class="text-gray-600 space-y-1">
         <div>名稱：<span class="font-medium">${selectedUserDoc.displayName||'(未設定)'}</span></div>
         <div>Email：<span class="font-medium">${selectedUserDoc.email||'—'}</span></div>
       </div>`;
     toggleRoleBtn.classList.remove('hidden');
     downloadBtn.classList.remove('hidden');
 
-    pagestack = []; lastDoc = null;
+    pagestack=[]; lastDoc=null;
     await loadDiariesPage({ reset:true });
     renderUserList();
   }
 
-  // ===== 日記（分頁 + 即時篩選） =====
+  // ===== 日記（分頁 + 即時篩選）=====
   async function loadDiariesPage({ reset=false, direction='next' }={}){
     if(!selectedUserId){ diaryList.innerHTML='<div class="p-3 text-gray-500 text-sm">尚未選取使用者</div>'; return; }
-    setLoading(true);
     diaryList.innerHTML = '<div class="p-3 text-gray-500 text-sm">載入中…</div>';
 
     const qText = diaryQ.value.trim().toLowerCase();
@@ -304,8 +327,8 @@
         q = db.collection('users').doc(selectedUserId).collection('diaries')
               .orderBy('createdAt','desc').startAt(startAtDoc).limit(PAGE);
       }
-      const snap = await q.get();
 
+      const snap = await q.get();
       if(snap.docs.length>0){
         const firstOnPage = snap.docs[0];
         if(direction==='next' || reset) pagestack.push(firstOnPage);
@@ -324,21 +347,23 @@
       });
       renderDiaries(rows);
     }catch(err){
-      console.error('讀取 diaries 失敗：', err);
       diaryList.innerHTML = `<div class="p-3 text-red-600 text-sm">讀取失敗：${err.message}</div>`;
-    }finally{
-      setLoading(false);
     }
   }
+
   function renderDiaries(rows){
     diaryList.innerHTML = '';
-    if(rows.length===0){ diaryList.innerHTML = '<div class="p-3 text-gray-400 text-sm">沒有資料或已到最末頁</div>'; return; }
+    if(rows.length===0){
+      diaryList.innerHTML = '<div class="p-3 text-gray-400 text-sm">沒有資料或已到最末頁</div>';
+      return;
+    }
     rows.forEach(d=>{
       const tags = (d.tags||[]).map(t=>`<span class="chip mr-1 mb-1">#${t}</span>`).join('');
       const privateBadge = d.isPrivate ? `<span class="chip">私密</span>`:'';
       const imgs = Array.isArray(d.images) ? d.images.slice(0,3) : [];
+
       const row = document.createElement('div');
-      row.className = 'p-3';
+      row.className = 'py-3';
       row.innerHTML = `
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
@@ -353,72 +378,68 @@
             <p class="text-sm text-gray-700 mt-1 whitespace-pre-wrap">${(d.isPrivate?'（私密內容）':(d.content||''))}</p>
             ${imgs.length?`<div class="flex gap-2 mt-2">${imgs.map(u=>`<img src="${u}" class="w-16 h-16 object-cover rounded border"/>`).join('')}</div>`:''}
           </div>
-          <div class="flex flex-col gap-2 items-end">
-            <button data-del="${d.id}" class="btn text-red-600">刪除</button>
+          <div class="flex flex-col gap-2 items-end shrink-0">
+            <button data-del="${d.id}" class="btn btn-danger">刪除</button>
           </div>
         </div>`;
       diaryList.appendChild(row);
     });
+
     $$('button[data-del]').forEach(btn=>{
       btn.onclick = async()=>{
         const id = btn.getAttribute('data-del');
         if(!confirm('確定刪除此日記？')) return;
-        setLoading(true);
-        await db.collection('users').doc(selectedUserId).collection('diaries').doc(id).delete().catch(()=>{});
+        await db.collection('users').doc(selectedUserId).collection('diaries').doc(id).delete();
         await loadDiariesPage({ direction:'stay' });
-        setLoading(false);
       };
     });
   }
+
+  // 分頁與清除
   nextPageBtn.onclick = ()=>loadDiariesPage({ direction:'next' });
   prevPageBtn.onclick = ()=>loadDiariesPage({ direction:'prev' });
+  clearFilter.onclick = ()=>{ diaryQ.value=''; diaryMood.value=''; loadDiariesPage({ reset:true }); };
 
-  // 即時篩選
+  // 即時篩選（打字就套用）
   diaryQ.addEventListener('input', ()=>loadDiariesPage({ reset:true }));
   diaryMood.addEventListener('change', ()=>loadDiariesPage({ reset:true }));
-  clearFilter.onclick = ()=>{ diaryQ.value=''; diaryMood.value=''; loadDiariesPage({ reset:true }); };
 
   // 下載全部 JSON
   downloadBtn.onclick = async()=>{
     if(!selectedUserId) return;
     if(!confirm('下載此使用者「全部」日記為 JSON？（可能較久）')) return;
     try{
-      setLoading(true);
       let q = db.collection('users').doc(selectedUserId).collection('diaries').orderBy('createdAt','desc');
-      const all = []; let last=null;
+      const all=[]; let last=null;
       while(true){
-        let cur = q; if(last) cur = cur.startAfter(last);
-        const snap = await cur.limit(500).get();
+        let cur=q; if(last) cur=cur.startAfter(last);
+        const snap=await cur.limit(500).get();
         if(snap.empty) break;
         snap.forEach(d=>all.push({ id:d.id, ...d.data() }));
-        last = snap.docs[snap.docs.length-1];
+        last=snap.docs[snap.docs.length-1];
         if(snap.size<500) break;
       }
       const blob = new Blob([JSON.stringify(all,null,2)], {type:'application/json'});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download=`${selectedUserId}_diaries.json`; a.click();
+      const a = document.createElement('a'); a.href = url; a.download = `${selectedUserId}_diaries.json`; a.click();
       URL.revokeObjectURL(url);
     }catch(err){
-      console.error(err); toast('下載失敗：'+err.message);
-    }finally{
-      setLoading(false);
+      alert('下載失敗：'+err.message);
     }
   };
 
-  // 切換被選使用者角色
+  // 管理員切換
   toggleRoleBtn.onclick = async()=>{
     if(!selectedUserId || !selectedUserDoc) return;
     const next = selectedUserDoc.role==='admin' ? 'user' : 'admin';
     if(!confirm(`將此使用者角色改為 ${next} ？`)) return;
     try{
-      setLoading(true);
       await db.collection('users').doc(selectedUserId).set({ role: next }, { merge:true });
       selectedUserDoc.role = next;
       const idx = allUsersCache.findIndex(u=>u.id===selectedUserId);
       if(idx>=0) allUsersCache[idx].role = next;
       await selectUser(selectedUserId, selectedUserDoc);
-    }catch(err){ console.error(err); toast('更新角色失敗：'+err.message); }
-    finally{ setLoading(false); }
+    }catch(err){ alert('更新角色失敗：'+err.message); }
   };
   </script>
 </body>
