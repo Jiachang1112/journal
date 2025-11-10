@@ -312,7 +312,7 @@
           )}
 
           {show && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify中心 z-50">
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
               <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-md">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold">{isSignup?'建立帳號':'登入'}</h3>
@@ -330,7 +330,7 @@
                   <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="密碼"
                          className="w-full border rounded-lg p-2"/>
                   <button onClick={submit} className="w-full primary-bg text-white rounded-lg py-2">{isSignup?'註冊':'登入'}</button>
-                  <button onClick={google} className="w-full bg-red-500 hover:bg-red-600 text白 rounded-lg py-2">使用 Google</button>
+                  <button onClick={google} className="w-full bg-red-500 hover:bg-red-600 text-white rounded-lg py-2">使用 Google</button>
                 </div>
               </div>
             </div>
@@ -416,7 +416,7 @@
       for(let d=1; d<=daysInMonth; d++) cells.push(new Date(y,m,d));
 
       return (
-        <div className="border rounded-2xl p-4 bg白/80 shadow">
+        <div className="border rounded-2xl p-4 bg-white/80 shadow">
           <div className="flex items-center justify-between mb-2">
             <button onClick={()=>setMonth(-1)} className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200">‹</button>
             <div className="font-bold text-xl">{y} 年 {m+1} 月</div>
@@ -788,7 +788,7 @@
       );
 
       return (
-        <div className="固定 inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b flex items-center justify-between">
               <div className="font-bold text-lg">設定面板</div>
@@ -904,7 +904,7 @@
                   </section>
                   <section>
                     <h3 className="font-semibold mb-2">資料匯入 / 匯出</h3>
-                    <div className="flex flex-wrap items中心 gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <button onClick={exportDiaries} className="px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
                         <Icon name="download"/><span>匯出 JSON</span>
                       </button>
@@ -1186,36 +1186,22 @@
         setFilteredDiaries(filtered);
       },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter, favoritesOnly]);
 
-      /* === 新增：取得可上傳 uid（登入或匿名） === */
-      const getUploaderUid = async () => {
-        if (auth.currentUser) return auth.currentUser.uid;
-        try {
-          const cred = await auth.signInAnonymously();
-          return cred.user?.uid;
-        } catch (e) {
-          alert('建立匿名上傳身分失敗：' + e.message);
-          throw e;
-        }
-      };
-
-      // 上傳圖片（改為真的上傳到 Firebase Storage）
+      // 上傳圖片 (原封不動)
       const onUploadImages = async (files)=>{
         if(!files || files.length===0) return;
         setUploading(true);
         try{
           const urls=[];
-          // 固定本篇日記的資料夾 id（新建或編輯都一致）
-          const diaryId = formData.id || (currentDiary?.id) || db.collection('_').doc().id;
-
-          // 取得可用的上傳 uid（登入者或匿名）
-          const uploaderUid = await getUploaderUid();
-
           for(const f of files){
-            const safeName = `${Date.now()}_${(f.name || 'image').replace(/[^\w.\-]/g,'_')}`;
-            const ref = storage.ref().child(`${uploaderUid}/${diaryId}/${safeName}`);
-            await ref.put(f);
-            const url = await ref.getDownloadURL();
-            urls.push(url);
+            if(!user){
+              urls.push(URL.createObjectURL(f));
+            }else{
+              const id = formData.id || (currentDiary?.id) || db.collection('_').doc().id;
+              const ref = storage.ref().child(`${user.uid}/${id}/${Date.now()}_${f.name}`);
+              await ref.put(f);
+              const url = await ref.getDownloadURL();
+              urls.push(url);
+            }
           }
           setFormData(prev=>({...prev, images:[...(prev.images||[]), ...urls]}));
         }catch(e){ alert('上傳失敗：'+e.message); }
