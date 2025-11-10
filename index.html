@@ -145,6 +145,21 @@
       }
     }
 
+    /* [✅ 新增] Firebase Storage 圖片上傳工具 */
+    const uploadFileToStorage = async (file, userId) => {
+      if (!userId) { throw new Error("User not authenticated for upload."); }
+      const storageRef = storage.ref();
+      // 使用檔案時間戳和隨機字串來確保唯一性
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
+      const imageRef = storageRef.child(fileName);
+
+      // 開始上傳
+      const snapshot = await imageRef.put(file);
+      // 取得下載 URL
+      return snapshot.ref.getDownloadURL();
+    };
+
     /* Streak (原封不動) */
     function calcStreak(diaries){
       const set = new Set();
@@ -243,7 +258,7 @@
       );
     };
 
-    /* 登入元件 (AuthBar) */
+    /* [✅ 修改] 登入元件 (AuthBar) */
     const AuthBar = ({ user }) => {
       const [show, setShow] = useState(false);
       const [isSignup, setIsSignup] = useState(false);
@@ -293,7 +308,8 @@
             <>
               <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/70">
                 <Icon name="user" />
-                <span className="text-sm" title={user.displayName || ''}>{user.email}</span>
+                {/* [✅ 修改] 優先顯示 displayName */}
+                <span className="text-sm" title={user.displayName || user.email}>{user.displayName || user.email}</span>
               </div>
               <button onClick={()=>auth.signOut()} className="px-3 py-1 rounded-lg bg-gray-200 hover:bg-gray-300">登出</button>
             </>
@@ -957,7 +973,7 @@
       );
     };
 
-    {/* [✅ 修改] 側邊欄元件 (SidebarContent) */}
+    /* [✅ 修改] 側邊欄元件 (SidebarContent) */
     const SidebarContent = ({ darkMode, user, activeView, setActiveView, setSidebarOpen }) => {
       const dark = darkMode;
 
@@ -1089,10 +1105,11 @@
       const membership = profile?.membership || { tier:'free', expiresAt:null };
       const [favoritesOnly, setFavoritesOnly] = useState(false);
       
+      // [✅ 修改] formData 狀態，新增 createdAt
       const [formData, setFormData] = useState({
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
-        isPrivate:false, isFavorite:false, images:[], remindAt:'',
-        createdAt: new Date().toISOString()
+        isPrivate:false, isFavorite:false, images:[], newImages: [], remindAt:'',
+        createdAt: new Date().toISOString() // 預設為當前時間
       });
       const [sidebarOpen, setSidebarOpen] = useState(false);
       
@@ -1112,7 +1129,6 @@
                 const d = s.data();
                 setProfile({ role: d.role||'user', membership: d.membership||{tier:'free',expiresAt:null}, privatePasswordHash: d.privatePasswordHash });
               }else{
-                // [✅ 新增] 如果 profile 不存在，且 user 有 displayName，自動建立一個
                 if (u.displayName) {
                    db.collection('users').doc(u.uid).set({ 
                       role: 'user', 
@@ -1175,16 +1191,15 @@
         setFilteredDiaries(filtered);
       },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter, favoritesOnly]);
 
-      // [✅ 修改] 上傳圖片 (onUploadImages) - 現在由 handleSaveDiary 統一處理
-      // (保留 onUploadImages 函式，但不再於 onChange 中直接呼叫)
+      // [✅ 修改] onUploadImages - 現在由 handleSaveDiary 統一處理
       const onUploadImages = async (files)=>{
-        if(!files || files.length===0) return []; // 返回一個空陣列
+        if(!files || files.length===0) return [];
         setUploading(true);
         const urls = [];
         try{
           for(const f of files){
             if(!user){
-              urls.push(URL.createObjectURL(f)); // 本地模式
+              urls.push(URL.createObjectURL(f));
             }else{
               // [✅ 修改] 使用新的上傳工具
               const url = await uploadFileToStorage(f, user.uid);
@@ -1197,20 +1212,18 @@
         finally{ 
           setUploading(false); 
         }
-        return urls; // 返回 URL 陣列
+        return urls;
       };
 
       // [✅ 修改] 儲存/刪除/編輯日記
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){ alert('請填寫標題和內容'); return; }
         
-        setUploading(true); // 開始 loading
+        setUploading(true);
         
-        // [✅ 新增] 處理圖片上傳
         let uploadedImageUrls = [];
         if (formData.newImages && formData.newImages.length > 0) {
             try {
-                // onUploadImages 已經被修改為返回 URL 陣列
                 uploadedImageUrls = await onUploadImages(formData.newImages); 
             } catch (e) {
                 setUploading(false);
@@ -1219,14 +1232,13 @@
             }
         }
         
-        // [✅ 修改] 合併既有圖片和新上傳的圖片
         const finalImages = [...(formData.images || []), ...uploadedImageUrls];
         
         const docData = {
           title: formData.title, content: formData.content, tags: formData.tags||[],
           mood: formData.mood||'😊', weather: formData.weather||'☀️',
           isPrivate: !!formData.isPrivate, isFavorite: !!formData.isFavorite,
-          images: finalImages, // [✅ 修改] 使用合併後的圖片陣列
+          images: finalImages,
           createdAt: formData.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -1251,7 +1263,7 @@
           if(currentDiary){ setDiaries(diaries.map(d=>d.id===id?newItem:d)); }
           else{ setDiaries([newItem, ...diaries]); }
         }
-        setUploading(false); // 結束 loading
+        setUploading(false);
         resetForm();
       };
       const handleDeleteDiary = async (id)=>{
@@ -1266,7 +1278,7 @@
           ...diary, 
           remindAt:'',
           createdAt: diary.createdAt || new Date().toISOString(),
-          newImages: [] // [✅ 新增]
+          newImages: []
         });
         setShowNewDiary(true);
         setActiveView('list');
@@ -1285,7 +1297,7 @@
           title:'',content:'',tags:[],mood:'😊',weather:'☀️',
           isPrivate:false,isFavorite:false,images:[], remindAt:'',
           createdAt: new Date().toISOString(),
-          newImages: [] // [✅ 新增]
+          newImages: []
         });
         setCurrentDiary(null);
         setShowNewDiary(false);
@@ -1491,7 +1503,6 @@
                       <button onClick={todayShortcut} className="px-2 py-1 rounded-full text-sm border">今天</button>
                       <button onClick={toggleFavoritesOnly} className={`px-2 py-1 rounded-full text-sm border ${favoritesOnly?'bg-yellow-50':''}`}>只看最愛</button>
                     </div>
-                    {/* [✅ 日期篩選狀態顯示] */}
                     {dateFilter && (
                       <div className="text-sm">
                         日期篩選：<span className="font-semibold">{dateFilter}</span>
@@ -1500,7 +1511,6 @@
                     )}
                     <div>
                       <div className="text-sm mb-2 text-gray-500">標籤雲（點擊篩選）</div>
-                      {/* [✅ TagCloud] 這裡會渲染修改後的版本 */}
                       <TagCloud diaries={diaries} activeTag={selectedTag} onToggle={(t)=> setSelectedTag(selectedTag===t?'':t) } />
                     </div>
                     <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
@@ -1556,7 +1566,7 @@
                   </div>
                 </div>
 
-                {/* [✅ 修改] 右欄：編輯/檢視 (移除 Charts) */}
+                {/* 右欄：編輯/檢視 */}
                 <div className="lg:col-span-2 grid grid-cols-1 gap-6">
                   <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6`}>
                     {showNewDiary ? (
@@ -1570,7 +1580,7 @@
                           className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
                         <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
                         
-                        {/* [✅ 新增] 日期選擇器 */}
+                        {/* 日期選擇器 */}
                         <div>
                           <label className="block text-sm font-medium mb-1 text-gray-700">日記日期</label>
                           <input
@@ -1608,7 +1618,7 @@
                         <div>
                           <label className="block text-sm font-medium mb-2">標籤</label>
                           <div className="flex gap-2 flex-wrap">
-                            {/* [✅ 已修改] 統一標籤按鈕大小 */}
+                            {/* [✅ 修改] 統一標籤按鈕大小 */}
                             {allTags.map(tag=>(
                               <button key={tag} type="button" onClick={()=>handleTagToggle(tag)}
                                 className={`px-3 py-1 rounded-lg text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
@@ -1698,7 +1708,6 @@
                       </div>
                     )}
                   </div>
-                  {/* [✅ 刪除] Charts 元件已從 'list' 視圖移除 */}
                 </div>
               </div>
             );
@@ -1711,15 +1720,14 @@
                   diaries={diaries} 
                   onPickDate={(date) => {
                     setDateFilter(date);
-                    setActiveView('list'); // 點擊日期後切回列表檢視並篩選
-                    setCurrentDiary(null); // 清除右側的單篇日記顯示
-                    setShowNewDiary(false); // 清除新增/編輯表單
+                    setActiveView('list');
+                    setCurrentDiary(null);
+                    setShowNewDiary(false);
                   }} 
                 />
               </div>
             );
           
-          {/* [✅ 新增] 分析視圖 */}
           case 'analysis':
             return (
               <div className="max-w-7xl mx-auto p-4">
@@ -1727,8 +1735,7 @@
                 <Charts diaries={diaries} darkMode={darkMode} />
               </div>
             );
-
-          // 處理其他側邊欄項目 (例如：設定會打開 Modal，然後回到 'list')
+          
           case 'settings':
             if (!settingsOpen) { setSettingsOpen(true); }
             setActiveView('list');
@@ -1761,7 +1768,6 @@
           
           {/* === 1. 桌面版側邊欄 (Desktop Sidebar) === */}
           <div className="hidden md:block w-64 flex-shrink-0 h-full">
-            {/* [✅ SidebarContent] 這裡會渲染修改後的版本 */}
             <SidebarContent 
               darkMode={darkMode} 
               user={user} 
@@ -1774,9 +1780,7 @@
           {/* === 2. 手機版側邊欄 (Mobile Sidebar) === */}
           {sidebarOpen && (
             <div className="fixed inset-0 flex z-50 md:hidden">
-              {/* 側邊欄本體 */}
               <div className="w-64 h-full">
-                {/* [✅ SidebarContent] 這裡會渲染修改後的版本 */}
                 <SidebarContent 
                   darkMode={darkMode} 
                   user={user} 
@@ -1785,7 +1789,6 @@
                   setSidebarOpen={setSidebarOpen}
                 />
               </div>
-              {/* 遮罩 (Overlay) */}
               <div
                 onClick={() => setSidebarOpen(false)}
                 className="flex-1 bg-black/40"
@@ -1796,13 +1799,10 @@
           {/* === 3. 主要內容區域 (Main Content) === */}
           <main className="flex-1 w-full h-screen overflow-y-auto">
 
-            {/* Top Bar (原封不動) */}
             <div className={`${darkMode?'bg-gray-800':'bg-white'} shadow-lg sticky top-0 z-40`}>
               <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
                 
-                {/* (左側：漢堡按鈕 + 標題) */}
                 <div className="flex items-center gap-3">
-                  {/* 漢堡按鈕 (僅在手機/平板上顯示) */}
                   <button 
                     onClick={() => setSidebarOpen(true)}
                     className={`p-2 rounded-lg md:hidden ${darkMode ? 'text-white' : 'text-gray-700'}`}
@@ -1811,7 +1811,6 @@
                     <Icon name="menu" className="w-6 h-6" />
                   </button>
 
-                  {/* [✅ 修改] 標題可點擊 */}
                   <button 
                     onClick={() => {
                       setActiveView('list');
@@ -1825,12 +1824,10 @@
                   </button>
                 </div>
 
-                {/* (右側：您原本的按鈕) (原封不動) */}
                 <div className="flex items-center gap-3 flex-wrap">
                   <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                     Get Premium
                   </button>
-                  {/* [✅ 修改] 設定按鈕圖示 */}
                   <button
                     onClick={()=>setSettingsOpen(true)}
                     title="設定"
@@ -1840,18 +1837,15 @@
                   >
                     <Icon name="gear" className="w-6 h-6"/>
                   </button>
-                  {/* [✅ AuthBar] 這裡會渲染修改後的版本 */}
                   <AuthBar user={user}/>
                 </div>
               </div>
             </div>
 
-            {/* Streak (原封不動 - 保持在 'list' 視圖之外，使其在 'list' 和 'analysis' 都能顯示) */}
             <div className="max-w-7xl mx-auto px-4 pt-4">
               <StreakBadge diaries={diaries}/>
             </div>
 
-            {/* Premium Modal (原封不動) */}
             <PremiumModal
               open={showPremium}
               onClose={()=>setShowPremium(false)}
@@ -1865,7 +1859,6 @@
               setSelectedPlan={setSelectedPlan}
             />
 
-            {/* 設定面板 (原封不動) */}
             <SettingsPanel
               open={settingsOpen}
               onClose={()=>setSettingsOpen(false)}
@@ -1892,7 +1885,6 @@
               user={user}
             />
 
-            {/* [✅ 根據 activeView 渲染主內容] */}
             {renderMainContent()}
             
           </main>
