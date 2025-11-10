@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>我的日記本｜優惠券管理系統🎟️</title>
 
+  <link rel="icon" href="./assets/img/journal-favicon.png?v=2" type="image/png">
+
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -557,9 +559,14 @@
           <div className="card glass-card hover-lift">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center shadow-lg">
-                  <Icon name="gift" className="w-8 h-8 text-white"/>
-                </div>
+                <div className="w-16 h-16 rounded-2xl gradient-bg shadow-lg overflow-hidden flex items-center justify-center">
+  <img
+    src="./assets/img/journal-favicon.png?v=2"
+    alt="我的日記本"
+    className="w-full h-full object-cover"
+  />
+</div>
+
                 <div>
                   <h1 className="text-3xl font-bold gradient-bg bg-clip-text text-transparent">優惠券管理系統</h1>
                   <p className="text-sm text-gray-600">管理所有優惠碼與折扣方案</p>
@@ -621,7 +628,7 @@
 
           {/* Footer */}
           <div className="text-center text-white/80 text-sm">
-            <p>🎟️ Coupon Management System • Made with ❤️ by Admin</p>
+            <p>🎟️ Coupon Management System • Made with ❤️ By Jiachang</p>
           </div>
         </div>
       );
