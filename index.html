@@ -1723,30 +1723,72 @@
                         <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
                         
                         {/* 日期選擇器 */}
-                       {/* [✅ 已改] 地點：改為一般文字輸入（讓使用者自己輸入） */}
+                      {/* [✅ 修改後] 地點：左邊縣市下拉 + 右邊手動輸入 */}
 <div>
   <label className="block text-sm font-medium mb-1 text-gray-700">地點</label>
-  <input
-    type="text"
-    placeholder="例如：家裡、學校圖書館、台北101、台南市東區…"
-    value={formData.location || ''}
-    onChange={(e)=>{
-      const text = e.target.value;
-      setFormData(prev => ({
-        ...prev,
-        location: text,
-        // 既有欄位保留，但改為清空（避免舊的自動完成殘留）
-        locationCounty: '',
-        locationPlace: '',
-        locationPlaceId: '',
-        locationLat: null,
-        locationLng: null,
-      }));
-    }}
-    className={`w-full border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
-  />
-</div>
+  <div className="flex gap-2">
+    {/* 縣市下拉保留 */}
+    <select
+      value={formData.locationCounty || ''}
+      onChange={(e) => {
+        const county = e.target.value;
+        setFormData(prev => ({
+          ...prev,
+          locationCounty: county,
+          // 如果之前有整合的 location，就重新拼上縣市名稱
+          location: county ? `${county} · ${prev.locationPlace || ''}` : prev.locationPlace || ''
+        }));
+      }}
+      className={`w-1/3 border rounded-lg p-2 ${
+        darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'
+      }`}
+    >
+      <option value="">選擇縣市</option>
+      <option value="台北市">台北市</option>
+      <option value="新北市">新北市</option>
+      <option value="桃園市">桃園市</option>
+      <option value="台中市">台中市</option>
+      <option value="台南市">台南市</option>
+      <option value="高雄市">高雄市</option>
+      <option value="基隆市">基隆市</option>
+      <option value="新竹市">新竹市</option>
+      <option value="嘉義市">嘉義市</option>
+      <option value="新竹縣">新竹縣</option>
+      <option value="苗栗縣">苗栗縣</option>
+      <option value="彰化縣">彰化縣</option>
+      <option value="南投縣">南投縣</option>
+      <option value="雲林縣">雲林縣</option>
+      <option value="嘉義縣">嘉義縣</option>
+      <option value="屏東縣">屏東縣</option>
+      <option value="宜蘭縣">宜蘭縣</option>
+      <option value="花蓮縣">花蓮縣</option>
+      <option value="台東縣">台東縣</option>
+      <option value="澎湖縣">澎湖縣</option>
+      <option value="金門縣">金門縣</option>
+      <option value="連江縣">連江縣</option>
+    </select>
 
+    {/* 右邊：使用者可自由輸入 */}
+    <input
+      type="text"
+      placeholder="例如：家裡、學校圖書館、台北101、東區誠品…"
+      value={formData.locationPlace || ''}
+      onChange={(e) => {
+        const place = e.target.value;
+        setFormData(prev => ({
+          ...prev,
+          locationPlace: place,
+          location: prev.locationCounty
+            ? `${prev.locationCounty} · ${place}`
+            : place
+        }));
+      }}
+      className={`flex-1 border rounded-lg p-2 ${
+        darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'
+      }`}
+    />
+  </div>
+</div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
