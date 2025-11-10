@@ -1736,28 +1736,23 @@
                         {/* [✅ 修改] 地點：改成縣市 + Google 自動完成 */}
                         <div>
                           <label className="block text-sm font-medium mb-1 text-gray-700">地點</label>
-                          {/* 地點：純文字輸入 */}
-<div>
-  <label className="block text-sm font-medium mb-1 text-gray-700">地點</label>
-  <input
-    type="text"
-    placeholder="請輸入地點（例如：台南火車站 / 公司 / 咖啡店）"
-    value={formData.location || ''}
-    onChange={e => setFormData(prev => ({
-      ...prev,
-      location: e.target.value,       // 只存你輸入的文字
-      // 清空原本的結構化欄位（如果不再用的話）
-      locationCounty: '',
-      locationPlace: '',
-      locationPlaceId: '',
-      locationLat: null,
-      locationLng: null,
-    }))}
-    className={`w-full border rounded-lg p-2 ${
-      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'
-    }`}
-  />
-</div>
+                          <LocationPicker
+                            darkMode={darkMode}
+                            county={formData.locationCounty || ''}
+                            value={formData.locationPlace || (formData.location || '').replace(/^(.+?) · /,'')}
+                            onChange={(loc)=>{
+                              setFormData(prev => ({
+                                ...prev,
+                                locationCounty: loc.county || '',
+                                locationPlace:  loc.placeText || '',
+                                location:       loc.location || '',
+                                locationPlaceId: loc.placeId || '',
+                                locationLat:     loc.lat ?? null,
+                                locationLng:     loc.lng ?? null,
+                              }));
+                            }}
+                          />
+                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
