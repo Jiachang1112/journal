@@ -1012,35 +1012,30 @@
     const SidebarContent = ({ darkMode, user, activeView, setActiveView, setSidebarOpen }) => {
       const dark = darkMode;
 
-      const NavItem = ({ icon, text, viewName, badge = null }) => {
-        const active = activeView === viewName;
-        return (
-          <button 
-            onClick={() => {
-              setActiveView(viewName);
-              setSidebarOpen(false);
-            }}
-            className={`
-              flex items-center gap-4 w-full text-left px-5 py-3 rounded-lg transition
-              ${active
-                ? 'bg-blue-600 text-white shadow'
-                : `
-                  ${dark
-                    ? 'text-gray-300 hover:bg-gray-700'
-                    : 'text-gray-700 hover:bg-gray-100'}
-                `}
-            `}
-          >
-            <Icon name={icon} className="w-5 h-5 flex-shrink-0" />
-            <span className="font-medium flex-1 truncate">{text}</span>
-            {badge && (
-              <span className={`text-xs ${active ? 'text-white' : 'text-blue-500'}`}>
-                {badge}
-              </span>
-            )}
-          </button>
-        );
-      };
+const NavItem = ({ icon, imgSrc, text, viewName, badge = null }) => {
+  const active = activeView === viewName;
+  return (
+    <button
+      onClick={() => {
+        setActiveView(viewName);
+        setSidebarOpen(false);
+      }}
+      className={`
+        flex items-center gap-4 w-full text-left px-5 py-3 rounded-lg transition
+        ${active ? 'bg-blue-600 text-white shadow'
+                 : (dark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100')}
+      `}
+    >
+      {imgSrc
+        ? <img src={imgSrc} alt="" className="w-5 h-5 flex-shrink-0 object-contain" />
+        : <Icon name={icon} className="w-5 h-5 flex-shrink-0" />
+      }
+      <span className="font-medium flex-1 truncate">{text}</span>
+      {badge && <span className={`text-xs ${active ? 'text-white' : 'text-blue-500'}`}>{badge}</span>}
+    </button>
+  );
+};
+
 
       const LabelHeader = ({ title }) => (
          <div className={`
