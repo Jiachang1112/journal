@@ -1007,11 +1007,12 @@
     const SidebarContent = ({ darkMode, user, activeView, setActiveView, setSidebarOpen }) => {
       const dark = darkMode;
 
-      const NavItem = ({ icon, imgSrc, text, viewName, badge = null }) => {
+      const NavItem = ({ icon, imgSrc, text, viewName, badge = null, onClick = null }) => {
         const active = activeView === viewName;
         return (
           <button
             onClick={() => {
+              if(onClick){ onClick(); setSidebarOpen(false); return; }
               setActiveView(viewName);
               setSidebarOpen(false);
             }}
@@ -1087,13 +1088,6 @@
             <LabelHeader title="參考" />
              <NavItem icon="star" text="付款" viewName="premium" />
              <NavItem imgSrc="./assets/img/settings-icon.png" text="應用設置" viewName="settings" />
-            <NavItem
-  icon="mail"
-  text="聯絡我們"
-  viewName="contact"
-  onClick={() => window.open('https://formspree.io/f/mkgknzda', '_blank')}
-/>
-
           </div>
         </div>
       );
@@ -2225,5 +2219,126 @@
 
     ReactDOM.render(<DiaryApp/>, document.getElementById('root'));
   </script>
+
+  <!-- 聯絡我們 Modal（原生版） -->
+  <div id="contact-modal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="window.__closeContact()"></div>
+    <div class="relative w-[92%] max-w-2xl mx-auto mt-24 bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden">
+      <div class="px-6 py-4 text-lg font-semibold bg-slate-100 dark:bg-slate-800">聯絡我們</div>
+      <form id="contact-form" class="p-6 space-y-4">
+        <div>
+          <label class="block mb-1">姓名</label>
+          <input name="name" class="w-full rounded-lg border px-3 py-2 bg-white/80 dark:bg-slate-800 outline-none focus:ring" required />
+        </div>
+        <div>
+          <label class="block mb-1">Email</label>
+          <input type="email" name="email" class="w-full rounded-lg border px-3 py-2 bg-white/80 dark:bg-slate-800 outline-none focus:ring" required />
+        </div>
+        <div>
+          <label class="block mb-1">訊息內容</label>
+          <textarea name="message" class="w-full h-40 rounded-lg border px-3 py-2 bg-white/80 dark:bg-slate-800 outline-none focus:ring resize-none" required></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600" onclick="window.__closeContact()">取消</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700" id="contact-submit">送出</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+    window.__openContact = function(){ document.getElementById('contact-modal').classList.remove('hidden'); };
+    window.__closeContact = function(){ document.getElementById('contact-modal').classList.add('hidden'); };
+    (function(){
+      const form = document.getElementById('contact-form');
+      const btn = document.getElementById('contact-submit');
+      form.addEventListener('submit', async function(e){
+        e.preventDefault();
+        const fd = new FormData(form);
+        const payload = { name: fd.get('name'), email: fd.get('email'), message: fd.get('message') };
+        btn.disabled = true; btn.textContent = '送出中…';
+        try{
+          const res = await fetch('https://formspree.io/f/mkgknzda',{
+            method:'POST',
+            headers:{'Accept':'application/json','Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+          });
+          if(res.ok){
+            alert('已送出！我們會盡快回覆你，謝謝。');
+            form.reset();
+            window.__closeContact();
+          }else{
+            alert('送出失敗，請稍後再試。');
+          }
+        }catch(err){
+          alert('送出失敗：'+ err.message);
+        }finally{
+          btn.disabled = false; btn.textContent = '送出';
+        }
+      });
+    })();
+  </script>
 </body>
-</html>
+</html
+// ======= Contact Modal =======
+function ContactModal({ open, onClose }){
+  const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [message, setMessage] = React.useState('');
+  const [sending, setSending] = React.useState(false);
+  const endpoint = 'https://formspree.io/f/mkgknzda';
+
+  const submit = async (e)=>{
+    e.preventDefault();
+    if(sending) return;
+    setSending(true);
+    try{
+      const res = await fetch(endpoint, {
+        method:'POST',
+        headers:{'Accept':'application/json','Content-Type':'application/json'},
+        body: JSON.stringify({name, email, message})
+      });
+      if(res.ok){
+        alert('已送出！我們會盡快回覆你，謝謝。');
+        setName(''); setEmail(''); setMessage('');
+        onClose();
+      }else{
+        alert('送出失敗，請稍後再試或直接寄信到：Bruce9811123@gmail.com');
+      }
+    }catch(err){
+      alert('送出失敗：'+err.message);
+    }finally{
+      setSending(false);
+    }
+  };
+
+  if(!open) return null;
+  return (
+    React.createElement('div', {className:'fixed inset-0 z-[100] flex items-center justify-center'},
+      React.createElement('div', {className:'absolute inset-0 bg-black/50', onClick:onClose}),
+      React.createElement('div', {className:'relative w-[90%] max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden'},
+        React.createElement('div', {className:'px-6 py-4 text-lg font-semibold bg-slate-100 dark:bg-slate-800'}, '聯絡我們'),
+        React.createElement('form', {className:'p-6 space-y-4', onSubmit:submit},
+          React.createElement('div', null,
+            React.createElement('label', {className:'block mb-1'}, '姓名'),
+            React.createElement('input', {className:'w-full rounded-lg border px-3 py-2 bg-white/80 dark:bg-slate-800 outline-none focus:ring', value:name, onChange:e=>setName(e.target.value), name:'name', required:true})
+          ),
+          React.createElement('div', null,
+            React.createElement('label', {className:'block mb-1'}, 'Email'),
+            React.createElement('input', {type:'email', className:'w-full rounded-lg border px-3 py-2 bg-white/80 dark:bg-slate-800 outline-none focus:ring', value:email, onChange:e=>setEmail(e.target.value), name:'email', required:true})
+          ),
+          React.createElement('div', null,
+            React.createElement('label', {className:'block mb-1'}, '訊息內容'),
+            React.createElement('textarea', {className:'w-full h-40 rounded-lg border px-3 py-2 bg-white/80 dark:bg-slate-800 outline-none focus:ring resize-none', value:message, onChange:e=>setMessage(e.target.value), name:'message', required:true})
+          ),
+          React.createElement('div', {className:'flex justify-end gap-2 pt-2'},
+            React.createElement('button', {type:'button', className:'px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600', onClick:onClose}, '取消'),
+            React.createElement('button', {type:'submit', disabled:sending, className:'px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60'}, sending ? '送出中…' : '送出')
+          )
+        )
+      )
+    )
+  );
+}
+
+              <NavItem icon="mail" text="聯絡我們" viewName="__contact" onClick={() => window.__openContact && window.__openContact()} />
+>
