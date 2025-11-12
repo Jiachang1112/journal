@@ -5,11 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>我的日記本 📔</title>
 
-  <link rel="icon" href="./assets/img/journal-favicon.png?v=3" type="image/png" sizes="32x32">
-<link rel="shortcut icon" href="./assets/img/journal-favicon.png?v=3" type="image/png">
-<link rel="apple-touch-icon" href="./assets/img/journal-favicon.png?v=3">
-
-
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -21,12 +16,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
-
-  <script
-    async
-    defer
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places">
-  </script>
 
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
@@ -87,7 +76,7 @@
         import:"M12 5v10m0 0l-4-4m4 4l4-4M5 19h14",
         bell:"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-9.33-4.93M13 21a2 2 0 01-4 0",
         image:"M3 19a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 01-2 2v14zm3-3l4-4 3 3 4-4 2 2v4H6z",
-        gear:"M13.8,12c0,1-0.8,1.8-1.8,1.8s-1.8-0.8-1.8-1.8s0.8-1.8,1.8-1.8S13.8,11,13.8,12z M19.4,12c0-0.4-0.3-0.8-0.8-0.8h-2.1 c-0.2-0.6-0.5-1.2-0.9-1.7l1.5-1.5c0.3-0.3,0.3-0.8,0-1.1l-1.2-1.2c-0.3-0.3-0.8-0.3-1.1,0l-1.5,1.5c-0.5-0.4-1.1-0.7-1.7-0.9v-2.1 c0-0.4-0.3-0.8-0.8-0.8h-1.8c-0.4,0-0.8,0.3-0.8,0.8v2.1c-0.6,0.2-1.2,0.5-1.7,0.9l-1.5-1.5c-0.3-0.3-0.8-0.3-1.1,0l-1.2,1.2 c-0.3,0.3-0.8,0.3-1.1,0l-1.5-1.5c-0.4,0.5-0.7,1.1-0.9,1.7H5.4c-0.4,0-0.8,0.3-0.8,0.8v1.8c0,0.4,0.3,0.8,0.8,0.8h2.1 c0.2,0.6,0.5,1.2,0.9,1.7l-1.5,1.5c-0.3,0.3-0.3,0.8,0,1.1l1.2,1.2c0.3,0.3,0.8,0.3,1.1,0l1.5-1.5c0.5,0.4,1.1,0.7,1.7,0.9v2.1 c0,0.4,0.3,0.8,0.8,0.8h1.8c0.4,0,0.8-0.3,0.8-0.8v-2.1c0.6-0.2,1.2-0.5,1.7-0.9l1.5,1.5c0.3,0.3,0.8,0.3,1.1,0l1.2-1.2 c0.3-0.3,0.3-0.8,0,1.1l-1.5-1.5c0.4-0.5,0.7-1.1,0.9-1.7h2.1c0.4,0,0.8-0.3,0.8-0.8V12z",
+        gear:"M13.8,12c0,1-0.8,1.8-1.8,1.8s-1.8-0.8-1.8-1.8s0.8-1.8,1.8-1.8S13.8,11,13.8,12z M19.4,12c0-0.4-0.3-0.8-0.8-0.8h-2.1 c-0.2-0.6-0.5-1.2-0.9-1.7l1.5-1.5c0.3-0.3,0.3-0.8,0-1.1l-1.2-1.2c-0.3-0.3-0.8-0.3-1.1,0l-1.5,1.5c-0.5-0.4-1.1-0.7-1.7-0.9v-2.1 c0-0.4-0.3-0.8-0.8-0.8h-1.8c-0.4,0-0.8,0.3-0.8,0.8v2.1c-0.6,0.2-1.2,0.5-1.7,0.9l-1.5-1.5c-0.3-0.3-0.8-0.3-1.1,0l-1.2,1.2 c-0.3,0.3-0.3,0.8,0,1.1l1.5,1.5c-0.4,0.5-0.7,1.1-0.9,1.7H5.4c-0.4,0-0.8,0.3-0.8,0.8v1.8c0,0.4,0.3,0.8,0.8,0.8h2.1 c0.2,0.6,0.5,1.2,0.9,1.7l-1.5,1.5c-0.3,0.3-0.3,0.8,0,1.1l1.2,1.2c0.3,0.3,0.8,0.3,1.1,0l1.5-1.5c0.5,0.4,1.1,0.7,1.7,0.9v2.1 c0,0.4,0.3,0.8,0.8,0.8h1.8c0.4,0,0.8-0.3,0.8-0.8v-2.1c0.6-0.2,1.2-0.5,1.7-0.9l1.5,1.5c0.3,0.3,0.8,0.3,1.1,0l1.2-1.2 c0.3-0.3,0.3-0.8,0,1.1l-1.5-1.5c0.4-0.5,0.7-1.1,0.9-1.7h2.1c0.4,0,0.8-0.3,0.8-0.8V12z",
         star:"M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
         trophy:"M17 3h4v2a5 5 0 01-5 5h-1a6 6 0 11-12 0V3h4",
         menu: "M3 12h18M3 6h18M3 18h18",
@@ -96,46 +85,23 @@
         scissors: "M6 6a2 2 0 0 1 4 0v4L6 14V6zm12 0a2 2 0 0 0-4 0v4l4 4V6zM8 8H4M16 8h4M8 12l-4 4 4 4M16 12l4 4-4 4",
         share: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13",
         chart:"M12 20V10M18 20V4M6 20v-4",
-        // [✅ 已有] 地圖圖示
-        "map-pin": "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
+        "map-pin": "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+        // [✅ 新增] 信封圖示
+        "mail": "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM20 6l-8 5-8-5M4 18h16V8l-8 5-8-5v10z"
       };
       return React.createElement('svg', {
-        className,
-        fill: name === 'gear' ? 'currentColor' : (fill ? 'currentColor' : 'none'),
-        stroke: name === 'gear' ? 'none' : (fill ? 'none' : 'currentColor'),
-        strokeWidth: name === 'gear' ? '0' : '2',
-        strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
-      }, React.createElement('path',{ d: P[name] }));
+  className,
+  fill: name === 'gear' ? 'currentColor' : (fill ? 'currentColor' : 'none'),
+  stroke: name === 'gear' ? 'none' : (fill ? 'none' : 'currentColor'),
+  strokeWidth: name === 'gear' ? '0' : '2',
+  strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
+}, React.createElement('path',{ d: P[name] }));
+
     };
 
     const moods = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
     const weathers = ['☀️','⛅','☁️','🌧️','⛈️','🌈','❄️','🌙'];
     const allTags = ['生活','工作','旅遊','學習','健康','人際關係','興趣'];
-
-    /* [✅ 新增] 台灣縣市清單 */
-    const TAIWAN_COUNTIES = [
-      '臺北市','新北市','桃園市','臺中市','臺南市','高雄市',
-      '基隆市','新竹市','新竹縣','苗栗縣','彰化縣','南投縣',
-      '雲林縣','嘉義市','嘉義縣','屏東縣','宜蘭縣','花蓮縣',
-      '臺東縣','澎湖縣','金門縣','連江縣'
-    ];
-
-    /* [✅ 新增] 等待 Google Maps 讀取 Places Library */
-    function waitForGoogleMaps(maxWait = 8000) {
-      return new Promise((resolve, reject) => {
-        if (window.google?.maps?.places) return resolve(window.google);
-        const start = Date.now();
-        const timer = setInterval(() => {
-          if (window.google?.maps?.places) {
-            clearInterval(timer);
-            resolve(window.google);
-          } else if (Date.now() - start > maxWait) {
-            clearInterval(timer);
-            reject(new Error('Google Maps 載入逾時'));
-          }
-        }, 100);
-      });
-    }
 
     /* 日期工具 (原封不動) */
     const toDate = (val) => {
@@ -232,7 +198,7 @@
       }, [diaries]);
       const week = useMemo(()=>{
         const today = new Date();
-        const offset = (today.getDay()+6)%7;
+        const offset = (today.getDay()+6)%7; // 0=Mon, … 6=Sun
         const monday = new Date(today);
         monday.setDate(today.getDate() - offset);
         const days = [];
@@ -253,6 +219,7 @@
 
       return (
         <div className="flex items-center gap-4 px-4 py-3 rounded-2xl border bg-white/80 shadow flex-wrap">
+          {/* 左側：連續天數卡 */}
           <div className="flex items-center gap-3">
             <Icon name={tier.icon} className="w-7 h-7 primary-text" fill />
             <div>
@@ -264,6 +231,7 @@
             </div>
             <span className="ml-2 px-2 py-1 text-xs rounded-full primary-bg text-white">{tier.name}</span>
           </div>
+          {/* 右側：本週打卡七日列 */}
           <div className="ml-auto">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1 select-none">
               {wcn.map((t, i)=>(<div key={i} className="w-8 text-center">{t}</div>))}
@@ -290,7 +258,7 @@
       );
     };
 
-    /* 登入元件 (AuthBar) [原封不動於功能，只是保留我們已有修改] */
+    /* 登入元件 (AuthBar) (原封不動) */
     const AuthBar = ({ user }) => {
       const [show, setShow] = useState(false);
       const [isSignup, setIsSignup] = useState(false);
@@ -1003,42 +971,55 @@
       );
     };
 
-    /* 側邊欄元件 (SidebarContent) [已更新 map 項目] */
+    /* [✅ 修改] 側邊欄元件 (SidebarContent) */
     const SidebarContent = ({ darkMode, user, activeView, setActiveView, setSidebarOpen }) => {
       const dark = darkMode;
 
-      const NavItem = ({ icon, imgSrc, text, viewName, badge = null }) => {
+      const NavItem = ({ icon, text, viewName, badge = null, onClick = null }) => {
         const active = activeView === viewName;
+        
+        // [✅ 修改] 決定點擊行為
+        const handleClick = () => {
+          if (onClick) {
+            onClick(); // 執行自訂點擊 (例如 聯絡我們)
+          } else {
+            setActiveView(viewName); // 執行預設的視圖切換
+          }
+          setSidebarOpen(false); // 手機版點擊後關閉側邊欄
+        };
+
         return (
-          <button
-            onClick={() => {
-              setActiveView(viewName);
-              setSidebarOpen(false);
-            }}
+          <button 
+            onClick={handleClick}
             className={`
               flex items-center gap-4 w-full text-left px-5 py-3 rounded-lg transition
-              ${active ? 'bg-blue-600 text-white shadow'
-                      : (dark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100')}
+              ${active
+                ? 'bg-blue-600 text-white shadow'
+                : `
+                  ${dark
+                    ? 'text-gray-300 hover:bg-gray-700'
+                    : 'text-gray-700 hover:bg-gray-100'}
+                `}
             `}
           >
-            {imgSrc
-              ? <img src={imgSrc} alt="" className="w-5 h-5 flex-shrink-0 object-contain" />
-              : <Icon name={icon} className="w-5 h-5 flex-shrink-0" />
-            }
+            <Icon name={icon} className="w-5 h-5 flex-shrink-0" />
             <span className="font-medium flex-1 truncate">{text}</span>
-            {badge && <span className={`text-xs ${active ? 'text-white' : 'text-blue-500'}`}>{badge}</span>}
+            {badge && (
+              <span className={`text-xs ${active ? 'text-white' : 'text-blue-500'}`}>
+                {badge}
+              </span>
+            )}
           </button>
         );
       };
 
-
       const LabelHeader = ({ title }) => (
-           <div className={`
-             px-5 py-2 mt-2
-             ${dark ? 'text-gray-500' : 'text-gray-600'}
-           `}>
-             <span className="text-sm">{title}</span>
-           </div>
+         <div className={`
+           px-5 py-2 mt-2
+           ${dark ? 'text-gray-500' : 'text-gray-600'}
+         `}>
+           <span className="text-sm">{title}</span>
+         </div>
       );
 
       return (
@@ -1069,11 +1050,11 @@
             )}
           </div>
 
+          {/* 導覽列表 (Nav List) */}
           <div className="flex-1 overflow-y-auto p-3 space-y-1">
             <NavItem icon="archive" text="所有記錄" viewName="list" />
             <NavItem icon="calendar" text="日曆" viewName="calendar" />
             <NavItem icon="chart" text="分析" viewName="analysis" />
-            {/* [✅ 新增地圖導覽項目] */}
             <NavItem icon="map-pin" text="地圖" viewName="map" />
 
             <LabelHeader title="時間" />
@@ -1085,152 +1066,23 @@
             <NavItem icon="plus" text="新區域" viewName="newArea" />
 
             <LabelHeader title="參考" />
-             <NavItem icon="star" text="付款" viewName="premium" />
-             <NavItem imgSrc="./assets/img/settings-icon.png" text="應用設置" viewName="settings" />
-            <NavItem
-  icon="mail"
-  text="聯絡我們"
-  viewName="contact"
-  onClick={() => window.open('https://formspree.io/f/mkgknzda', '_blank')}
-/>
-
+            <NavItem icon="refresh-ccw" text="習慣" viewName="habits" />
+            <NavItem icon="scissors" text="休假模式" viewName="vacation" />
+            <NavItem icon="star" text="付款" viewName="premium" />
+            <NavItem icon="gear" text="應用設置" viewName="settings" />
+            
+            {/* [✅ 新增] 聯絡我們按鈕，並使用 onClick 屬性 */}
+            <NavItem 
+              icon="mail" 
+              text="聯絡我們" 
+              viewName="contact" // viewName 設為 "contact" (即使它不會被選中)
+              onClick={() => window.open('https://formspree.io/f/mkgknzda', '_blank')}
+            />
           </div>
         </div>
       );
     };
 
-    /* [✅ 修改] 地點選擇元件：縣市 + Google Places 自動完成（全球地圖） */
-    const LocationPicker = ({ county, placeText, onChange, darkMode }) => {
-      const inputRef = React.useRef(null);
-      const autocompleteRef = React.useRef(null);
-
-      React.useEffect(() => {
-        let destroyed = false;
-        
-        // 1. 設定 Places Autocomplete
-        waitForGoogleMaps().then(() => {
-          if (destroyed || !inputRef.current) return;
-          
-          const options = {
-            fields: ['place_id', 'name', 'geometry', 'formatted_address'],
-            // [✅ 關鍵修改] 預設不設 countryRestriction，讓使用者可以搜尋全世界。
-            // 如果選了縣市，就限制在台灣。
-            types: ['establishment', 'geocode'] // 讓結果包含地標和地址
-          };
-          
-          if (county && TAIWAN_COUNTIES.includes(county)) {
-             options.componentRestrictions = { country: 'tw' };
-          }
-
-          const ac = new window.google.maps.places.Autocomplete(inputRef.current, options);
-          autocompleteRef.current = ac;
-          
-          ac.addListener('place_changed', () => {
-            const place = ac.getPlace();
-            
-            // 找出最適合的地點名稱（優先使用 place.name，如果沒有就用 formatted_address）
-            const selectedPlaceText = place.name || place.formatted_address || inputRef.current.value || '';
-            
-            // 嘗試從 address_components 中找出國家代碼，用來決定是否為台灣
-            let isTaiwan = (county && TAIWAN_COUNTIES.includes(county));
-            if (!isTaiwan && place.address_components) {
-                const countryComponent = place.address_components.find(c => c.types.includes('country'));
-                if (countryComponent && countryComponent.short_name === 'TW') {
-                    isTaiwan = true;
-                }
-            }
-
-            // 嘗試從 address_components 中找出縣市名稱 (如果使用者沒選)
-            let determinedCounty = county || '';
-            if (!determinedCounty && isTaiwan && place.address_components) {
-                const countyComponent = place.address_components.find(c => c.types.includes('administrative_area_level_1'));
-                if (countyComponent) {
-                    determinedCounty = countyComponent.long_name || '';
-                }
-            }
-
-            const lat = place.geometry?.location?.lat?.();
-            const lng = place.geometry?.location?.lng?.();
-
-            // 重新組合完整的 location 顯示文字
-            const finalLocationText = determinedCounty
-              ? `${determinedCounty} · ${selectedPlaceText}`.trim()
-              : selectedPlaceText;
-
-            onChange({
-              county: determinedCounty,
-              placeText: selectedPlaceText, // 這是 Places API 提供的名稱/地址
-              location: finalLocationText, // 這是給日記顯示的完整文字
-              placeId: place.place_id || '',
-              lat: (typeof lat === 'number' ? lat : null),
-              lng: (typeof lng === 'number' ? lng : null),
-            });
-          });
-        }).catch(() => {
-          // 忽略 Google Maps 載入失敗的錯誤，當作一般輸入框用
-        });
-
-        // 2. 處理縣市變動，重設 Autocomplete 的 componentRestrictions
-        if (autocompleteRef.current) {
-            const countryCode = county && TAIWAN_COUNTIES.includes(county) ? 'tw' : null;
-            autocompleteRef.current.setComponentRestrictions(countryCode ? { country: countryCode } : {});
-        }
-
-        return () => { destroyed = true; };
-      }, [county, onChange]); // 依賴於 county 變化
-
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
-          {/* 縣市下拉 */}
-          <select
-            value={county || ''}
-            onChange={e => {
-              const nextCounty = e.target.value;
-              
-              // 更新縣市，並清除座標/placeId，讓使用者重新搜尋
-              onChange({
-                county: nextCounty,
-                placeText: '',
-                location: nextCounty,
-                placeId: '',
-                lat: null,
-                lng: null
-              });
-              
-              // [✅ 處理 Autocomplete 限制]
-              if (autocompleteRef.current) {
-                const countryCode = nextCounty ? 'tw' : null;
-                autocompleteRef.current.setComponentRestrictions(countryCode ? { country: countryCode } : {});
-                inputRef.current.value = ''; // 清空輸入框
-              }
-
-              
-            }}
-            className={`border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
-          >
-            <option value="">（全球）</option>
-            {TAIWAN_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-
-          {/* Google Places 自動完成輸入框 */}
-          <input
-            ref={inputRef}
-            placeholder="您在哪裡？（可輸入地標、地址、店名…）"
-            defaultValue={placeText || ''}
-            onInput={(e) => {
-               // 當使用者手動輸入時，即時更新 placeText 和 location，但不清除座標
-              const text = e.target.value;
-              onChange(prev => ({
-                ...prev,
-                placeText: text,
-                location: county ? `${county} · ${text}` : text,
-              }));
-            }}
-            className={`w-full border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
-          />
-        </div>
-      );
-    };
 
     /* 主 App */
     const DiaryApp = () => {
@@ -1251,12 +1103,11 @@
       const [showPremium, setShowPremium] = useState(false);
       const [appliedCoupon, setAppliedCoupon] = useState(null);
       const [selectedPlan, setSelectedPlan] = useState('monthly');
-      const [profile, setProfile]      = useState(null);
+      const [profile, setProfile]     = useState(null);
       const isAdmin = profile?.role === 'admin';
       const membership = profile?.membership || { tier:'free', expiresAt:null };
       const [favoritesOnly, setFavoritesOnly] = useState(false);
       
-      // [✅ 修改] formData：加入地點的結構化欄位
       const [formData, setFormData] = useState({
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
         isPrivate:false, isFavorite:false, images:[], newImages: [], remindAt:'',
@@ -1268,9 +1119,9 @@
         locationLat: null,
         locationLng: null,
       });
-
       const [sidebarOpen, setSidebarOpen] = useState(false);
-      const [activeView, setActiveView] = useState('list');
+      
+      const [activeView, setActiveView] = useState('list'); 
 
       useEffect(()=>{ ReminderService.requestPermission(); ReminderService.scheduleTicker(); },[]);
       useEffect(()=>{ document.documentElement.style.setProperty('--primary', themeColor); localStorage.setItem('themeColor', themeColor); },[themeColor]);
@@ -1288,8 +1139,8 @@
               }else{
                 if (u.displayName) {
                    db.collection('users').doc(u.uid).set({ 
-                     role: 'user', 
-                     membership: { tier: 'free', expiresAt: null }
+                      role: 'user', 
+                      membership: { tier: 'free', expiresAt: null }
                    }, { merge: true });
                 } else {
                    setProfile({ role:'user', membership:{ tier:'free', expiresAt:null }, privatePasswordHash: undefined });
@@ -1348,7 +1199,7 @@
         setFilteredDiaries(filtered);
       },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter, favoritesOnly]);
 
-      // 上傳圖片 (原封不動的行為)
+      // [✅ 修改] onUploadImages - 現在由 handleSaveDiary 統一處理
       const onUploadImages = async (files)=>{
         if(!files || files.length===0) return [];
         const urls = [];
@@ -1363,7 +1214,7 @@
         return urls;
       };
 
-      // 儲存/刪除/編輯日記
+      // [✅ 修改] 儲存/刪除/編輯日記
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){ alert('請填寫標題和內容'); return; }
         
@@ -1378,18 +1229,12 @@
           const finalImages = [...(formData.images || []), ...uploadedImageUrls];
           
           const docData = {
-            title: formData.title,
-            content: formData.content,
-            tags: formData.tags||[],
-            mood: formData.mood||'😊',
-            weather: formData.weather||'☀️',
-            isPrivate: !!formData.isPrivate,
-            isFavorite: !!formData.isFavorite,
+            title: formData.title, content: formData.content, tags: formData.tags||[],
+            mood: formData.mood||'😊', weather: formData.weather||'☀️',
+            isPrivate: !!formData.isPrivate, isFavorite: !!formData.isFavorite,
             images: finalImages,
             createdAt: formData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-
-            // [✅ 新增] 地點資訊完整寫入
             location: formData.location || '',
             locationCounty: formData.locationCounty || '',
             locationPlace: formData.locationPlace || '',
@@ -1408,7 +1253,6 @@
               alert('提醒已設定：'+when.toLocaleString('zh-TW'));
             } else { alert('提醒時間格式不正確，已忽略。'); }
           }
-
           if(user){
             const col = db.collection('users').doc(user.uid).collection('diaries');
             if(currentDiary){ await col.doc(currentDiary.id).set(docData, { merge:true }); }
@@ -1428,21 +1272,18 @@
           setUploading(false);
         }
       };
-
       const handleDeleteDiary = async (id)=>{
         if(!confirm('確定要刪除這篇日記嗎？')) return;
         if(user){ await db.collection('users').doc(user.uid).collection('diaries').doc(id).delete(); }
         else{ setDiaries(diaries.filter(d=>d.id!==id)); }
         if(currentDiary?.id===id) setCurrentDiary(null);
       };
-
       const handleEditDiary = (diary)=>{
         setCurrentDiary(diary);
         setFormData({ 
           ...diary, 
           remindAt:'',
           createdAt: diary.createdAt || new Date().toISOString(),
-          // [✅ 新增] 編輯時帶回地點資料
           location: diary.location || '',
           locationCounty: diary.locationCounty || '',
           locationPlace: diary.locationPlace || '',
@@ -1454,7 +1295,6 @@
         setShowNewDiary(true);
         setActiveView('list');
       };
-
       const toggleFavorite = async (id)=>{
         if(user){
           const doc = diaries.find(d=>d.id===id);
@@ -1464,14 +1304,12 @@
           setDiaries(diaries.map(d=>d.id===id?{...d,isFavorite:!d.isFavorite}:d));
         }
       };
-
       const resetForm = ()=>{
         setFormData({ 
           title:'',content:'',tags:[],mood:'😊',weather:'☀️',
           isPrivate:false,isFavorite:false,images:[], remindAt:'',
           createdAt: new Date().toISOString(),
           newImages: [],
-          // [✅ 新增] 清空地點資料
           location: '',
           locationCounty:'',
           locationPlace:'',
@@ -1482,7 +1320,6 @@
         setCurrentDiary(null);
         setShowNewDiary(false);
       };
-
       const handleTagToggle = (tag)=>{
         setFormData(prev=>({
           ...prev,
@@ -1498,7 +1335,6 @@
         const a = document.createElement('a');
         a.href=url; a.download=`diary_backup_${localDateKey(new Date())}.json`; a.click();
       };
-
       const importDiaries = async (file)=>{
         try{
           const text = await file.text();
@@ -1520,7 +1356,6 @@
                 images:d.images||[],
                 createdAt:d.createdAt||new Date().toISOString(),
                 updatedAt:new Date().toISOString(),
-                // [✅ 修改] 匯入時保留地點資訊
                 location: d.location || '',
                 locationCounty: d.locationCounty || '',
                 locationPlace: d.locationPlace || '',
@@ -1670,11 +1505,11 @@
         setDateFilter(today); 
         setCurrentDiary(null); 
         setShowNewDiary(false); 
-        setActiveView('list');
+        setActiveView('list'); // 確保切換回列表
       };
       const toggleFavoritesOnly = ()=> setFavoritesOnly(v=>!v);
 
-      // 主內容切換
+      // 根據 activeView 渲染主內容
       const renderMainContent = () => {
         switch (activeView) {
           case 'list':
@@ -1682,7 +1517,7 @@
               <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* 左欄：篩選 + 新增 + 清單 */}
-                <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto lg:col-span-1`}>
+                <div className={`lg:col-span-1 ${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto`}>
                   <div className="space-y-4">
                     <div className="relative">
                       <div className="absolute left-3 top-3"><Icon name="search" className="w-5 h-5 text-gray-400"/></div>
@@ -1740,10 +1575,10 @@
                             <p className="text-sm text-gray-500 mb-2">{dateText}</p>
                             {/* [✅ 顯示地點] */}
                             {d.location && (
-                                <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
-                                    <Icon name="map-pin" className="w-3 h-3"/>
-                                    <span className="truncate">{d.location}</span>
-                                </p>
+                              <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                                <Icon name="map-pin" className="w-3 h-3"/>
+                                <span className="truncate">{d.location}</span>
+                              </p>
                             )}
                             {d.isPrivate ? (
                               <div className="text-xs text-gray-500 italic flex items-center gap-1">
@@ -1797,32 +1632,17 @@
                           />
                         </div>
 
-                        {/* [✅ 修改] 地點選擇元件：使用 LocationPicker */}
+                        {/* [✅ 新增] 地點輸入框 */}
                         <div>
-                          <label className="block text-sm font-medium mb-1 text-gray-700">地點 (全球搜尋)</label>
-                          <LocationPicker
-                            county={formData.locationCounty}
-                            placeText={formData.locationPlace}
-                            darkMode={darkMode}
-                            onChange={({ county, placeText, location, placeId, lat, lng }) => {
-                              setFormData(prev => ({
-                                ...prev,
-                                location: location,
-                                locationCounty: county,
-                                locationPlace: placeText,
-                                locationPlaceId: placeId,
-                                locationLat: lat,
-                                locationLng: lng,
-                              }));
-                            }}
+                          <label className="block text-sm font-medium mb-1 text-gray-700">地點</label>
+                          <input
+                            type="text"
+                            placeholder="您在哪裡？ (選填)"
+                            value={formData.location}
+                            onChange={e => setFormData({...formData, location: e.target.value})}
+                            className={`w-full border rounded-lg p-2 ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}
                           />
-                          <div className="text-xs text-gray-500 mt-1">
-                            {formData.locationLat && formData.locationLng ? 
-                              `已鎖定座標：${formData.locationLat.toFixed(4)}, ${formData.locationLng.toFixed(4)}` : 
-                              '未鎖定座標 (可手動輸入)'}
-                          </div>
                         </div>
-
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
@@ -1853,7 +1673,7 @@
                           <div className="flex gap-2 flex-wrap">
                             {allTags.map(tag=>(
                               <button key={tag} type="button" onClick={()=>handleTagToggle(tag)}
-                                className={`px-3 py-1 rounded-full text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
+                                className={`px-3 py-1 rounded-lg text-sm transition ${formData.tags.includes(tag)?'primary-bg text-white':'bg-gray-200 hover:bg-gray-300'}`}>
                                 #{tag}
                               </button>
                             ))}
@@ -1864,7 +1684,6 @@
                           className={`w-full h-64 p-4 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none resize-none`}/>
                         <div className="text-sm text-gray-500">內容字數：{(formData.content||'').length}</div>
                         
-                        {/* 圖片上傳介面（原封不動） */}
                         <div className="space-y-2">
                           <label className="block text-sm font-medium">圖片上傳</label>
                           <div className="flex items-center gap-2">
@@ -1907,7 +1726,6 @@
                             <Icon name="heart"/><span>加入最愛</span>
                           </label>
                         </div>
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium mb-2">提醒時間（本地）</label>
@@ -1917,7 +1735,6 @@
                             <div className="text-xs text-gray-500 mt-1">到時會發出桌面通知（需保持瀏覽器開啟或定期檢查）。</div>
                           </div>
                         </div>
-
                         <button onClick={handleSaveDiary}
                           className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2"
                           disabled={uploading}
@@ -1969,12 +1786,13 @@
               </div>
             );
           
+          {/* [✅ 新增] 地圖視圖 */}
           case 'map':
             return (
               <div className="max-w-7xl mx-auto p-4">
                 <h2 className="text-3xl font-bold mb-4">🗺️ 地圖檢視</h2>
-                <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 h-[80vh] flex items-center justify-center`}>
-                  <p className="text-gray-500 text-lg">世界地圖功能開發中... 目前會在地圖開啟日記中的座標。</p>
+                <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 h-96 flex items-center justify-center`}>
+                  <p className="text-gray-500">(地圖功能開發中...)</p>
                 </div>
               </div>
             );
@@ -2002,14 +1820,14 @@
         }
       };
 
-      // DiaryApp render
+      // === DiaryApp 的主要渲染邏輯 ===
       return (
         <div className={`
           flex h-screen overflow-hidden
           ${darkMode ? 'bg-gray-900 text-white' : 'bg-transparent'}
         `}>
           
-          {/* 桌面版側邊欄 */}
+          {/* === 1. 桌面版側邊欄 (Desktop Sidebar) === */}
           <div className="hidden md:block w-64 flex-shrink-0 h-full">
             <SidebarContent 
               darkMode={darkMode} 
@@ -2020,7 +1838,7 @@
             />
           </div>
 
-          {/* 手機版側邊欄 */}
+          {/* === 2. 手機版側邊欄 (Mobile Sidebar) === */}
           {sidebarOpen && (
             <div className="fixed inset-0 flex z-50 md:hidden">
               <div className="w-64 h-full">
@@ -2039,7 +1857,7 @@
             </div>
           )}
 
-          {/* 主內容區 */}
+          {/* === 3. 主要內容區域 (Main Content) === */}
           <main className="flex-1 w-full h-screen overflow-y-auto">
 
             <div className={`${darkMode?'bg-gray-800':'bg-white'} shadow-lg sticky top-0 z-40`}>
@@ -2054,18 +1872,16 @@
                     <Icon name="menu" className="w-6 h-6" />
                   </button>
 
-                  <button
+                  <button 
                     onClick={() => {
                       setActiveView('list');
                       setDateFilter('');
                       setCurrentDiary(null);
                       setShowNewDiary(false);
                     }}
-                    className="flex items-center gap-2 text-2xl font-bold primary-text"
-                    title="回到首頁"
+                    className="text-2xl font-bold primary-text"
                   >
-                    <img src="./assets/img/journal-favicon.png" alt="logo" className="w-7 h-7 rounded" />
-                    <span>我的日記本</span>
+                    📔 我的日記本
                   </button>
                 </div>
 
@@ -2080,7 +1896,7 @@
                       ring-1 transition hover:scale-105
                       ${darkMode ? 'ring-white/20 hover:ring-white/30 bg-transparent text-white' : 'ring-black/10 hover:ring-black/20 bg-transparent text-gray-600'}`}
                   >
-                    <img src="./assets/img/settings-icon.png" alt="設定" className="w-6 h-6 object-contain" />
+                    <Icon name="gear" className="w-6 h-6"/>
                   </button>
                   <AuthBar user={user}/>
                 </div>
@@ -2161,7 +1977,6 @@
       }
       return <DiaryViewer currentDiary={currentDiary} onEdit={onEdit} onDelete={onDelete} toggleFavorite={toggleFavorite} />;
     };
-
     const DiaryViewer = ({ currentDiary, onEdit, onDelete, toggleFavorite }) => (
       <div className="space-y-6">
         <div className="flex items-start justify-between flex-wrap gap-4">
@@ -2174,21 +1989,10 @@
             <p className="text-sm text-gray-500">
               {(()=>{ const dt = toDate(currentDiary.createdAt); return dt ? dt.toLocaleString('zh-TW') : '—'; })()}
             </p>
-            {/* [✅ 修改] 顯示地點 + 地圖連結（如果有座標） */}
+            {/* [✅ 新增] 顯示地點 */}
             {currentDiary.location && (
-              <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                <Icon name="map-pin" className="w-4 h-4"/>
-                <span>{currentDiary.location}</span>
-                {(typeof currentDiary.locationLat === 'number' && typeof currentDiary.locationLng === 'number') && (
-                  <a
-                    className="underline text-blue-600"
-                    // [✅ 全球地圖連結] 連結到 Google Maps 的座標檢視
-                    href={`https://www.google.com/maps/search/?api=1&query=${currentDiary.locationLat},${currentDiary.locationLng}`}
-                    target="_blank" rel="noopener noreferrer"
-                  >
-                    在地圖開啟
-                  </a>
-                )}
+              <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                <Icon name="map-pin" className="w-4 h-4"/> {currentDiary.location}
               </p>
             )}
           </div>
