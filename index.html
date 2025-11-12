@@ -1179,24 +1179,59 @@ const ContactModal = ({ show, onClose }) => {
       );
     };
 
-    /* [✅ 修改] 地點選擇元件：縣市 + Google Places 自動完成（全球地圖） */
+    /* [✅ 修改] 地點選擇元件：縣市 + 手動輸入框 */
     const LocationPicker = ({ county, placeText, onChange, darkMode }) => {
-      const inputRef = React.useRef(null);
-      const autocompleteRef = React.useRef(null);
+      // 不再需要 useEffect, useRef, 也不用等 Google Maps
+      
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
+          {/* 縣市下拉 (保留) */}
+          <select
+            value={county || ''}
+            onChange={e => {
+              const nextCounty = e.target.value;
+              
+              // 選擇縣市時：更新縣市、清除地點文字、清除座標
+              onChange({
+                county: nextCounty,
+                placeText: '', // 清空地點
+                location: nextCounty, // 地點顯示為縣市
+                placeId: '',
+                lat: null,
+                lng: null
+              });
+            }}
+            className={`border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
+          >
+            <option value="">（全球/其他）</option>
+            {TAIWAN_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
 
-      React.useEffect(() => {
-        let destroyed = false;
-        
-        // 1. 設定 Places Autocomplete
-        waitForGoogleMaps().then(() => {
-          if (destroyed || !inputRef.current) return;
-          
-          const options = {
-            fields: ['place_id', 'name', 'geometry', 'formatted_address'],
-            // [✅ 關鍵修改] 預設不設 countryRestriction，讓使用者可以搜尋全世界。
-            // 如果選了縣市，就限制在台灣。
-            types: ['establishment', 'geocode'] // 讓結果包含地標和地址
-          };
+          {/* 純手動輸入框 */}
+          <input
+            placeholder="您在哪裡？（可手動輸入）"
+            value={placeText || ''} // Controlled component
+            onChange={(e) => {
+              const newPlaceText = e.target.value;
+              const finalLocationText = county
+                ? `${county} · ${newPlaceText}`
+                : newPlaceText;
+              
+              // 手動輸入時：更新地點文字、組合地點、清除座標
+              onChange({
+                county: county, // 保留現有的 county
+                placeText: newPlaceText,
+                location: finalLocationText,
+                placeId: '', // 手動輸入沒有 placeId
+                lat: null,   // 手動輸入沒有座標
+                lng: null
+              });
+            }}
+            className={`w-full border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
+          />
+        </div>
+      );
+    };
           
           if (county && TAIWAN_COUNTIES.includes(county)) {
              options.componentRestrictions = { country: 'tw' };
