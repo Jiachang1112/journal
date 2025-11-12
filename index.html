@@ -1179,52 +1179,76 @@ const ContactModal = ({ show, onClose }) => {
       );
     };
 
-    /* [✅ 簡化版] 地點選擇元件：左邊縣市下拉、右邊純手動輸入 */
-const LocationPicker = ({ county, placeText, onChange, darkMode }) => {
-  const buildLocation = (c, text) => (c ? `${c} · ${text||''}`.trim() : (text||'')).trim();
+    /* [✅ 修改] 地點選擇元件：縣市 + Google Places 自動完成（全球地圖） */
+    const LocationPicker = ({ county, placeText, onChange, darkMode }) => {
+      const inputRef = React.useRef(null);
+      const autocompleteRef = React.useRef(null);
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
-      {/* 縣市下拉（保留） */}
-      <select
-        value={county || ''}
-        onChange={(e) => {
-          const nextCounty = e.target.value;
-          onChange({
-            county: nextCounty,                 // 存縣市
-            placeText: placeText || '',         // 保留右邊輸入
-            location: buildLocation(nextCounty, placeText || ''),
-            placeId: '',                        // 不用 Places
-            lat: null,                          // 不存座標
-            lng: null
-          });
-        }}
-        className={`border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
-      >
-        <option value="">（全球）</option>
-        {TAIWAN_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
-      </select>
+      React.useEffect(() => {
+        let destroyed = false;
+        
+        // 1. 設定 Places Autocomplete
+        waitForGoogleMaps().then(() => {
+          if (destroyed || !inputRef.current) return;
+          
+          const options = {
+            fields: ['place_id', 'name', 'geometry', 'formatted_address'],
+            // [✅ 關鍵修改] 預設不設 countryRestriction，讓使用者可以搜尋全世界。
+            // 如果選了縣市，就限制在台灣。
+            types: ['establishment', 'geocode'] // 讓結果包含地標和地址
+          };
+          
+          if (county && TAIWAN_COUNTIES.includes(county)) {
+             options.componentRestrictions = { country: 'tw' };
+          }
 
-      {/* 右邊：純手動輸入 */}
-      <input
-        placeholder="請輸入地點（自由輸入文字）"
-        value={placeText || ''}
-        onChange={(e) => {
-          const text = e.target.value;
-          onChange({
-            county: county || '',
-            placeText: text,                    // 只存你打的文字
-            location: buildLocation(county, text),
-            placeId: '',
-            lat: null,
-            lng: null
+          const ac = new window.google.maps.places.Autocomplete(inputRef.current, options);
+          autocompleteRef.current = ac;
+          
+          ac.addListener('place_changed', () => {
+            const place = ac.getPlace();
+            
+            // 找出最適合的地點名稱（優先使用 place.name，如果沒有就用 formatted_address）
+            const selectedPlaceText = place.name || place.formatted_address || inputRef.current.value || '';
+            
+            // 嘗試從 address_components 中找出國家代碼，用來決定是否為台灣
+            let isTaiwan = (county && TAIWAN_COUNTIES.includes(county));
+            if (!isTaiwan && place.address_components) {
+                const countryComponent = place.address_components.find(c => c.types.includes('country'));
+                if (countryComponent && countryComponent.short_name === 'TW') {
+                    isTaiwan = true;
+                }
+            }
+
+            // 嘗試從 address_components 中找出縣市名稱 (如果使用者沒選)
+            let determinedCounty = county || '';
+            if (!determinedCounty && isTaiwan && place.address_components) {
+                const countyComponent = place.address_components.find(c => c.types.includes('administrative_area_level_1'));
+                if (countyComponent) {
+                    determinedCounty = countyComponent.long_name || '';
+                }
+            }
+
+            const lat = place.geometry?.location?.lat?.();
+            const lng = place.geometry?.location?.lng?.();
+
+            // 重新組合完整的 location 顯示文字
+            const finalLocationText = determinedCounty
+              ? `${determinedCounty} · ${selectedPlaceText}`.trim()
+              : selectedPlaceText;
+
+            onChange({
+              county: determinedCounty,
+              placeText: selectedPlaceText, // 這是 Places API 提供的名稱/地址
+              location: finalLocationText, // 這是給日記顯示的完整文字
+              placeId: place.place_id || '',
+              lat: (typeof lat === 'number' ? lat : null),
+              lng: (typeof lng === 'number' ? lng : null),
+            });
           });
-        }}
-        className={`w-full border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
-      />
-    </div>
-  );
-};
+        }).catch(() => {
+          // 忽略 Google Maps 載入失敗的錯誤，當作一般輸入框用
+        });
 
         // 2. 處理縣市變動，重設 Autocomplete 的 componentRestrictions
         if (autocompleteRef.current) {
