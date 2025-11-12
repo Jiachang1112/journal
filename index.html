@@ -1159,6 +1159,11 @@ const ContactModal = ({ show, onClose }) => {
             {/* [✅ 新增地圖導覽項目] */}
             <NavItem icon="map-pin" text="地圖" viewName="map" />
 
+            {/* 新增這一段：建立 */}
+               <LabelHeader title="建立" />
+               <NavItem icon="plus" text="新增日記" viewName="compose" />
+
+
             <LabelHeader title="時間" />
             <NavItem icon="sun" text="早上" viewName="morning" />
             <NavItem icon="sun" text="下午" viewName="afternoon" />
@@ -1346,6 +1351,18 @@ const ContactModal = ({ show, onClose }) => {
 
       const [sidebarOpen, setSidebarOpen] = useState(false);
       const [activeView, setActiveView] = useState('list');
+      // 新增日記功能（側欄開啟）
+useEffect(() => {
+  if (activeView === 'compose') {
+    if (!showNewDiary) {
+      resetForm();          // 清空表單
+      setShowNewDiary(true);
+      setCurrentDiary(null);
+    }
+    setActiveView('list');   // 回到列表畫面（右邊顯示編輯器）
+  }
+}, [activeView]);
+
       // 聯絡表單 Modal 的開關
 const [showContact, setShowContact] = useState(false);
 
@@ -1798,10 +1815,13 @@ useEffect(() => {
                       <div className="text-sm mb-2 text-gray-500">標籤雲（點擊篩選）</div>
                       <TagCloud diaries={diaries} activeTag={selectedTag} onToggle={(t)=> setSelectedTag(selectedTag===t?'':t) } />
                     </div>
-                    <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
-                      className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
-                      <Icon name="plus"/> 新增日記
-                    </button>
+                    <button
+  onClick={() => setActiveView('compose')}
+  className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2"
+>
+  <Icon name="plus" /> 新增日記
+</button>
+
                     <div className="space-y-3">
                       {filteredDiaries.length===0 ? (
                         <div className="text-center py-8 text-gray-400"><p>還沒有日記，快來寫一篇吧！</p></div>
