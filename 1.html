@@ -1,15 +1,9 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>我的日記本 📔</title>
-
-  <!-- Favicon（修正路徑 + 版本號換成 v=3 逼瀏覽器更新） -->
-<link rel="icon" href="./assets/img/journal-favicon.png?v=3" type="image/png" sizes="32x32">
-<link rel="shortcut icon" href="./assets/img/journal-favicon.png?v=3" type="image/png">
-<link rel="apple-touch-icon" href="./assets/img/journal-favicon.png?v=3">
-
 
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -23,7 +17,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 
-  <!-- [✅ 新增] Google Maps Places API（請換成你自己的 key） -->
   <script
     async
     defer
@@ -69,7 +62,7 @@
     const storage = firebase.storage();
 
     /* =========================
-       工具
+       工具 (SVG 圖示庫 - 解決破圖問題)
     ==========================*/
     const Icon = ({ name, className="w-5 h-5", fill=false }) => {
       const P = {
@@ -89,7 +82,8 @@
         import:"M12 5v10m0 0l-4-4m4 4l4-4M5 19h14",
         bell:"M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-9.33-4.93M13 21a2 2 0 01-4 0",
         image:"M3 19a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-6l-2-2H5a2 2 0 01-2 2v14zm3-3l4-4 3 3 4-4 2 2v4H6z",
-        gear:"M13.8,12c0,1-0.8,1.8-1.8,1.8s-1.8-0.8-1.8-1.8s0.8-1.8,1.8-1.8S13.8,11,13.8,12z M19.4,12c0-0.4-0.3-0.8-0.8-0.8h-2.1 c-0.2-0.6-0.5-1.2-0.9-1.7l1.5-1.5c0.3-0.3,0.3-0.8,0-1.1l-1.2-1.2c-0.3-0.3-0.8-0.3-1.1,0l-1.5,1.5c-0.5-0.4-1.1-0.7-1.7-0.9v-2.1 c0-0.4-0.3-0.8-0.8-0.8h-1.8c-0.4,0-0.8,0.3-0.8,0.8v2.1c-0.6,0.2-1.2,0.5-1.7,0.9l-1.5-1.5c-0.3-0.3-0.8-0.3-1.1,0l-1.2,1.2 c-0.3,0.3-0.8,0.3-1.1,0l-1.5-1.5c-0.4,0.5-0.7,1.1-0.9,1.7H5.4c-0.4,0-0.8,0.3-0.8,0.8v1.8c0,0.4,0.3,0.8,0.8,0.8h2.1 c0.2,0.6,0.5,1.2,0.9,1.7l-1.5,1.5c-0.3,0.3-0.3,0.8,0,1.1l1.2,1.2c0.3,0.3,0.8,0.3,1.1,0l1.5-1.5c0.5,0.4,1.1,0.7,1.7,0.9v2.1 c0,0.4,0.3,0.8,0.8,0.8h1.8c0.4,0,0.8-0.3,0.8-0.8v-2.1c0.6-0.2,1.2-0.5,1.7-0.9l1.5,1.5c0.3,0.3,0.8,0.3,1.1,0l1.2-1.2 c0.3-0.3,0.3-0.8,0,1.1l-1.5-1.5c0.4-0.5,0.7-1.1,0.9-1.7h2.1c0.4,0,0.8-0.3,0.8-0.8V12z",
+        // [✅ 修復] 內建精緻齒輪 (設定)
+        gear:"M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm9 3.5a7.95 7.95 0 01-.22 1.8l2.06 1.6-2 3.46-2.46-1a8.1 8.1 0 01-3.1 1.8l-.36 2.6h-4l-.36-2.6a8.1 8.1 0 01-3.1-1.8l-2.46 1-2-3.46 2.06-1.6c.15.57.22 1.17.22 1.8z",
         star:"M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
         trophy:"M17 3h4v2a5 5 0 01-5 5h-1a6 6 0 11-12 0V3h4",
         menu: "M3 12h18M3 6h18M3 18h18",
@@ -98,13 +92,15 @@
         scissors: "M6 6a2 2 0 0 1 4 0v4L6 14V6zm12 0a2 2 0 0 0-4 0v4l4 4V6zM8 8H4M16 8h4M8 12l-4 4 4 4M16 12l4 4-4 4",
         share: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13",
         chart:"M12 20V10M18 20V4M6 20v-4",
-        // [✅ 已有] 地圖圖示
-        "map-pin": "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
+        "map-pin": "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+        mail: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM20 6l-8 5-8-5M4 18h16V8l-8 5-8-5v10z",
+        // [✅ 修復] 內建日記本 (Logo)
+        book: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
       };
       return React.createElement('svg', {
         className,
-        fill: name === 'gear' ? 'currentColor' : (fill ? 'currentColor' : 'none'),
-        stroke: name === 'gear' ? 'none' : (fill ? 'none' : 'currentColor'),
+        fill: name === 'gear' || fill ? 'currentColor' : 'none',
+        stroke: name === 'gear' || fill ? 'none' : 'currentColor',
         strokeWidth: name === 'gear' ? '0' : '2',
         strokeLinecap:'round', strokeLinejoin:'round', viewBox:'0 0 24 24'
       }, React.createElement('path',{ d: P[name] }));
@@ -113,16 +109,8 @@
     const moods = ['😊','😢','😡','😰','😍','🤔','😴','🎉'];
     const weathers = ['☀️','⛅','☁️','🌧️','⛈️','🌈','❄️','🌙'];
     const allTags = ['生活','工作','旅遊','學習','健康','人際關係','興趣'];
+    const TAIWAN_COUNTIES = ['臺北市','新北市','桃園市','臺中市','臺南市','高雄市','基隆市','新竹市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義市','嘉義縣','屏東縣','宜蘭縣','花蓮縣','臺東縣','澎湖縣','金門縣','連江縣'];
 
-    /* [✅ 新增] 台灣縣市清單 */
-    const TAIWAN_COUNTIES = [
-      '臺北市','新北市','桃園市','臺中市','臺南市','高雄市',
-      '基隆市','新竹市','新竹縣','苗栗縣','彰化縣','南投縣',
-      '雲林縣','嘉義市','嘉義縣','屏東縣','宜蘭縣','花蓮縣',
-      '臺東縣','澎湖縣','金門縣','連江縣'
-    ];
-
-    /* [✅ 新增] 等待 Google Maps 讀取 Places Library */
     function waitForGoogleMaps(maxWait = 8000) {
       return new Promise((resolve, reject) => {
         if (window.google?.maps?.places) return resolve(window.google);
@@ -139,7 +127,7 @@
       });
     }
 
-    /* 日期工具 (原封不動) */
+    /* 日期工具 */
     const toDate = (val) => {
       try {
         if (!val) return null;
@@ -158,8 +146,6 @@
       const day = String(d.getDate()).padStart(2,'0');
       return `${y}-${m}-${day}`;
     };
-
-    // 日期格式化工具
     const toDateTimeLocal = (isoString) => {
       if (!isoString) return '';
       try {
@@ -168,28 +154,19 @@
         const tzoffset = (new Date()).getTimezoneOffset() * 60000;
         const localISOTime = (new Date(date.getTime() - tzoffset)).toISOString().slice(0, 16);
         return localISOTime;
-      } catch (e) {
-        return '';
-      }
+      } catch (e) { return ''; }
     };
 
-    /* SHA-256 (原封不動) */
     async function sha256Hex(text){
       try{
-        // 移除不再需要的座標欄位
-    delete formData.locationLat;
-    delete formData.locationLng;
         const enc = new TextEncoder().encode(text);
         const buf = await crypto.subtle.digest('SHA-256', enc);
         return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-      }catch(e){
-        return `plain:${text}`;
-      }
+      }catch(e){ return `plain:${text}`; }
     }
     
-    {/* Firebase Storage 圖片上傳工具 (原封不動) */}
     const uploadFileToStorage = async (file, userId) => {
-      if (!userId) { throw new Error("User not authenticated for upload."); }
+      if (!userId) throw new Error("User not authenticated for upload.");
       const storageRef = storage.ref();
       const fileExtension = file.name.split('.').pop();
       const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
@@ -198,8 +175,6 @@
       return snapshot.ref.getDownloadURL();
     };
 
-
-    /* Streak (原封不動) */
     function calcStreak(diaries){
       const set = new Set();
       diaries.forEach(d=>{
@@ -207,7 +182,6 @@
         set.add(localDateKey(dt));
       });
       if(set.size===0) return { streak:0, best:0, hasToday:false };
-
       const keys = Array.from(set).sort();
       let best = 1, cur = 1;
       for(let i=1;i<keys.length;i++){
@@ -217,27 +191,23 @@
         if(diff===1){ cur++; best=Math.max(best,cur); }
         else if(diff>1){ cur=1; }
       }
-
       const todayKey = localDateKey(new Date());
       const hasToday = set.has(todayKey);
       let streak = 0; let probe = new Date();
       while(set.has(localDateKey(probe))){ streak++; probe.setDate(probe.getDate()-1); }
-
       return { streak, best, hasToday };
     }
+
     const StreakBadge = ({ diaries }) => {
       const { streak, best, hasToday } = useMemo(()=>calcStreak(diaries), [diaries]);
       const daySet = useMemo(()=>{
         const s = new Set();
-        diaries.forEach(d=>{
-          const dt = toDate(d.createdAt);
-          if (dt) s.add(localDateKey(dt));
-        });
+        diaries.forEach(d=>{ const dt = toDate(d.createdAt); if (dt) s.add(localDateKey(dt)); });
         return s;
       }, [diaries]);
       const week = useMemo(()=>{
         const today = new Date();
-        const offset = (today.getDay()+6)%7;
+        const offset = (today.getDay()+6)%7; 
         const monday = new Date(today);
         monday.setDate(today.getDate() - offset);
         const days = [];
@@ -295,7 +265,7 @@
       );
     };
 
-    /* 登入元件 (AuthBar) [原封不動於功能，只是保留我們已有修改] */
+    /* AuthBar */
     const AuthBar = ({ user }) => {
       const [show, setShow] = useState(false);
       const [isSignup, setIsSignup] = useState(false);
@@ -314,15 +284,10 @@
       const submit = async () => {
         try{
           if(isSignup){
-            if (!displayName.trim()) {
-              alert('請輸入你的名字');
-              return;
-            }
+            if (!displayName.trim()) { alert('請輸入你的名字'); return; }
             const userCredential = await auth.createUserWithEmailAndPassword(email, password);
             if (userCredential.user) {
-              await userCredential.user.updateProfile({
-                displayName: displayName.trim()
-              });
+              await userCredential.user.updateProfile({ displayName: displayName.trim() });
             }
           } else {
             await auth.signInWithEmailAndPassword(email, password);
@@ -382,7 +347,6 @@
       );
     };
 
-    /* 提醒服務 (原封不動) */
     const ReminderService = {
       key: 'diary_reminders_v2',
       load(){ try{ return JSON.parse(localStorage.getItem(this.key)||'[]'); }catch{ return [] } },
@@ -416,7 +380,6 @@
       }
     };
 
-    /* Tag Cloud (原封不動) */
     const TagCloud = ({ diaries, activeTag, onToggle }) => {
       const map = {}; diaries.forEach(d => (d.tags||[]).forEach(t => map[t]=(map[t]||0)+1));
       const entries = Object.entries(map).sort((a,b)=>b[1]-a[1]);
@@ -438,7 +401,6 @@
       );
     };
     
-    // CalendarView (原封不動)
     const CalendarView = ({ diaries, onPickDate }) => {
       const [cur, setCur] = useState(new Date());
       const y = cur.getFullYear(), m = cur.getMonth();
@@ -471,9 +433,7 @@
               if(!d) return <div key={i} className="h-20"></div>;
               const key = localDateKey(d);
               const count = hasMap[key]||0;
-              
               const btnClasses = 'h-20 rounded-xl text-sm';
-
               return (
                 <button key={i}
                   onClick={()=>onPickDate(key)}
@@ -503,8 +463,7 @@
       const dailyRef = useRef(null);
       const moodChart  = useRef(null);
       const dailyChart = useRef(null);
-      const getPrimary = () =>
-        getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#7c3aed';
+      const getPrimary = () => getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#7c3aed';
       const rgba = (hex, a=1)=>{
         const h = hex.replace('#','');
         const bigint = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h,16);
@@ -521,28 +480,12 @@
         const map = {};
         diaries.forEach(d=>{
           const dt = toDate(d.createdAt);
-          if (dt) {
-            const k = localDateKey(dt);
-            map[k] = (map[k]||0)+1;
-          }
+          if (dt) { const k = localDateKey(dt); map[k] = (map[k]||0)+1; }
         });
         const keys = Object.keys(map).sort();
         return { labels: keys, data: keys.map(k=>map[k]) };
       }, [diaries]);
-      const centerTextPlugin = {
-        id: 'centerText',
-        afterDraw(chart, args, opts){
-          const {ctx, chartArea:{width,height}} = chart;
-          if(!opts?.text) return;
-          ctx.save();
-          ctx.font = `600 ${opts.fontSize||20}px system-ui, -apple-system`;
-          ctx.fillStyle = opts.color||'#111';
-          ctx.textAlign='center';
-          ctx.textBaseline='middle';
-          ctx.fillText(opts.text, width/2, height/2);
-          ctx.restore();
-        }
-      };
+      
       useEffect(()=>{
         moodChart.current?.destroy();
         dailyChart.current?.destroy();
@@ -558,270 +501,84 @@
           data:{
             labels: Object.keys(moodCounts),
             datasets:[{
-              data: moodData,
-              backgroundColor: donutColors.slice(0, moodData.length),
-              borderWidth: 0,
-              hoverOffset: 8,
-              spacing: 2
+              data: moodData, backgroundColor: donutColors.slice(0, moodData.length),
+              borderWidth: 0, hoverOffset: 8, spacing: 2
             }]
           },
-          options:{
-            cutout: '65%',
-            plugins:{
-              legend:{ display:false },
-              tooltip:{
-                backgroundColor: rgba('#111827', .9),
-                titleColor:'#fff', bodyColor:'#fff',
-                padding:12, cornerRadius:10,
-                callbacks:{
-                  label(ctx){
-                    const v = ctx.parsed;
-                    const p = total? Math.round(v/total*100):0;
-                    return `  ${v} 篇（${p}%）`;
-                  }
-                }
-              }
-            },
-            animation:{ duration:800, easing:'easeOutQuart' }
-          },
-          plugins:[centerTextPlugin],
+          options:{ cutout: '65%', plugins:{ legend:{ display:false } } }
         });
-        moodChart.current.options.plugins.centerText = {
-          text: total ? `共 ${total} 篇` : '尚無資料',
-          color: darkMode? '#e5e7eb':'#374151',
-          fontSize: 16
-        };
-        moodChart.current.update();
-        const labels = dailyCounts.labels.map(s=>{
-          const [y,m,d] = s.split('-');
-          return `${m}/${d}`;
-        });
-        const gridColor = darkMode? rgba('#ffffff', .1) : rgba('#000000', .06);
+        const labels = dailyCounts.labels.map(s=>{ const [y,m,d] = s.split('-'); return `${m}/${d}`; });
         dailyChart.current = new Chart(dailyRef.current, {
           type:'bar',
           data:{
             labels,
             datasets:[{
-              label:'每日篇數',
-              data: dailyCounts.data,
-              backgroundColor: rgba(primary, .35),
-              borderColor: rgba(primary, .9),
-              borderWidth: 1.5,
-              borderRadius: 8,
-              barPercentage: .6,
-              categoryPercentage: .7
+              label:'每日篇數', data: dailyCounts.data,
+              backgroundColor: rgba(primary, .35), borderColor: rgba(primary, .9),
+              borderWidth: 1.5, borderRadius: 8
             }]
           },
           options:{
             maintainAspectRatio: false,
-            scales:{
-              x:{
-                grid:{ display:false },
-                ticks:{
-                  color: darkMode?'#fff':'#111',
-                  maxRotation: 0,
-                  autoSkip: true
-                }
-              },
-              y:{
-                beginAtZero:true,
-                grid:{ color: gridColor, drawBorder:false },
-                ticks:{ color: darkMode?'#fff':'#111', stepSize: 1 }
-              }
-            },
-            plugins:{
-              legend:{ display:false },
-              tooltip:{
-                backgroundColor: rgba('#111827', .9),
-                titleColor:'#fff', bodyColor:'#fff',
-                padding:12, cornerRadius:10
-              }
-            },
-            layout:{ padding: { top: 6, right: 10, left: 6, bottom: 0 } },
-            animation:{ duration:700, easing:'easeOutCubic' }
+            scales:{ x:{ grid:{ display:false } }, y:{ beginAtZero:true } },
+            plugins:{ legend:{ display:false } }
           }
         });
         return ()=>{ moodChart.current?.destroy(); dailyChart.current?.destroy(); }
       }, [moodCounts, dailyCounts, darkMode]);
+
       const total = diaries.length || 0;
       const happy = moodCounts['😊']||0;
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
             <h4 className="font-bold mb-2">心情分佈</h4>
-            <div style={{height: 320}}>
-              <canvas ref={moodRef}></canvas>
-            </div>
+            <div style={{height: 320}}><canvas ref={moodRef}></canvas></div>
             <div className="mt-3 text-sm text-gray-500">共 {total} 篇，😊 {happy} 篇</div>
           </div>
           <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow p-4`}>
             <h4 className="font-bold mb-2">每日篇數</h4>
-            <div style={{height: 320}}>
-              <canvas ref={dailyRef}></canvas>
-            </div>
+            <div style={{height: 320}}><canvas ref={dailyRef}></canvas></div>
           </div>
         </div>
       );
     };
 
-    /* 金額折抵工具 (原封不動) */
-    const prices = { monthly: 150, yearly: 1500 };
-    function priceAfterDiscount(price, coupon){
-      if(!coupon) return price;
-      const off = Math.max(0, Number(coupon.discountAmount||0));
-      return Math.max(0, price - off);
-    }
-
-    /* Premium Modal (原封不動) */
-    const PremiumModal = ({
-      open, onClose, onApplyCoupon, onClearCoupon, onPurchase,
-      membership, user, appliedCoupon, selectedPlan, setSelectedPlan
-    }) => {
-      const [code, setCode] = useState('');
-      if(!open) return null;
-      const expiresText = (() => {
-        const dt = toDate(membership?.expiresAt);
-        return dt ? dt.toLocaleDateString('zh-TW') : null;
-      })();
-
-      const basePrice = selectedPlan==='yearly' ? prices.yearly : prices.monthly;
-      const due = priceAfterDiscount(basePrice, appliedCoupon);
-      const off = Math.max(0, basePrice - due);
-
-      return (
-        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="p-4 border-b flex items-center justify-between">
-              <div className="font-bold text-lg">Get Premium</div>
-              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
-            </div>
-            <div className="p-5 space-y-5">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={()=>setSelectedPlan('monthly')}
-                  className={`rounded-xl border p-4 text-left ${selectedPlan==='monthly'?'border-2 primary-border bg-purple-50':''}`}
-                >
-                  <div className="text-xl font-bold mb-1">月費</div>
-                  <div className="text-3xl font-extrabold mb-2 primary-text">NT$ {prices.monthly}</div>
-                  <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-                    <li>雲端備份</li><li>圖片上傳</li><li>更多統計</li>
-                  </ul>
-                </button>
-                <button
-                  onClick={()=>setSelectedPlan('yearly')}
-                  className={`rounded-xl border p-4 text-left ${selectedPlan==='yearly'?'border-2 primary-border bg-purple-50':''}`}
-                >
-                  <div className="text-xl font-bold mb-1">年費</div>
-                  <div className="text-3xl font-extrabold mb-2 primary-text">NT$ {prices.yearly}</div>
-                  <ul className="list-disc pl-5 text-sm text-gray-600 space-y-1">
-                    <li>功能同月費</li><li>更划算（12 個月）</li>
-                  </ul>
-                </button>
-              </div>
-              <div className="rounded-xl border p-4">
-                <div className="font-semibold mb-2">優惠券</div>
-                <div className="flex gap-2">
-                  <input value={code} onChange={e=>setCode(e.target.value)} placeholder="輸入優惠券代碼"
-                         className="flex-1 border rounded-lg p-2"/>
-                  <button onClick={()=>onApplyCoupon(code)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用</button>
-                  {appliedCoupon && (
-                    <button onClick={onClearCoupon} className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-red-600">清除</button>
-                  )}
-                </div>
-                {appliedCoupon && (
-                  <div className="text-sm text-green-700 mt-2">
-                    已套用：<span className="font-semibold">{appliedCoupon.code}</span> · 折抵金額 NT$ {Number(appliedCoupon.discountAmount||0)}
-                  </div>
-                )}
-              </div>
-              <div className="rounded-xl border p-4 bg-gray-50">
-                <div className="flex items-center justify-between text-sm">
-                  <span>方案原價</span><span>NT$ {basePrice}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span>折抵</span><span className={`${off>0?'text-green-700':''}`}>-{off}</span>
-                </div>
-                <div className="mt-2 border-t pt-2 flex items-center justify-between font-bold text-lg">
-                  <span>應付金額</span><span className="primary-text">NT$ {due}</span>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600">
-                目前等級：<span className="font-semibold">{membership?.tier || 'free'}</span>
-                {expiresText && <> · 到期：<span className="font-semibold">{expiresText}</span></>}
-                {!user && <div className="text-red-600 mt-1">請先登入以完成升級</div>}
-              </div>
-              <button
-                onClick={()=>onPurchase(selectedPlan, appliedCoupon, basePrice, due)}
-                className="w-full primary-bg text-white rounded-lg py-3"
-              >
-                立即升級（應付 NT$ {due}）
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    };
-
-    /* 設定面板 (原封不動) */
+    /* SettingsPanel */
     const SettingsPanel = ({
-      open, onClose,
-      exportDiaries, importDiaries,
-      themeColor, setThemeColor,
-      reminders, onAddReminder, onRemoveReminder,
-      profile, isAdmin, onCreateCoupon, onApplyCoupon,
-      membership, onSetMembershipTier,
-      onBackupToStorage, onRestoreFromStorage,
-      todayShortcut, toggleFavoritesOnly, favoritesOnly,
-      darkMode, setDarkMode, user
+      open, onClose, exportDiaries, importDiaries, themeColor, setThemeColor,
+      reminders, onAddReminder, onRemoveReminder, profile, isAdmin, onCreateCoupon, onApplyCoupon,
+      membership, onSetMembershipTier, onBackupToStorage, onRestoreFromStorage,
+      todayShortcut, toggleFavoritesOnly, favoritesOnly, darkMode, setDarkMode, user
     })=>{
       const [title,setTitle] = useState('');
       const [when,setWhen]   = useState('');
       const [freq,setFreq]   = useState('ONCE');
       const [couponCode,setCouponCode] = useState('');
-      const [newCoupon, setNewCoupon]  = useState({
-        code:'', months:1, active:true, discountAmount: 0
-      });
+      const [newCoupon, setNewCoupon]  = useState({ code:'', months:1, active:true, discountAmount: 0 });
       const [privPwdInput, setPrivPwdInput] = useState('');
       const [privPwdVisible, setPrivPwdVisible] = useState(false);
+      const [activeTab, setActiveTab] = useState('personal');
       useEffect(()=>{ setPrivPwdInput(''); }, [open]);
       
-      const [activeTab, setActiveTab] = useState('personal');
-
       if(!open) return null;
-      const membershipExpireText = (() => {
-        const dt = toDate(membership?.expiresAt);
-        return dt ? dt.toLocaleDateString('zh-TW') : '—';
-      })();
-      const currentHashed = profile?.privatePasswordHash || localStorage.getItem('privatePasswordHash') || '';
+
       const savePrivatePwd = async ()=>{
         if(!privPwdInput){ alert('請先輸入密碼'); return; }
         const hashed = await sha256Hex(privPwdInput);
-        if(user){
-          await db.collection('users').doc(user.uid).set({ privatePasswordHash: hashed }, { merge:true });
-        }else{
-          localStorage.setItem('privatePasswordHash', hashed);
-        }
-        alert('私密日記密碼已設定 ✅');
-        setPrivPwdInput('');
+        if(user){ await db.collection('users').doc(user.uid).set({ privatePasswordHash: hashed }, { merge:true }); }
+        else{ localStorage.setItem('privatePasswordHash', hashed); }
+        alert('私密日記密碼已設定 ✅'); setPrivPwdInput('');
       };
       const clearPrivatePwd = async ()=>{
-        if(user){
-          await db.collection('users').doc(user.uid).set({ privatePasswordHash: firebase.firestore.FieldValue.delete() }, { merge:true });
-        }else{
-          localStorage.removeItem('privatePasswordHash');
-        }
+        if(user){ await db.collection('users').doc(user.uid).set({ privatePasswordHash: firebase.firestore.FieldValue.delete() }, { merge:true }); }
+        else{ localStorage.removeItem('privatePasswordHash'); }
         alert('已清除私密日記密碼'); setPrivPwdInput('');
       };
 
       const TabButton = ({ tab, label }) => (
-        <button
-          onClick={() => setActiveTab(tab)}
-          className={`px-4 py-2 font-medium rounded-lg transition ${
-            activeTab === tab
-              ? 'primary-bg text-white shadow-md'
-              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-          }`}
-        >
+        <button onClick={() => setActiveTab(tab)}
+          className={`px-4 py-2 font-medium rounded-lg transition ${activeTab === tab ? 'primary-bg text-white shadow-md' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}>
           {label}
         </button>
       );
@@ -833,103 +590,42 @@
               <div className="font-bold text-lg">設定面板</div>
               <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="x"/></button>
             </div>
-
             <div className="p-4 border-b flex gap-3">
               <TabButton tab="personal" label="個人"/>
               <TabButton tab="general" label="通用"/>
             </div>
-
             <div className="p-4 space-y-8">
               {activeTab === 'personal' && (
                 <div className="space-y-8">
                   <section>
                     <h3 className="font-semibold mb-2">付費會員</h3>
-                    <div className="text-sm text-gray-600 mb-2">
-                      目前身分：<span className="font-semibold">{profile?.role || 'user'}</span> |
-                      會員等級：<span className="font-semibold">{membership?.tier || 'free'}</span>（到期：{membershipExpireText}）
-                    </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <button onClick={()=>onSetMembershipTier('free')} className="px-2 py-1 rounded border">Free</button>
-                      <button onClick={()=>onSetMembershipTier('pro')}  className="px-2 py-1 rounded border">Pro（示範）</button>
-                      <button onClick={()=>onSetMembershipTier('vip')}  className="px-2 py-1 rounded border">VIP（示範）</button>
+                      <button onClick={()=>onSetMembershipTier('pro')}  className="px-2 py-1 rounded border">Pro</button>
+                      <button onClick={()=>onSetMembershipTier('vip')}  className="px-2 py-1 rounded border">VIP</button>
                     </div>
                     <div className="mt-3 grid sm:grid-cols-2 gap-2">
                       <input value={couponCode} onChange={e=>setCouponCode(e.target.value)} className="border rounded-lg p-2" placeholder="輸入優惠券代碼"/>
-                      <button onClick={()=>onApplyCoupon(couponCode)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用優惠券</button>
+                      <button onClick={()=>onApplyCoupon(couponCode)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">套用</button>
                     </div>
-                    {isAdmin && (
-                      <div className="mt-4 border-t pt-4">
-                        <div className="text-sm text-gray-600 mb-2">（管理員）建立優惠券</div>
-                        <div className="grid sm:grid-cols-4 gap-2">
-                          <input value={newCoupon.code} onChange={e=>setNewCoupon({...newCoupon, code:e.target.value})} className="border rounded-lg p-2" placeholder="代碼，如 OFF200"/>
-                          <input type="number" min="0" value={newCoupon.discountAmount} onChange={e=>setNewCoupon({...newCoupon, discountAmount: parseInt(e.target.value||'0')})} className="border rounded-lg p-2" placeholder="折抵金額（NT$）"/>
-                          <input type="number" min="1" value={newCoupon.months} onChange={e=>setNewCoupon({...newCoupon, months:parseInt(e.target.value||'1')})} className="border rounded-lg p-2" placeholder="延長月數（可留空）"/>
-                          <select value={String(newCoupon.active)} onChange={e=>setNewCoupon({...newCoupon, active:(e.target.value==='true')})} className="border rounded-lg p-2">
-                            <option value="true">啟用</option>
-                            <option value="false">停用</option>
-                          </select>
-                        </div>
-                        <button onClick={()=>onCreateCoupon(newCoupon)} className="mt-2 px-3 py-2 rounded-lg border hover:bg-gray-50">建立 / 更新</button>
-                        <div className="text-xs text-gray-500 mt-1">
-                          欄位：code、discountAmount（優先套用）、months（可選）、active<br/>
-                          路徑：Firestore /coupons/{'{code}'}
-                        </div>
-                      </div>
-                    )}
                   </section>
                   <section>
                     <h3 className="font-semibold mb-2">私密日記密碼</h3>
-                    <p className="text-sm text-gray-500 mb-2">設定後，開啟 <span class="font-semibold">私密日記</span> 會先要求輸入密碼。</p>
                     <div className="flex items-center gap-2">
-                      <input
-                        type={privPwdVisible ? 'text' : 'password'}
-                        value={privPwdInput}
-                        onChange={e=>setPrivPwdInput(e.target.value)}
-                        className="flex-1 border rounded-lg p-2"
-                        placeholder="輸入新密碼"
-                      />
-                      <button onClick={()=>setPrivPwdVisible(v=>!v)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">
-                        {privPwdVisible?'隱藏':'顯示'}
-                      </button>
+                      <input type={privPwdVisible ? 'text' : 'password'} value={privPwdInput} onChange={e=>setPrivPwdInput(e.target.value)} className="flex-1 border rounded-lg p-2" placeholder="輸入新密碼"/>
+                      <button onClick={()=>setPrivPwdVisible(v=>!v)} className="px-3 py-2 rounded-lg border hover:bg-gray-50">{privPwdVisible?'隱藏':'顯示'}</button>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
-                      <button onClick={async()=>{
-                        if(!privPwdInput){ alert('請先輸入密碼'); return; }
-                        const hashed = await sha256Hex(privPwdInput);
-                        if(user){
-                          await db.collection('users').doc(user.uid).set({ privatePasswordHash: hashed }, { merge:true });
-                        }else{
-                          localStorage.setItem('privatePasswordHash', hashed);
-                        }
-                        alert('私密日記密碼已設定 ✅'); setPrivPwdInput('');
-                      }} className="px-3 py-2 rounded-lg primary-bg text-white">設定密碼</button>
-                      <button onClick={async()=>{
-                        if(user){
-                          await db.collection('users').doc(user.uid).set({ privatePasswordHash: firebase.firestore.FieldValue.delete() }, { merge:true });
-                        }else{
-                          localStorage.removeItem('privatePasswordHash');
-                        }
-                        alert('已清除私密日記密碼'); setPrivPwdInput('');
-                      }} className="px-3 py-2 rounded-lg border hover:bg-gray-50">清除密碼</button>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      目前狀態：{currentHashed ? <span class="text-green-600">已設定</span> : <span class="text-red-600">尚未設定</span>}
+                      <button onClick={savePrivatePwd} className="px-3 py-2 rounded-lg primary-bg text-white">設定密碼</button>
+                      <button onClick={clearPrivatePwd} className="px-3 py-2 rounded-lg border hover:bg-gray-50">清除密碼</button>
                     </div>
                   </section>
                 </div>
               )}
-              
               {activeTab === 'general' && (
                 <div className="space-y-8">
                   <section>
                     <h3 className="font-semibold mb-2">外觀</h3>
-                    <div className="flex items-center gap-3 mb-3">
-                      <label className="text-sm text-gray-500">主題色</label>
-                      <input type="color" value={themeColor} onChange={e=>setThemeColor(e.target.value)} />
-                      <button onClick={()=>setThemeColor('#7c3aed')} className="px-2 py-1 rounded bg-gray-100">預設紫</button>
-                      <button onClick={()=>setThemeColor('#0ea5e9')} className="px-2 py-1 rounded bg-gray-100">藍</button>
-                      <button onClick={()=>setThemeColor('#f97316')} className="px-2 py-1 rounded bg-gray-100">橘</button>
-                    </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-gray-500">深色模式</span>
                       <label className="switch">
@@ -941,64 +637,14 @@
                   <section>
                     <h3 className="font-semibold mb-2">資料匯入 / 匯出</h3>
                     <div className="flex flex-wrap items-center gap-3">
-                      <button onClick={exportDiaries} className="px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
-                        <Icon name="download"/><span>匯出 JSON</span>
-                      </button>
+                      <button onClick={exportDiaries} className="px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2"><Icon name="download"/><span>匯出 JSON</span></button>
                       <label className="px-3 py-2 rounded-lg border hover:bg-gray-50 cursor-pointer flex items-center gap-2">
                         <Icon name="import"/><span>匯入 JSON</span>
                         <input type="file" accept="application/json" className="hidden" onChange={e=>e.target.files[0]&&importDiaries(e.target.files[0])}/>
                       </label>
-                      <button onClick={onBackupToStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50">備份到 Firebase Storage</button>
+                      <button onClick={onBackupToStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50">備份到 Storage</button>
                       <button onClick={onRestoreFromStorage} className="px-3 py-2 rounded-lg border hover:bg-gray-50">從 Storage 還原</button>
                     </div>
-                  </section>
-                  <section>
-                    <h3 className="font-semibold mb-2">提醒</h3>
-                    <div className="grid sm:grid-cols-2 gap-3 items-end">
-                      <input value={title} onChange={e=>setTitle(e.target.value)} className="border rounded-lg p-2" placeholder="提醒內容，如：晚上 9 點寫日記"/>
-                      <div className="flex items-center gap-2">
-                        <input type="datetime-local" value={when} onChange={e=>setWhen(e.target.value)} className="border rounded-lg p-2"/>
-                        <select value={freq} onChange={e=>setFreq(e.target.value)} className="border rounded-lg p-2">
-                          <option value="ONCE">一次</option>
-                          <option value="DAILY">每天</option>
-                          <option value="WEEKLY">每週</option>
-                        </select>
-                      </div>
-                      <button onClick={()=>{
-                        if(!when){alert('請選擇時間');return;}
-                        onAddReminder({title, when, freq}); setTitle(''); setWhen(''); setFreq('ONCE');
-                      }} className="sm:col-span-2 w-full primary-bg text-white rounded-lg py-2">新增提醒</button>
-                    </div>
-                    <div className="mt-3">
-                      <div className="text-sm text-gray-500 mb-1">目前提醒</div>
-                      {reminders.length===0 ? <div className="text-gray-400 text-sm">尚無提醒</div> :
-                        <div className="space-y-2">
-                          {reminders.map(r=>{
-                            const dt = toDate(r.at); const txt = dt ? dt.toLocaleString('zh-TW') : '—';
-                            return (
-                              <div key={r.id} className="flex items-center justify-between border rounded-lg p-2">
-                                <div>
-                                  <div className="font-medium">{r.title||'(無標題)'}</div>
-                                  <div className="text-xs text-gray-500">{txt} · {r.freq||'ONCE'}</div>
-                                </div>
-                                <button onClick={()=>onRemoveReminder(r.id)} className="px-2 py-1 rounded bg-red-50 text-red-600">刪除</button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      }
-                      <button onClick={()=>ReminderService.requestPermission()} className="mt-3 px-3 py-2 rounded-lg border hover:bg-gray-50 flex items-center gap-2">
-                        <Icon name="bell"/><span>允許桌面通知</span>
-                      </button>
-                    </div>
-                  </section>
-                  <section>
-                    <h3 className="font-semibold mb-2">實用工具</h3>
-                    <div className="flex flex-wrap gap-2">
-                      <button onClick={todayShortcut} className="px-3 py-2 rounded-lg border hover:bg-gray-50">跳到今天</button>
-                      <button onClick={toggleFavoritesOnly} className={`px-3 py-2 rounded-lg border hover:bg-gray-50 ${favoritesOnly?'bg-yellow-50':''}`}>只看最愛：{favoritesOnly?'ON':'OFF'}</button>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-2">備註：金流仍為示範，未串第三方支付。</div>
                   </section>
                 </div>
               )}
@@ -1008,73 +654,43 @@
       );
     };
 
-    /* 側邊欄元件 (SidebarContent) [原封不動除了有 map 項目] */
+    /* Sidebar */
     const SidebarContent = ({ darkMode, user, activeView, setActiveView, setSidebarOpen }) => {
       const dark = darkMode;
-
-      const NavItem = ({ icon, text, viewName, badge = null }) => {
+      const NavItem = ({ icon, imgSrc, text, viewName, badge = null, onClick = null }) => {
         const active = activeView === viewName;
+        const handleClick = () => {
+          if (onClick) onClick();
+          else setActiveView(viewName);
+          setSidebarOpen(false);
+        };
         return (
-          <button 
-            onClick={() => {
-              setActiveView(viewName);
-              setSidebarOpen(false);
-            }}
-            className={`
-              flex items-center gap-4 w-full text-left px-5 py-3 rounded-lg transition
-              ${active
-                ? 'bg-blue-600 text-white shadow'
-                : `
-                  ${dark
-                    ? 'text-gray-300 hover:bg-gray-700'
-                    : 'text-gray-700 hover:bg-gray-100'}
-                `}
-            `}
-          >
-            <Icon name={icon} className="w-5 h-5 flex-shrink-0" />
+          <button onClick={handleClick}
+            className={`flex items-center gap-4 w-full text-left px-5 py-3 rounded-lg transition ${active ? 'bg-blue-600 text-white shadow' : (dark ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100')}`}>
+            {imgSrc ? <img src={imgSrc} alt="" className="w-5 h-5 flex-shrink-0 object-contain" /> : <Icon name={icon} className="w-5 h-5 flex-shrink-0" />}
             <span className="font-medium flex-1 truncate">{text}</span>
-            {badge && (
-              <span className={`text-xs ${active ? 'text-white' : 'text-blue-500'}`}>
-                {badge}
-              </span>
-            )}
+            {badge && <span className={`text-xs ${active ? 'text-white' : 'text-blue-500'}`}>{badge}</span>}
           </button>
         );
       };
-
       const LabelHeader = ({ title }) => (
-         <div className={`
-           px-5 py-2 mt-2
-           ${dark ? 'text-gray-500' : 'text-gray-600'}
-         `}>
-           <span className="text-sm">{title}</span>
-         </div>
+         <div className={`px-5 py-2 mt-2 ${dark ? 'text-gray-500' : 'text-gray-600'}`}><span className="text-sm">{title}</span></div>
       );
 
       return (
-        <div className={`
-          flex flex-col h-full w-full
-          ${dark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900 border-r border-gray-200'}
-        `}>
-          
+        <div className={`flex flex-col h-full w-full ${dark ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-900 border-r border-gray-200'}`}>
           <div className={`flex items-center gap-3 p-4 ${dark ? 'border-b border-gray-700' : 'border-b'}`}>
             {user ? (
               <>
                 <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
                   {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
                 </div>
-                <span className="font-semibold text-lg truncate" title={user.displayName || user.email}>
-                  {user.displayName || user.email}
-                </span>
+                <span className="font-semibold text-lg truncate" title={user.displayName || user.email}>{user.displayName || user.email}</span>
               </>
             ) : (
               <>
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${dark ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                  <Icon name="user" className={`w-6 h-6 ${dark ? 'text-gray-400' : 'text-gray-500'}`} />
-                </div>
-                <span className="font-semibold text-lg text-gray-500">
-                  未登入
-                </span>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${dark ? 'bg-gray-700' : 'bg-gray-200'}`}><Icon name="user" className={`w-6 h-6 ${dark ? 'text-gray-400' : 'text-gray-500'}`} /></div>
+                <span className="font-semibold text-lg text-gray-500">未登入</span>
               </>
             )}
           </div>
@@ -1084,107 +700,24 @@
             <NavItem icon="calendar" text="日曆" viewName="calendar" />
             <NavItem icon="chart" text="分析" viewName="analysis" />
             <NavItem icon="map-pin" text="地圖" viewName="map" />
-
             <LabelHeader title="時間" />
             <NavItem icon="sun" text="早上" viewName="morning" />
             <NavItem icon="sun" text="下午" viewName="afternoon" />
             <NavItem icon="moon" text="晚上" viewName="night" badge="● 現在" />
-
             <LabelHeader title="區域" />
             <NavItem icon="plus" text="新區域" viewName="newArea" />
-
             <LabelHeader title="參考" />
             <NavItem icon="refresh-ccw" text="習慣" viewName="habits" />
             <NavItem icon="scissors" text="休假模式" viewName="vacation" />
             <NavItem icon="star" text="付款" viewName="premium" />
             <NavItem icon="gear" text="應用設置" viewName="settings" />
+            <NavItem icon="mail" text="聯絡我們" viewName="contact" onClick={() => window.open('https://formspree.io/f/mkgknzda', '_blank')} />
           </div>
         </div>
       );
     };
 
-    /* [✅ 新增] 地點選擇元件：縣市 + Google Places 自動完成 */
-    const LocationPicker = ({ value, county, onChange, darkMode }) => {
-      const inputRef = React.useRef(null);
-
-      React.useEffect(() => {
-        let destroyed = false;
-
-        waitForGoogleMaps().then(() => {
-          if (destroyed || !inputRef.current) return;
-          const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
-            fields: ['place_id', 'name', 'geometry', 'formatted_address'],
-            componentRestrictions: { country: 'tw' }
-          });
-          ac.addListener('place_changed', () => {
-            const place = ac.getPlace();
-            const name = place?.name || inputRef.current.value || '';
-            const address = place?.formatted_address || '';
-            const lat = place?.geometry?.location?.lat?.();
-            const lng = place?.geometry?.location?.lng?.();
-
-            const countyText = county || '';
-            const locationText = countyText
-              ? `${countyText} · ${name || ''}`.trim()
-              : (name || '');
-
-            onChange({
-              county: countyText,
-              placeText: name || address,
-              location: locationText,
-              placeId: place?.place_id || '',
-              lat: (typeof lat === 'number' ? lat : null),
-              lng: (typeof lng === 'number' ? lng : null),
-            });
-          });
-        }).catch(() => {
-          // 如果 Google 沒載到，就當一般輸入框用，不報錯
-        });
-
-        return () => { destroyed = true; };
-      }, [county, onChange]);
-
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-2">
-          {/* 縣市下拉 */}
-          <select
-            value={county || ''}
-            onChange={e=>{
-              const nextCounty = e.target.value;
-              onChange({
-                county: nextCounty,
-                placeText: value || '',
-                location: nextCounty
-                  ? `${nextCounty} · ${value||''}`.trim()
-                  : (value||'')
-              });
-            }}
-            className={`border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
-          >
-            <option value="">（選擇縣市）</option>
-            {TAIWAN_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-
-          {/* Google Places 自動完成輸入框 */}
-          <input
-            ref={inputRef}
-            placeholder="您在哪裡？（可輸入地標、地址、店名…）"
-            defaultValue={value || ''}
-            onChange={(e)=>{
-              const text = e.target.value;
-              onChange({
-                county: county || '',
-                placeText: text,
-                location: county ? `${county} · ${text}` : text
-              });
-            }}
-            className={`w-full border rounded-lg p-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
-          />
-        </div>
-      );
-    };
-
-    /* 主 App */
+    /* App */
     const DiaryApp = () => {
       const [user, setUser] = useState(null);
       const [diaries, setDiaries] = useState([]);
@@ -1208,19 +741,12 @@
       const membership = profile?.membership || { tier:'free', expiresAt:null };
       const [favoritesOnly, setFavoritesOnly] = useState(false);
       
-      // [✅ 修改] formData：加入地點的結構化欄位
       const [formData, setFormData] = useState({
         title:'', content:'', tags:[], mood:'😊', weather:'☀️',
         isPrivate:false, isFavorite:false, images:[], newImages: [], remindAt:'',
         createdAt: new Date().toISOString(),
-        location: '',
-        locationCounty:'',
-        locationPlace:'',
-        locationPlaceId:'',
-        locationLat: null,
-        locationLng: null,
+        location: '', locationCounty:'', locationPlace:'', locationPlaceId:'', locationLat: null, locationLng: null,
       });
-
       const [sidebarOpen, setSidebarOpen] = useState(false);
       const [activeView, setActiveView] = useState('list');
 
@@ -1228,7 +754,6 @@
       useEffect(()=>{ document.documentElement.style.setProperty('--primary', themeColor); localStorage.setItem('themeColor', themeColor); },[themeColor]);
       useEffect(()=>{ localStorage.setItem('darkMode', darkMode ? '1' : '0'); }, [darkMode]);
       
-      // Auth + Firestore
       useEffect(()=>{
         const unsub = auth.onAuthStateChanged(async (u)=>{
           setUser(u||null);
@@ -1239,18 +764,13 @@
                 setProfile({ role: d.role||'user', membership: d.membership||{tier:'free',expiresAt:null}, privatePasswordHash: d.privatePasswordHash });
               }else{
                 if (u.displayName) {
-                   db.collection('users').doc(u.uid).set({ 
-                      role: 'user', 
-                      membership: { tier: 'free', expiresAt: null }
-                   }, { merge: true });
+                   db.collection('users').doc(u.uid).set({ role: 'user', membership: { tier: 'free', expiresAt: null } }, { merge: true });
                 } else {
                    setProfile({ role:'user', membership:{ tier:'free', expiresAt:null }, privatePasswordHash: undefined });
                 }
               }
             });
-            db.collection('users').doc(u.uid).collection('diaries')
-              .orderBy('createdAt','desc')
-              .onSnapshot(snap=>{
+            db.collection('users').doc(u.uid).collection('diaries').orderBy('createdAt','desc').onSnapshot(snap=>{
                 const arr = [];
                 snap.forEach(doc=>arr.push({ id:doc.id, ...doc.data() }));
                 setDiaries(arr);
@@ -1258,8 +778,6 @@
           }else{
             const sample = [
               { id:'1', title:'美好的一天', content:'今天天氣很好，去公園散步...', tags:['生活','健康'], mood:'😊', weather:'☀️', isPrivate:false, isFavorite:true, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), images:[], location:'臺北市 · 公園' },
-              { id:'2', title:'工作上的挑戰', content:'今天遇到了一個難題...', tags:['工作','學習'], mood:'🤔', weather:'☁️', isPrivate:false, isFavorite:false, createdAt:new Date(Date.now()-86400000).toISOString(), updatedAt:new Date(Date.now()-86400000).toISOString(), images:[], location:'' },
-              { id:'3', title:'週末計畫', content:'這個週末想去爬山...', tags:['生活','興趣'], mood:'😍', weather:'🌈', isPrivate:false, isFavorite:false, createdAt:new Date(Date.now()-86400000*2).toISOString(), updatedAt:new Date(Date.now()-86400000*2).toISOString(), images:[], location:'新北市 · 爬山步道' }
             ];
             setProfile(null); setDiaries(sample);
           }
@@ -1267,7 +785,6 @@
         return ()=>unsub();
       },[]);
 
-      // 過濾排序 (原封不動)
       useEffect(()=>{
         let filtered = [...diaries];
         if (searchTerm) {
@@ -1300,48 +817,32 @@
         setFilteredDiaries(filtered);
       },[diaries, searchTerm, selectedTag, filterMood, sortBy, dateFilter, favoritesOnly]);
 
-      // 上傳圖片 (原封不動的行為)
       const onUploadImages = async (files)=>{
         if(!files || files.length===0) return [];
         const urls = [];
         for(const f of files){
-          if(!user){
-            urls.push(URL.createObjectURL(f));
-          }else{
-            const url = await uploadFileToStorage(f, user.uid);
-            urls.push(url);
-          }
+          if(!user){ urls.push(URL.createObjectURL(f)); }
+          else{ const url = await uploadFileToStorage(f, user.uid); urls.push(url); }
         }
         return urls;
       };
 
-      // 儲存/刪除/編輯日記
       const handleSaveDiary = async ()=>{
         if(!formData.title || !formData.content){ alert('請填寫標題和內容'); return; }
-        
         setUploading(true);
-        
         try {
           let uploadedImageUrls = [];
           if (formData.newImages && formData.newImages.length > 0) {
               uploadedImageUrls = await onUploadImages(formData.newImages); 
           }
-          
           const finalImages = [...(formData.images || []), ...uploadedImageUrls];
-          
           const docData = {
-            title: formData.title,
-            content: formData.content,
-            tags: formData.tags||[],
-            mood: formData.mood||'😊',
-            weather: formData.weather||'☀️',
-            isPrivate: !!formData.isPrivate,
-            isFavorite: !!formData.isFavorite,
+            title: formData.title, content: formData.content, tags: formData.tags||[],
+            mood: formData.mood||'😊', weather: formData.weather||'☀️',
+            isPrivate: !!formData.isPrivate, isFavorite: !!formData.isFavorite,
             images: finalImages,
             createdAt: formData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-
-            // [✅ 新增] 地點資訊完整寫入
             location: formData.location || '',
             locationCounty: formData.locationCounty || '',
             locationPlace: formData.locationPlace || '',
@@ -1349,7 +850,6 @@
             locationLat: (formData.locationLat ?? null),
             locationLng: (formData.locationLng ?? null),
           };
-
           if(formData.remindAt){
             const when = new Date(formData.remindAt);
             if (!isNaN(when.getTime())) {
@@ -1358,9 +858,8 @@
                 at: when.toISOString(), title: docData.title, freq: 'ONCE', fired:false
               });
               alert('提醒已設定：'+when.toLocaleString('zh-TW'));
-            } else { alert('提醒時間格式不正確，已忽略。'); }
+            }
           }
-
           if(user){
             const col = db.collection('users').doc(user.uid).collection('diaries');
             if(currentDiary){ await col.doc(currentDiary.id).set(docData, { merge:true }); }
@@ -1371,14 +870,8 @@
             if(currentDiary){ setDiaries(diaries.map(d=>d.id===id?newItem:d)); }
             else{ setDiaries([newItem, ...diaries]); }
           }
-          
           resetForm();
-
-        } catch (e) {
-          alert('儲存失敗：'+e.message);
-        } finally {
-          setUploading(false);
-        }
+        } catch (e) { alert('儲存失敗：'+e.message); } finally { setUploading(false); }
       };
 
       const handleDeleteDiary = async (id)=>{
@@ -1387,253 +880,44 @@
         else{ setDiaries(diaries.filter(d=>d.id!==id)); }
         if(currentDiary?.id===id) setCurrentDiary(null);
       };
-
       const handleEditDiary = (diary)=>{
         setCurrentDiary(diary);
         setFormData({ 
-          ...diary, 
-          remindAt:'',
-          createdAt: diary.createdAt || new Date().toISOString(),
-          // [✅ 新增] 編輯時帶回地點資料
-          location: diary.location || '',
-          locationCounty: diary.locationCounty || '',
-          locationPlace: diary.locationPlace || '',
-          locationPlaceId: diary.locationPlaceId || '',
-          locationLat: diary.locationLat ?? null,
-          locationLng: diary.locationLng ?? null,
+          ...diary, remindAt:'', createdAt: diary.createdAt || new Date().toISOString(),
+          location: diary.location || '', locationCounty: diary.locationCounty || '',
+          locationPlace: diary.locationPlace || '', locationPlaceId: diary.locationPlaceId || '',
+          locationLat: diary.locationLat ?? null, locationLng: diary.locationLng ?? null,
           newImages: []
         });
-        setShowNewDiary(true);
-        setActiveView('list');
+        setShowNewDiary(true); setActiveView('list');
       };
-
       const toggleFavorite = async (id)=>{
         if(user){
-          const doc = diaries.find(d=>d.id===id);
           await db.collection('users').doc(user.uid).collection('diaries').doc(id)
             .set({ isFavorite: !doc.isFavorite, updatedAt:new Date().toISOString() }, { merge:true });
         }else{
           setDiaries(diaries.map(d=>d.id===id?{...d,isFavorite:!d.isFavorite}:d));
         }
       };
-
       const resetForm = ()=>{
         setFormData({ 
           title:'',content:'',tags:[],mood:'😊',weather:'☀️',
           isPrivate:false,isFavorite:false,images:[], remindAt:'',
-          createdAt: new Date().toISOString(),
-          newImages: [],
-          // [✅ 新增] 清空地點資料
-          location: '',
-          locationCounty:'',
-          locationPlace:'',
-          locationPlaceId:'',
-          locationLat: null,
-          locationLng: null,
+          createdAt: new Date().toISOString(), newImages: [],
+          location: '', locationCounty:'', locationPlace:'', locationPlaceId:'', locationLat: null, locationLng: null,
         });
-        setCurrentDiary(null);
-        setShowNewDiary(false);
+        setCurrentDiary(null); setShowNewDiary(false);
       };
-
       const handleTagToggle = (tag)=>{
-        setFormData(prev=>({
-          ...prev,
-          tags: (prev.tags || []).includes(tag) ? prev.tags.filter(t=>t!==tag) : [...prev.tags, tag]
-        }));
+        setFormData(prev=>({ ...prev, tags: (prev.tags || []).includes(tag) ? prev.tags.filter(t=>t!==tag) : [...prev.tags, tag] }));
       };
 
-      // 匯入匯出
-      const exportDiaries = ()=>{
-        const dataStr = JSON.stringify(diaries, null, 2);
-        const blob = new Blob([dataStr],{ type:'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href=url; a.download=`diary_backup_${localDateKey(new Date())}.json`; a.click();
-      };
-
-      const importDiaries = async (file)=>{
-        try{
-          const text = await file.text();
-          const arr = JSON.parse(text);
-          if(!Array.isArray(arr)) throw new Error('JSON 格式不正確（需要陣列）');
-          if(user){
-            const batch = db.batch();
-            const col = db.collection('users').doc(user.uid).collection('diaries');
-            arr.forEach(d=>{
-              const ref = d.id ? col.doc(d.id) : col.doc();
-              batch.set(ref, {
-                title:d.title||'',
-                content:d.content||'',
-                tags:d.tags||[],
-                mood:d.mood||'😊',
-                weather:d.weather||'☀️',
-                isPrivate:!!d.isPrivate,
-                isFavorite:!!d.isFavorite,
-                images:d.images||[],
-                createdAt:d.createdAt||new Date().toISOString(),
-                updatedAt:new Date().toISOString(),
-                // [✅ 修改] 匯入時保留地點資訊
-                location: d.location || '',
-                locationCounty: d.locationCounty || '',
-                locationPlace: d.locationPlace || '',
-                locationPlaceId: d.locationPlaceId || '',
-                locationLat: (d.locationLat ?? null),
-                locationLng: (d.locationLng ?? null),
-              }, { merge:true });
-            });
-            await batch.commit(); alert('已匯入至雲端');
-          }else{
-            const map = Object.fromEntries(diaries.map(d=>[d.id,d]));
-            arr.forEach(d=>{
-              const id=d.id||(Date.now()+Math.random()).toString();
-              map[id]={ id, ...d };
-            });
-            setDiaries(Object.values(map).sort((a,b)=>{
-              const da=toDate(a.createdAt), dbb=toDate(b.createdAt);
-              return (dbb?dbb.getTime():0)-(da?da.getTime():0);
-            }));
-            alert('已匯入（本地模式）');
-          }
-        }catch(e){ alert('匯入失敗：'+e.message); }
-      };
-
-      // 提醒 (原封不動)
-      const reminders = useMemo(()=>ReminderService.load(), [settingsOpen]);
-      const onAddReminder = ({title, when, freq})=>{
-        const id = `rem_${Date.now()}`;
-        const dt = new Date(when);
-        if (isNaN(dt.getTime())) { alert('時間格式不正確'); return; }
-        ReminderService.add({ id, title, at: dt.toISOString(), freq, fired:false });
-        alert('已新增提醒');
-      };
-      const onRemoveReminder = (id)=>{ ReminderService.remove(id); alert('已刪除提醒'); };
-
-      // 會員/優惠券/付款 (原封不動)
-      const onSetMembershipTier = async (tier)=>{
-        if(!user){ alert('請先登入'); return; }
-        const expiresAt = membership?.expiresAt ? toDate(membership.expiresAt) : new Date();
-        if(tier==='free'){
-          await db.collection('users').doc(user.uid).set({ membership:{ tier:'free', expiresAt:null }}, {merge:true});
-        }else{
-          const base = expiresAt || new Date();
-          base.setDate(base.getDate()+30);
-          await db.collection('users').doc(user.uid).set({ membership:{ tier, expiresAt: base.toISOString() }},{merge:true});
-        }
-        alert('會員狀態已更新（示範）');
-      };
-      const onCreateCoupon = async ({code, months, active, discountAmount})=>{
-        if(!user || !isAdmin){ alert('需要管理員權限'); return; }
-        if(!code){ alert('請輸入代碼'); return; }
-        const payload = {
-          code,
-          active: !!active,
-          discountAmount: Math.max(0, parseInt(discountAmount||0)),
-          discountMonths: Math.max(0, parseInt(months||0)) || null,
-          createdBy: user.uid,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        await db.collection('coupons').doc(code).set(payload, { merge:true });
-        alert('已建立/更新優惠券：'+code);
-      };
-      const onApplyCoupon = async (code)=>{
-        if(!user){ 
-          alert('請先登入才能套用優惠券'); 
-          return; 
-        }
-        if(!code){ 
-          alert('請輸入優惠券代碼'); 
-          return; 
-        }
-        try{
-          const snap = await db.collection('coupons').doc(code).get();
-          if(!snap.exists){ 
-            alert('優惠券不存在'); 
-            return; 
-          }
-          const c = snap.data();
-          if(c.active === false){ 
-            alert('此優惠券未啟用'); 
-            return; 
-          }
-          const discountAmount = Math.max(0, Number(c.discountAmount||0));
-          if(discountAmount <= 0){ 
-            alert('此優惠券未設定折抵金額'); 
-            return; 
-          }
-          setAppliedCoupon({ code, discountAmount, active:true });
-          alert(`已套用優惠券：${code}（可折抵 NT$ ${discountAmount}）`);
-        }catch(err){
-          alert('讀取優惠券失敗：' + err.message);
-        }
-      };
-      const onClearCoupon = ()=> setAppliedCoupon(null);
-      const onPurchase = async (plan, coupon, basePrice, duePrice)=> {
-        if(!user){ alert('請先登入'); return; }
-        const now = new Date();
-        let base = membership?.expiresAt ? toDate(membership.expiresAt) : now;
-        if(!base || base < now) base = now;
-        if(plan==='monthly'){ base.setMonth(base.getMonth()+1); }
-        if(plan==='yearly'){ base.setFullYear(base.getFullYear()+1); }
-        await db.collection('users').doc(user.uid).set({
-          membership:{ tier:'pro', expiresAt: base.toISOString() }
-        }, { merge:true });
-        if(coupon?.code){
-          const usedId = `${user.uid}_${coupon.code}`;
-          await db.collection('coupon_redemptions').doc(usedId).set({
-            uid:user.uid, code:coupon.code,
-            discountAmount: Number(coupon.discountAmount||0),
-            plan, basePrice, paid: duePrice,
-            redeemedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-        }
-        alert(`升級成功！實付 NT$ ${duePrice}（${plan==='yearly'?'年費':'月費'}）。到期：${base.toLocaleDateString('zh-TW')}`);
-        setShowPremium(false);
-      };
-
-      // 備份/還原 (原封不動)
-      const onBackupToStorage = async ()=>{
-        if(!user){ alert('請先登入'); return; }
-        const payload = JSON.stringify(diaries, null, 2);
-        const ref = storage.ref().child(`${user.uid}/backups/diaries_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`);
-        await ref.put(new Blob([payload],{type:'application/json'}));
-        alert('已備份到 Storage');
-      };
-      const onRestoreFromStorage = async ()=>{
-        if(!user){ alert('請先登入'); return; }
-        const listRef = storage.ref().child(`${user.uid}/backups/`);
-        const list = await listRef.list({ maxResults: 1 });
-        if(!list.items.length){ alert('沒有備份檔'); return; }
-        const url = await list.items[0].getDownloadURL();
-        const res = await fetch(url);
-        const arr = await res.json();
-        const batch = db.batch();
-        const col = db.collection('users').doc(user.uid).collection('diaries');
-        arr.forEach(d=>{
-          const ref = d.id ? col.doc(d.id) : col.doc();
-          batch.set(ref, d, { merge:true });
-        });
-        await batch.commit();
-        alert('已從 Storage 還原最新備份');
-      };
-
-      // 快捷鍵 (原封不動)
-      const todayShortcut = ()=>{ 
-        const today = localDateKey(new Date()); 
-        setDateFilter(today); 
-        setCurrentDiary(null); 
-        setShowNewDiary(false); 
-        setActiveView('list');
-      };
-      const toggleFavoritesOnly = ()=> setFavoritesOnly(v=>!v);
-
-      // 主內容切換
       const renderMainContent = () => {
         switch (activeView) {
           case 'list':
             return (
               <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* 左欄：篩選 + 新增 + 清單 */}
+                {/* 左欄 */}
                 <div className={`${darkMode?'bg-gray-800':'bg-white'} rounded-2xl shadow-xl p-6 max-h-screen overflow-y-auto lg:col-span-1`}>
                   <div className="space-y-4">
                     <div className="relative">
@@ -1664,6 +948,11 @@
                       <div className="text-sm mb-2 text-gray-500">標籤雲（點擊篩選）</div>
                       <TagCloud diaries={diaries} activeTag={selectedTag} onToggle={(t)=> setSelectedTag(selectedTag===t?'':t) } />
                     </div>
+                    {/* [✅ 新增] 數據分析按鈕 */}
+                    <button onClick={()=>setActiveView('analysis')}
+                      className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 flex items-center justify-center gap-2 font-medium">
+                      <Icon name="chart"/> 分析
+                    </button>
                     <button onClick={()=>{resetForm(); setShowNewDiary(true);}}
                       className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2">
                       <Icon name="plus"/> 新增日記
@@ -1690,6 +979,12 @@
                             </div>
                             <h3 className="font-bold mb-1">{d.title}</h3>
                             <p className="text-sm text-gray-500 mb-2">{dateText}</p>
+                            {d.location && (
+                                <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                                    <Icon name="map-pin" className="w-3 h-3"/>
+                                    <span className="truncate">{d.location}</span>
+                                </p>
+                            )}
                             {d.isPrivate ? (
                               <div className="text-xs text-gray-500 italic flex items-center gap-1">
                                 <Icon name="lock" className="w-3 h-3" />
@@ -1731,80 +1026,47 @@
                           className={`w-full text-2xl font-bold p-3 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}/>
                         <div className="text-sm text-gray-500">標題字數：{(formData.title||'').length}</div>
                         
-                        {/* 日期選擇器 */}
-                      {/* [✅ 修改後] 地點：左邊縣市下拉 + 右邊手動輸入 */}
-<div>
-  <label className="block text-sm font-medium mb-1 text-gray-700">地點</label>
-  <div className="flex gap-2">
-    {/* 縣市下拉保留 */}
-    <select
-      value={formData.locationCounty || ''}
-      onChange={(e) => {
-        const county = e.target.value;
-        setFormData(prev => ({
-          ...prev,
-          locationCounty: county,
-          // 如果之前有整合的 location，就重新拼上縣市名稱
-          location: county ? `${county} · ${prev.locationPlace || ''}` : prev.locationPlace || ''
-        }));
-      }}
-      className={`w-1/3 border rounded-lg p-2 ${
-        darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'
-      }`}
-    >
-      <option value="">選擇縣市</option>
-      <option value="台北市">台北市</option>
-      <option value="新北市">新北市</option>
-      <option value="桃園市">桃園市</option>
-      <option value="台中市">台中市</option>
-      <option value="台南市">台南市</option>
-      <option value="高雄市">高雄市</option>
-      <option value="基隆市">基隆市</option>
-      <option value="新竹市">新竹市</option>
-      <option value="嘉義市">嘉義市</option>
-      <option value="新竹縣">新竹縣</option>
-      <option value="苗栗縣">苗栗縣</option>
-      <option value="彰化縣">彰化縣</option>
-      <option value="南投縣">南投縣</option>
-      <option value="雲林縣">雲林縣</option>
-      <option value="嘉義縣">嘉義縣</option>
-      <option value="屏東縣">屏東縣</option>
-      <option value="宜蘭縣">宜蘭縣</option>
-      <option value="花蓮縣">花蓮縣</option>
-      <option value="台東縣">台東縣</option>
-      <option value="澎湖縣">澎湖縣</option>
-      <option value="金門縣">金門縣</option>
-      <option value="連江縣">連江縣</option>
-    </select>
+                        <div>
+                          <label className="block text-sm font-medium mb-1 text-gray-700">日記日期</label>
+                          <input
+                            type="datetime-local"
+                            value={toDateTimeLocal(formData.createdAt)}
+                            onChange={e => setFormData({...formData, createdAt: new Date(e.target.value).toISOString()})}
+                            className={`w-full border rounded-lg p-2 ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none`}
+                          />
+                        </div>
 
-    {/* 右邊：使用者可自由輸入 */}
-    <input
-      type="text"
-      placeholder="例如：家裡、學校圖書館、台北101、東區誠品…"
-      value={formData.locationPlace || ''}
-      onChange={(e) => {
-        const place = e.target.value;
-        setFormData(prev => ({
-          ...prev,
-          locationPlace: place,
-          location: prev.locationCounty
-            ? `${prev.locationCounty} · ${place}`
-            : place
-        }));
-      }}
-      className={`flex-1 border rounded-lg p-2 ${
-        darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'
-      }`}
-    />
-  </div>
-</div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1 text-gray-700">地點 (全球搜尋)</label>
+                          <LocationPicker
+                            county={formData.locationCounty}
+                            placeText={formData.locationPlace}
+                            darkMode={darkMode}
+                            onChange={({ county, placeText, location, placeId, lat, lng }) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                location: location,
+                                locationCounty: county,
+                                locationPlace: placeText,
+                                locationPlaceId: placeId,
+                                locationLat: lat,
+                                locationLng: lng,
+                              }));
+                            }}
+                          />
+                          <div className="text-xs text-gray-500 mt-1">
+                            {formData.locationLat && formData.locationLng ? 
+                              `已鎖定座標：${formData.locationLat.toFixed(4)}, ${formData.locationLng.toFixed(4)}` : 
+                              '未鎖定座標 (可手動輸入)'}
+                          </div>
+                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium mb-2">心情</label>
                             <div className="flex gap-2 flex-wrap">
                               {moods.map(m=>(
-                                <button key={m} onClick={()=>setFormData({...formData,mood:m})}
+                                <button key={m} type="button" onClick={()=>setFormData({...formData,mood:m})}
                                   className={`text-3xl p-2 rounded-lg transition ${formData.mood===m?'bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
                                   {m}
                                 </button>
@@ -1815,7 +1077,7 @@
                             <label className="block text-sm font-medium mb-2">天氣</label>
                             <div className="flex gap-2 flex-wrap">
                               {weathers.map(w=>(
-                                <button key={w} onClick={()=>setFormData({...formData,weather:w})}
+                                <button key={w} type="button" onClick={()=>setFormData({...formData,weather:w})}
                                   className={`text-3xl p-2 rounded-lg transition ${formData.weather===w?'bg-purple-200 scale-110':'hover:bg-gray-100'}`}>
                                   {w}
                                 </button>
@@ -1823,7 +1085,6 @@
                             </div>
                           </div>
                         </div>
-
                         <div>
                           <label className="block text-sm font-medium mb-2">標籤</label>
                           <div className="flex gap-2 flex-wrap">
@@ -1835,13 +1096,11 @@
                             ))}
                           </div>
                         </div>
-
                         <textarea placeholder="今天發生了什麼事呢..." value={formData.content}
                           onChange={e=>setFormData({...formData, content:e.target.value})}
                           className={`w-full h-64 p-4 rounded-lg border ${darkMode?'bg-gray-700 border-gray-600 text-white':'border-gray-300'} focus:ring-2 focus:outline-none resize-none`}/>
                         <div className="text-sm text-gray-500">內容字數：{(formData.content||'').length}</div>
                         
-                        {/* 圖片上傳介面（原封不動） */}
                         <div className="space-y-2">
                           <label className="block text-sm font-medium">圖片上傳</label>
                           <div className="flex items-center gap-2">
@@ -1884,7 +1143,6 @@
                             <Icon name="heart"/><span>加入最愛</span>
                           </label>
                         </div>
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium mb-2">提醒時間（本地）</label>
@@ -1894,7 +1152,6 @@
                             <div className="text-xs text-gray-500 mt-1">到時會發出桌面通知（需保持瀏覽器開啟或定期檢查）。</div>
                           </div>
                         </div>
-
                         <button onClick={handleSaveDiary}
                           className="w-full primary-bg text-white py-3 rounded-lg hover:opacity-90 flex items-center justify-center gap-2"
                           disabled={uploading}
@@ -1979,14 +1236,11 @@
         }
       };
 
-      // DiaryApp render
       return (
         <div className={`
           flex h-screen overflow-hidden
           ${darkMode ? 'bg-gray-900 text-white' : 'bg-transparent'}
         `}>
-          
-          {/* 桌面版側邊欄 */}
           <div className="hidden md:block w-64 flex-shrink-0 h-full">
             <SidebarContent 
               darkMode={darkMode} 
@@ -1996,8 +1250,6 @@
               setSidebarOpen={setSidebarOpen}
             />
           </div>
-
-          {/* 手機版側邊欄 */}
           {sidebarOpen && (
             <div className="fixed inset-0 flex z-50 md:hidden">
               <div className="w-64 h-full">
@@ -2015,13 +1267,9 @@
               ></div>
             </div>
           )}
-
-          {/* 主內容區 */}
           <main className="flex-1 w-full h-screen overflow-y-auto">
-
             <div className={`${darkMode?'bg-gray-800':'bg-white'} shadow-lg sticky top-0 z-40`}>
               <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
-                
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => setSidebarOpen(true)}
@@ -2030,23 +1278,18 @@
                   >
                     <Icon name="menu" className="w-6 h-6" />
                   </button>
-
-                  <button
-  onClick={() => {
-    setActiveView('list');
-    setDateFilter('');
-    setCurrentDiary(null);
-    setShowNewDiary(false);
-  }}
-  className="flex items-center gap-2 text-2xl font-bold primary-text"
-  title="回到首頁"
->
-  <img src="./assets/img/journal-favicon.png" alt="logo" className="w-7 h-7 rounded" />
-  <span>我的日記本</span>
-</button>
-
+                  <button 
+                    onClick={() => {
+                      setActiveView('list');
+                      setDateFilter('');
+                      setCurrentDiary(null);
+                      setShowNewDiary(false);
+                    }}
+                    className="text-2xl font-bold primary-text"
+                  >
+                    📔 我的日記本
+                  </button>
                 </div>
-
                 <div className="flex items-center gap-3 flex-wrap">
                   <button onClick={()=>setShowPremium(true)} className="px-3 py-1 rounded-lg primary-bg text-white">
                     Get Premium
@@ -2064,11 +1307,9 @@
                 </div>
               </div>
             </div>
-
             <div className="max-w-7xl mx-auto px-4 pt-4">
               <StreakBadge diaries={diaries}/>
             </div>
-
             <PremiumModal
               open={showPremium}
               onClose={()=>setShowPremium(false)}
@@ -2081,7 +1322,6 @@
               selectedPlan={selectedPlan}
               setSelectedPlan={setSelectedPlan}
             />
-
             <SettingsPanel
               open={settingsOpen}
               onClose={()=>setSettingsOpen(false)}
@@ -2107,98 +1347,11 @@
               setDarkMode={setDarkMode}
               user={user}
             />
-
             {renderMainContent()}
-            
           </main>
         </div>
       );
     };
-
-    /* 私密檢視器與一般檢視器 */
-    const PrivateDiaryViewer = ({ currentDiary, user, profile, onEdit, onDelete, toggleFavorite }) => {
-      const [inputPwd, setInputPwd] = React.useState('');
-      const [unlocked, setUnlocked] = React.useState(false);
-      const savedHash = (profile?.privatePasswordHash) || localStorage.getItem('privatePasswordHash') || '';
-      const checkPassword = async ()=>{
-        if(!savedHash){ alert('尚未設定私密日記密碼'); return; }
-        const hash = await sha256Hex(inputPwd);
-        if(hash === savedHash){ setUnlocked(true); } else { alert('密碼錯誤'); }
-      };
-      if(!unlocked){
-        return (
-          <div className="text-center py-20">
-            <Icon name="lock" className="w-16 h-16 mx-auto mb-4 text-gray-400"/>
-            <p className="text-gray-600 mb-4">這是一篇私密日記，請輸入密碼以查看內容</p>
-            <div className="flex justify-center gap-2">
-              <input type="password" value={inputPwd} onChange={e=>setInputPwd(e.target.value)} className="border rounded-lg p-2"/>
-              <button onClick={checkPassword} className="primary-bg text-white rounded-lg px-3">解鎖</button>
-            </div>
-          </div>
-        );
-      }
-      return <DiaryViewer currentDiary={currentDiary} onEdit={onEdit} onDelete={onDelete} toggleFavorite={toggleFavorite} />;
-    };
-
-    const DiaryViewer = ({ currentDiary, onEdit, onDelete, toggleFavorite }) => (
-      <div className="space-y-6">
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-5xl">{currentDiary.mood}</span>
-              <span className="text-4xl">{currentDiary.weather}</span>
-            </div>
-            <h2 className="text-3xl font-bold mb-2">{currentDiary.title}</h2>
-            <p className="text-sm text-gray-500">
-              {(()=>{ const dt = toDate(currentDiary.createdAt); return dt ? dt.toLocaleString('zh-TW') : '—'; })()}
-            </p>
-            {/* [✅ 修改] 顯示地點 + 地圖連結（如果有座標） */}
-            {currentDiary.location && (
-              <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                <Icon name="map-pin" className="w-4 h-4"/>
-                <span>{currentDiary.location}</span>
-                {(typeof currentDiary.locationLat === 'number' && typeof currentDiary.locationLng === 'number') && (
-                  <a
-                    className="underline text-blue-600"
-                    href={`https://www.google.com/maps/search/?api=1&query=${currentDiary.locationLat},${currentDiary.locationLng}`}
-                    target="_blank" rel="noopener noreferrer"
-                  >
-                    在地圖開啟
-                  </a>
-                )}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {toggleFavorite && (
-              <button onClick={()=>toggleFavorite(currentDiary.id)} className="p-2 hover:bg-gray-100 rounded-lg">
-                <Icon name="heart" className={`w-6 h-6 ${currentDiary.isFavorite?'text-red-500':''}`} fill={currentDiary.isFavorite}/>
-              </button>
-            )}
-            {onEdit && <button onClick={()=>onEdit(currentDiary)} className="p-2 hover:bg-gray-100 rounded-lg"><Icon name="edit" className="w-6 h-6"/></button>}
-            {onDelete && <button onClick={()=>onDelete(currentDiary.id)} className="p-2 hover:bg-red-100 text-red-600 rounded-lg"><Icon name="trash" className="w-6 h-6"/></button>}
-          </div>
-        </div>
-        {(currentDiary.tags||[]).length>0 && (
-          <div className="flex gap-2 flex-wrap">
-            {currentDiary.tags.map(t=><span key={t} className="bg-purple-200 text-purple-700 px-3 py-1 rounded-full">#{t}</span>)}
-          </div>
-        )}
-        {currentDiary.images?.length>0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {currentDiary.images.map((url,i)=><img key={i} src={url} className="w-full h-40 object-cover rounded-xl border"/>)}
-          </div>
-        )}
-        <div className="prose max-w-none">
-          <p className="text-lg whitespace-pre-wrap">{currentDiary.content}</p>
-        </div>
-        {currentDiary.isPrivate && (
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
-            <Icon name="lock" className="w-4 h-4"/><span>這是一篇私密日記</span>
-          </div>
-        )}
-      </div>
-    );
 
     ReactDOM.render(<DiaryApp/>, document.getElementById('root'));
   </script>
